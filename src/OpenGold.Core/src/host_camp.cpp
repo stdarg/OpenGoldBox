@@ -1,4 +1,5 @@
 #include "opengold/rolf_tour.h"
+#include "opengold/camp_service.h"
 
 namespace opengold::por
 {
@@ -18,53 +19,59 @@ void RolfTourSession::decline_camp()
 // area's check interval (0x6DD2); on reaching it, the count restarts and d100 at
 // or below the chance (0x6DD3) interrupts. The count carries over between rests.
 // Returns the minutes rested before an interruption, or nothing when none occurs.
-std::optional<RestResult> RolfTourSession::camp_rest()
+std::optional<RestResult> CampService::camp_rest(TownServiceHost &host)
 {
-    return camp_length_ ? campaign_->rest(*camp_length_) : campaign_->rest(camp_kind_);
+    auto &campaign = *host.campaign();
+    return camp_length_ ? campaign.rest(*camp_length_) : campaign.rest(camp_kind_);
 }
 
-unsigned RolfTourSession::camp_minutes() const
+unsigned CampService::camp_minutes(const CampaignParty &campaign) const
 {
     if (camp_length_)
     {
         return static_cast<unsigned>(camp_length_->count());
     }
-    const auto &rules = campaign_->rule_module();
+    const auto &rules = campaign.rule_module();
     return (camp_kind_ == RestKind::short_rest ? rules.short_rest_policy()
                                                : rules.long_rest_policy())
         .duration_minutes;
 }
 
-std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance)
+std::optional<unsigned> CampService::rest_interruption(TownServiceHost &host, unsigned interval,
+                                                       unsigned chance)
 {
-    return rest_interruption(interval, chance, camp_minutes(),
-                             [this](unsigned count)
+    auto &machine = host.script_machine();
+    return rest_interruption(interval, chance, camp_minutes(*host.campaign()),
+                             [&machine](unsigned count)
                              {
-                                 return machine_.engine_random(count);
+                                 return machine.engine_random(count);
                              });
 }
 
-void RolfTourSession::foresee_rest_interruption(unsigned interval, unsigned chance)
+void CampService::foresee_rest_interruption(TownServiceHost &host, unsigned interval,
+                                            unsigned chance)
 {
-    const auto rested = campaign_->state().spell_rest->rested_minutes;
-    const auto longest = static_cast<std::uint64_t>(campaign_->longest_rest_to_memorize().count());
+    auto &campaign = *host.campaign();
+    auto &machine = host.script_machine();
+    const auto rested = campaign.state().spell_rest->rested_minutes;
+    const auto longest = static_cast<std::uint64_t>(campaign.longest_rest_to_memorize().count());
     if (longest <= rested)
     {
         return;
     }
-    const auto dice = machine_.dice_state();
+    const auto dice = machine.dice_state();
     const auto checks = rest_checks_;
     const auto foreseen =
         rest_interruption(interval, chance, static_cast<unsigned>(longest - rested),
-                          [this](unsigned count)
+                          [&machine](unsigned count)
                           {
-                              return machine_.engine_random(count);
+                              return machine.engine_random(count);
                           });
-    machine_.restore_dice(dice);
+    machine.restore_dice(dice);
     rest_checks_ = checks;
     if (foreseen)
     {
-        campaign_->interrupt_rest_at(std::chrono::minutes{rested + *foreseen});
+        campaign.interrupt_rest_at(std::chrono::minutes{rested + *foreseen});
     }
 }
 
@@ -77,8 +84,8 @@ void RolfTourSession::interrupt_camp()
     }
 }
 
-std::optional<unsigned> RolfTourSession::rest_interruption(unsigned interval, unsigned chance,
-                                                           unsigned duration, const Dice &dice)
+std::optional<unsigned> CampService::rest_interruption(unsigned interval, unsigned chance,
+                                                       unsigned duration, const Dice &dice)
 {
     if (!interval)
     {

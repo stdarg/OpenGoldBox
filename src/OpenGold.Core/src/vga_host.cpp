@@ -156,7 +156,7 @@ void RolfTourSession::stage_vga_treasure(const EclRequest &request)
             loot.items.push_back(std::move(*item));
         }
     }
-    staged_treasure_ = std::move(loot);
+    treasure_service_.stage(std::move(loot));
 }
 
 void RolfTourSession::open_vga_store(const EclRequest &request)
@@ -167,20 +167,21 @@ void RolfTourSession::open_vga_store(const EclRequest &request)
     {
         store = 1;
     }
-    treasure_.clear();
+    auto &goods = shop_service_.shop_stock();
+    goods.clear();
     for (const auto number : town_->stores.at(store - 1))
     {
         if (auto item = vga_item(number, request.id))
         {
             // A store's goods are known for what they are.
             item->identify();
-            item->index = treasure_.size();
-            treasure_.push_back(std::move(*item));
+            item->index = goods.size();
+            goods.push_back(std::move(*item));
         }
     }
     choose_shopper();
     read_character();
-    enter_shop(request.id);
+    shop_service_.enter_shop(*this, request.id);
 }
 
 bool RolfTourSession::vga_area_map() const
@@ -929,7 +930,7 @@ std::optional<unsigned> RolfTourSession::fix_rest(unsigned minutes, const Dice &
     }
     const auto interval = machine_.variable(game_cell(ecl_rest_check_interval)),
                chance = machine_.variable(game_cell(ecl_rest_interruption_chance));
-    const auto interrupted = rest_interruption(interval, chance, minutes, dice);
+    const auto interrupted = camp_service_.rest_interruption(interval, chance, minutes, dice);
     campaign_->advance_time(std::chrono::minutes{interrupted.value_or(minutes)});
     return interrupted;
 }

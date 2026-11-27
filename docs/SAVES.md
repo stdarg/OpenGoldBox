@@ -197,6 +197,15 @@ A campaign save stores:
   Doors forced open are not saved; a loaded district starts with its original
   locks.
 
+The town's part of the save is written by `RolfTourSession::save` in
+`campaign_save.cpp`, the codec's one entry into the session. A service with
+saved state writes it through its own `save` at its place in the field order:
+`CampService` the camp interruption step count, `VaultService` Dark Queen's
+vault, `TreasureService` the deferred loot. The order and bytes are those the
+session wrote before its services were classes of their own (#399), so no
+format number changed. Every expedition fixture save loads as the game loads
+it and saves again byte for byte (`opengold_expedition_saves_resave`).
+
 The `--no-fog` launch flag only changes overhead rendering. It does not fill
 either bitset, and saving while it is enabled does not reveal unexplored areas
 when the save is later loaded during normal play.

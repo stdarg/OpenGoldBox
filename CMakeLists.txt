@@ -248,6 +248,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/rolf_tour.cpp
     src/OpenGold.Core/src/phlan_session.cpp
     src/OpenGold.Core/src/host_services.cpp
+    src/OpenGold.Core/src/town_service_host.cpp
     src/OpenGold.Core/src/host_halls.cpp
     src/OpenGold.Core/src/host_temples.cpp
     src/OpenGold.Core/src/host_shops.cpp

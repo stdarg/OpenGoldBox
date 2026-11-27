@@ -119,7 +119,7 @@ void RolfTourSession::solar_map_step()
     keep_solar_map(original::step_rocket(solar_map_state(), heading_of(*pending_movement_)));
     if (campaign_)
     {
-        rest_buck_rogers_team(original::rocket_step_days);
+        BuckRogersMenuService::rest_buck_rogers_team(*campaign_, original::rocket_step_days);
         for (const auto &w : character_reply(selected_character_).writes)
         {
             machine_.bind_variable(w.address, w.value);

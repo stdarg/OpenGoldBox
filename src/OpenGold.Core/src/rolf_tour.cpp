@@ -614,113 +614,9 @@ RolfTourSession RolfTourSession::detached_copy() const
     return copy;
 }
 
-namespace
-{
-// The original item a shop's record names, at the record's price. Its type
-// must still match the list's, so a record made from other files fails here.
-// An original item the shop sells with its record's enchantment added, and
-// named by the record, such as "Leather Armor +1".
-void enchant(Equipment &item, const opengold::ShopOffering &offering)
-{
-    auto &stored = item.stored;
-    stored.magic_bonus += offering.magic_bonus;
-    stored.raw[50] = static_cast<std::uint8_t>(static_cast<std::int8_t>(stored.magic_bonus));
-    item.bonuses = equipment_bonuses(stored, item.base);
-    item.decoded_name = offering.name;
-    item.unidentified_name = offering.name;
-}
-
-Equipment original_offering(const PhlanResources &town, const opengold::ShopOffering &offering,
-                            opengold::ShopStock stock)
-{
-    const std::map<unsigned, std::vector<Equipment>> *lists = nullptr;
-    if (offering.archive == "ITEM3.DAX")
-    {
-        lists = &town.treasure;
-    }
-    for (const auto &[id, district] : town.districts)
-    {
-        if (offering.archive == "ITEM" + std::to_string(district->bank) + ".DAX")
-        {
-            lists = &district->treasure;
-        }
-    }
-    if (lists)
-    {
-        const auto list = lists->find(offering.record);
-        if (list != lists->end() && offering.index < list->second.size() &&
-            list->second[offering.index].stored.type == offering.item_type)
-        {
-            auto item = list->second[offering.index];
-            if (stock == opengold::ShopStock::modified)
-            {
-                item.stored.value = static_cast<std::uint16_t>(offering.price_gp);
-            }
-            if (offering.magic_bonus)
-            {
-                enchant(item, offering);
-            }
-            return item;
-        }
-    }
-    throw EclError("A shop sells an item the game's lists lack: " + offering.name);
-}
-
-// Gear OpenGoldBox adds (authored_items.h), sold by the record's bundle.
-Equipment authored_offering(const opengold::ShopOffering &offering)
-{
-    Equipment item;
-    item.stored.type = static_cast<std::uint8_t>(offering.item_type);
-    item.stored.stored_name = offering.name;
-    item.stored.value = static_cast<std::uint16_t>(offering.price_gp);
-    item.stored.stack_size = static_cast<std::uint8_t>(offering.bundle_quantity);
-    return item;
-}
-} // namespace
-
 void RolfTourSession::shops(std::vector<opengold::ShopSite> sites, opengold::ShopStock kept)
 {
-    const bool original = kept == opengold::ShopStock::original;
-    if (original)
-    {
-        std::erase_if(sites,
-                      [](const opengold::ShopSite &site)
-                      {
-                          return site.entrance.has_value();
-                      });
-    }
-    std::vector<std::vector<Equipment>> stocks;
-    for (const auto &site : sites)
-    {
-        auto &stock = stocks.emplace_back();
-        for (const auto &offering : site.offerings)
-        {
-            // A record may still list arrows or quarrels; there is no ammunition.
-            if (offering.item_type < 128 && opengold::original_item::is_ammunition(
-                                                static_cast<std::uint8_t>(offering.item_type)))
-            {
-                continue;
-            }
-            // The original sold neither OpenGoldBox's gear nor enchanted items.
-            if (original && (offering.archive.empty() || offering.magic_bonus != 0))
-            {
-                continue;
-            }
-            stock.push_back(offering.archive.empty() ? authored_offering(offering)
-                                                     : original_offering(*town_, offering, kept));
-            stock.back().index = stock.size() - 1;
-            // A shop says what it sells: the Rogue's Shop's magic weapons and
-            // dust are known by their full names (SECRET-1).
-            auto &item = stock.back();
-            item.identify();
-            if (!item.decoded_name.empty())
-            {
-                item.stored.stored_name = item.decoded_name;
-            }
-        }
-    }
-    shops_ = std::move(sites);
-    shop_stocks_ = std::move(stocks);
+    shop_service_.shops(town_.get(), std::move(sites), kept);
     apply_entrances();
 }
 
@@ -755,22 +651,20 @@ void RolfTourSession::reset_run()
     current_area_ = 0;
     visited_areas_.clear();
     seen_areas_.clear();
-    rest_checks_ = 0;
-    camp_memorizing_.reset();
+    camp_service_.restart();
     const auto revision = snapshot_.revision + 1;
     snapshot_ = {};
     snapshot_.revision = revision;
     menu_request_ = delayed_request_ = 0;
     remaining_delay_ = 0;
     party_ = {};
-    treasure_.clear();
+    shop_service_.close();
     picture_.reset();
     event_checkpoint_.reset();
     diagnostics_.clear();
     current_script_ = 0;
     event_stage_ = EventStage::none;
     selected_character_ = {};
-    camp_kind_ = RestKind::long_rest;
     staged_enemies_.clear();
     staged_art_.clear();
     staged_records_.clear();
@@ -780,8 +674,7 @@ void RolfTourSession::reset_run()
     monster_picture_id_.reset();
     showing_monster_picture_ = false;
     combat_request_ = 0;
-    pending_loot_.clear();
-    staged_treasure_.reset();
+    treasure_service_.restore_loot({});
     door_menu_ = pick_tried_ = false;
     door_choices_.clear();
     who_request_ = damage_request_ = 0;
@@ -791,17 +684,14 @@ void RolfTourSession::reset_run()
     duel_ = mirror_duel_ = false;
     turncoats_.clear();
     who_slots_.clear();
-    dark_queen_vault_visit_.reset();
-    temple_visit_.reset();
-    hall_visit_.reset();
+    vault_service_ = {};
+    temple_service_.close();
+    hall_service_.close();
     pending_movement_.reset();
     teleport_arrival_.reset();
-    dark_queen_vault_money_ = {};
-    dark_queen_vault_items_.clear();
     entrances_.clear();
     wand_traps_.clear();
     transition_ = message_only_ = false;
-    shop_request_ = 0;
     // Rolf's tour of New Phlan shows his sprite; Curse's root sprites are the
     // wilderness's encounters.
     if (town_ && !town_->sprite_archive.empty() && game() == GoldBoxGame::pool_of_radiance)
@@ -925,20 +815,17 @@ void RolfTourSession::roll_back_event()
     party_ = std::move(saved.party);
     current_script_ = saved.script;
     map_ = std::move(saved.map);
-    pending_loot_ = std::move(saved.pending_loot);
-    staged_treasure_.reset();
+    treasure_service_.restore_loot(std::move(saved.pending_loot));
     door_menu_ = false;
     door_choices_.clear();
     visited_areas_ = std::move(saved.visited_areas);
     seen_areas_ = std::move(saved.seen_areas);
     entrances_ = std::move(saved.entrances);
     wand_traps_ = std::move(saved.wand_traps);
-    rest_checks_ = saved.rest_checks;
-    camp_memorizing_.reset();
+    camp_service_.roll_back(saved.rest_checks);
     travel_mode_ = saved.travel_mode;
     dark_queen_combat_set_ = saved.dark_queen_combat_set;
-    dark_queen_vault_money_ = saved.dark_queen_vault_money;
-    dark_queen_vault_items_ = std::move(saved.dark_queen_vault_items);
+    vault_service_ = std::move(saved.dark_queen_vault);
     const auto revision = snapshot_.revision + 1;
     snapshot_ = std::move(saved.snapshot);
     snapshot_.revision = revision;
@@ -949,14 +836,14 @@ void RolfTourSession::roll_back_event()
     duel_ = mirror_duel_ = false;
     turncoats_.clear();
     who_slots_.clear();
-    dark_queen_vault_visit_.reset();
-    temple_visit_.reset();
-    hall_visit_.reset();
+    vault_service_.close();
+    temple_service_.close();
+    hall_service_.close();
     selected_character_ = saved.selected_character;
     pending_movement_.reset();
     transition_ = false;
-    delayed_request_ = shop_request_ = 0;
-    treasure_.clear();
+    delayed_request_ = 0;
+    shop_service_.close();
     staged_enemies_.clear();
     staged_art_.clear();
     staged_records_.clear();
@@ -1370,7 +1257,7 @@ void RolfTourSession::advance(double seconds)
             return;
         }
         // A camp waiting for its casters' spells ends once they are chosen.
-        if (camp_memorizing_)
+        if (camp_service_.memorizing())
         {
             if (!campaign_ || !campaign_->state().spell_rest)
             {
@@ -1507,6 +1394,56 @@ void RolfTourSession::advance(double seconds)
     }
 }
 
+EclMachine &RolfTourSession::script_machine() noexcept
+{
+    return machine_;
+}
+
+const EclMachine &RolfTourSession::script_machine() const noexcept
+{
+    return machine_;
+}
+
+CampaignParty *RolfTourSession::campaign() const noexcept
+{
+    return campaign_.get();
+}
+
+TourSnapshot &RolfTourSession::screen() noexcept
+{
+    return snapshot_;
+}
+
+std::uint64_t RolfTourSession::new_ticket() noexcept
+{
+    return ++next_ticket_;
+}
+
+PartySlot RolfTourSession::selected_character() const noexcept
+{
+    return selected_character_;
+}
+
+void RolfTourSession::select_character(PartySlot slot) noexcept
+{
+    selected_character_ = slot;
+}
+
+Difficulty RolfTourSession::played_difficulty() const noexcept
+{
+    return difficulty_;
+}
+
+const PhlanResources &RolfTourSession::town_resources() const
+{
+    return *town_;
+}
+
+TownParty &RolfTourSession::town_party() noexcept
+{
+    return party_;
+}
+
 void RolfTourSession::log_player(const std::string &action) const
 {
     if (!diagnostic_log_enabled())
@@ -1580,8 +1517,7 @@ bool RolfTourSession::start_camp(RestKind kind, std::optional<std::chrono::minut
     {
         return false;
     }
-    camp_kind_ = kind;
-    camp_length_ = length;
+    camp_service_.start(kind, length);
     log_player(kind == RestKind::long_rest ? "camps for a Long Rest" : "camps for a Short Rest");
     // The camp's outcome is the news, not what the last event said.
     snapshot_.dialogue.clear();

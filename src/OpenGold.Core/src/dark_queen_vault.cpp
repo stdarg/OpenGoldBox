@@ -1,4 +1,5 @@
-#include "opengold/rolf_tour.h"
+#include "opengold/town_service_host.h"
+#include "opengold/vault_service.h"
 
 #include <limits>
 #include <stdexcept>
@@ -20,13 +21,14 @@ unsigned combined(unsigned first, unsigned second)
 }
 } // namespace
 
-void RolfTourSession::open_dark_queen_vault(std::uint64_t request)
+void VaultService::open_dark_queen_vault(TownServiceHost &host, std::uint64_t request)
 {
     dark_queen_vault_visit_ = VaultVisit{request};
-    show_dark_queen_vault(VaultMenu::home);
+    show_dark_queen_vault(host, VaultMenu::home);
 }
 
-void RolfTourSession::show_dark_queen_vault(VaultMenu menu, std::vector<rules::Message> notice)
+void VaultService::show_dark_queen_vault(TownServiceHost &host, VaultMenu menu,
+                                         std::vector<rules::Message> notice)
 {
     auto &visit = *dark_queen_vault_visit_;
     visit.choices.clear();
@@ -52,13 +54,13 @@ void RolfTourSession::show_dark_queen_vault(VaultMenu menu, std::vector<rules::M
     else if (menu == VaultMenu::deposit)
     {
         notice.push_back({"Choose an item to leave in the vault.", {}});
-        for (const auto id : campaign_->state().slots)
+        for (const auto id : host.campaign()->state().slots)
         {
             if (!id)
             {
                 continue;
             }
-            const auto &member = campaign_->member(id);
+            const auto &member = host.campaign()->member(id);
             for (const auto &item : member.character.inventory().items())
             {
                 if (member.item_sources.contains(item.id))
@@ -86,38 +88,38 @@ void RolfTourSession::show_dark_queen_vault(VaultMenu menu, std::vector<rules::M
     {
         notice.push_back(
             {"Who will take {item}?", {{"item", dark_queen_vault_items_.at(visit.item).label()}}});
-        for (const auto id : campaign_->state().slots)
+        for (const auto id : host.campaign()->state().slots)
         {
             if (id)
             {
-                add({"{name}", {{"name", campaign_->member(id).character.sheet().name}}},
+                add({"{name}", {{"name", host.campaign()->member(id).character.sheet().name}}},
                     {VaultAction::recipient, id});
             }
         }
         add({"Back", {}}, {VaultAction::back});
     }
-    show_host_menu(std::move(notice), std::move(choices));
+    host.show_host_menu(std::move(notice), std::move(choices));
 }
 
-bool RolfTourSession::choose_dark_queen_vault(std::size_t choice)
+bool VaultService::choose_dark_queen_vault(TownServiceHost &host, std::size_t choice)
 {
     auto &visit = *dark_queen_vault_visit_;
     const auto picked = visit.choices.at(choice);
     if (picked.action == VaultAction::leave)
     {
-        auto reply = character_reply(selected_character_);
+        auto reply = host.character_reply(host.selected_character());
         reply.writes.push_back({EclAddress{0x31}, 0});
-        if (!machine_.resume_host(visit.request, reply))
+        if (!host.script_machine().resume_host(visit.request, reply))
         {
             throw EclError("Vault reply rejected");
         }
         dark_queen_vault_visit_.reset();
-        snapshot_.host_dialogue.clear();
-        snapshot_.host_choices.clear();
-        snapshot_.choices.clear();
-        snapshot_.dialogue.clear();
-        snapshot_.phase = TourPhase::running;
-        ++snapshot_.revision;
+        host.screen().host_dialogue.clear();
+        host.screen().host_choices.clear();
+        host.screen().choices.clear();
+        host.screen().dialogue.clear();
+        host.screen().phase = TourPhase::running;
+        ++host.screen().revision;
         return true;
     }
     try
@@ -126,7 +128,7 @@ bool RolfTourSession::choose_dark_queen_vault(std::size_t choice)
         {
         case VaultAction::money:
         {
-            auto wealth = campaign_->state().wealth;
+            auto wealth = host.campaign()->state().wealth;
             auto deposited = dark_queen_vault_money_;
             for (std::size_t coin = 0; coin < vault_coins.size(); ++coin)
             {
@@ -134,15 +136,15 @@ bool RolfTourSession::choose_dark_queen_vault(std::size_t choice)
                 deposited[coin] = combined(deposited[coin], carried);
                 carried = 0;
             }
-            campaign_->set_wealth(wealth);
+            host.campaign()->set_wealth(wealth);
             dark_queen_vault_money_ = deposited;
             break;
         }
         case VaultAction::deposit:
-            show_dark_queen_vault(VaultMenu::deposit);
+            show_dark_queen_vault(host, VaultMenu::deposit);
             return true;
         case VaultAction::withdraw:
-            show_dark_queen_vault(VaultMenu::withdraw);
+            show_dark_queen_vault(host, VaultMenu::withdraw);
             return true;
         case VaultAction::deposit_item:
         {
@@ -151,31 +153,31 @@ bool RolfTourSession::choose_dark_queen_vault(std::size_t choice)
                 throw std::runtime_error("Vault is full!");
             }
             auto deposited = dark_queen_vault_items_;
-            auto item = campaign_->member(picked.member).item_sources.at(picked.item);
+            auto item = host.campaign()->member(picked.member).item_sources.at(picked.item);
             item.stored.readied_raw = 0;
             deposited.push_back(std::move(item));
-            campaign_->drop(picked.member, picked.item);
+            host.campaign()->drop(picked.member, picked.item);
             dark_queen_vault_items_ = std::move(deposited);
             break;
         }
         case VaultAction::withdraw_money:
         {
-            auto wealth = campaign_->state().wealth;
+            auto wealth = host.campaign()->state().wealth;
             for (std::size_t coin = 0; coin < vault_coins.size(); ++coin)
             {
                 auto &carried = wealth[static_cast<std::size_t>(vault_coins[coin])];
                 carried = combined(carried, dark_queen_vault_money_[coin]);
             }
-            campaign_->set_wealth(wealth);
+            host.campaign()->set_wealth(wealth);
             dark_queen_vault_money_ = {};
             break;
         }
         case VaultAction::withdraw_item:
             visit.item = static_cast<std::size_t>(picked.item);
-            show_dark_queen_vault(VaultMenu::recipient);
+            show_dark_queen_vault(host, VaultMenu::recipient);
             return true;
         case VaultAction::recipient:
-            campaign_->take_item(picked.member, dark_queen_vault_items_.at(visit.item));
+            host.campaign()->take_item(picked.member, dark_queen_vault_items_.at(visit.item));
             dark_queen_vault_items_.erase(dark_queen_vault_items_.begin() +
                                           static_cast<std::ptrdiff_t>(visit.item));
             break;
@@ -187,10 +189,10 @@ bool RolfTourSession::choose_dark_queen_vault(std::size_t choice)
     }
     catch (const std::runtime_error &error)
     {
-        show_dark_queen_vault(VaultMenu::home, {{"{reason}", {{"reason", error.what()}}}});
+        show_dark_queen_vault(host, VaultMenu::home, {{"{reason}", {{"reason", error.what()}}}});
         return true;
     }
-    show_dark_queen_vault(VaultMenu::home);
+    show_dark_queen_vault(host, VaultMenu::home);
     return true;
 }
 } // namespace opengold::por

@@ -382,6 +382,12 @@ if(OPENGOLD_BUILD_TESTS)
     # It took 493 s beside the rest of the suite on Windows (#279).
     set_tests_properties(opengold_expedition_fixtures PROPERTIES FIXTURES_SETUP expedition_fixtures
         TIMEOUT 1300 SKIP_REGULAR_EXPRESSION "Skipped: ")
+    # Every one of those saves loads as the game loads it and saves again byte
+    # for byte (#399).
+    add_test(NAME opengold_expedition_saves_resave
+        COMMAND opengold_expedition_tests --resave "${CMAKE_BINARY_DIR}/expedition-fixtures")
+    set_tests_properties(opengold_expedition_saves_resave PROPERTIES FIXTURES_REQUIRED expedition_fixtures
+        TIMEOUT 600 SKIP_REGULAR_EXPRESSION "Skipped: ")
     add_test(NAME opengold_godot_ohlo_save_route COMMAND "${CMAKE_COMMAND}"
         "-DGODOT=${OPENGOLDBOX_CHECK_GODOT}" "-DPROJECT=${game_project}"
         "-DEXPEDITION=$<TARGET_FILE:opengold_expedition_tests>"

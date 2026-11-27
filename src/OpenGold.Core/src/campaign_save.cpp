@@ -737,423 +737,469 @@ template <bool Reading> struct SaveCodec
         }
     }
 
-    void town(Visited<por::RolfTourSession> v)
+    // The town session's fields (RolfTourSession::save).
+    // The program a machine runs, and its place in it (Matrix's terminal
+    // PROGRAM 2).
+    static const por::EclProgram &program(const por::EclMachine &machine)
     {
-        require(reading || (v.can_leave() && v.snapshot_.tour_finished && !v.event_checkpoint_ &&
-                            !v.pending_movement_),
-                "Save only during idle town exploration");
-        fields(v.current_script_, v.selected_character_, v.next_ticket_, v.rest_checks_,
-               v.travel_mode_, v.snapshot_.searching);
-        if (v.game() == GoldBoxGame::dark_queen_of_krynn)
-        {
-            field(v.dark_queen_combat_set_);
-            require(v.dark_queen_combat_set_ <= 255, "Invalid native combat tile set");
-            if (format >= native_vault_format)
-            {
-                fields(v.dark_queen_vault_money_, v.dark_queen_vault_items_);
-                require(v.dark_queen_vault_items_.size() <= 50, "Native vault is over capacity");
-            }
-            else
-            {
-                require(reading || (v.dark_queen_vault_items_.empty() &&
-                                    std::ranges::all_of(v.dark_queen_vault_money_,
-                                                        [](unsigned amount)
-                                                        {
-                                                            return amount == 0;
-                                                        })),
-                        "An older native save cannot record a vault");
-                if constexpr (reading)
-                {
-                    v.dark_queen_vault_money_ = {};
-                    v.dark_queen_vault_items_.clear();
-                }
-            }
-        }
-        // On the wilderness map only in a wilderness script, with its data.
-        require(v.travel_mode_ >= 1 && v.travel_mode_ <= 4 &&
-                    (v.travel_mode_ == 1 ||
-                     (v.current_script_ == v.travel_mode_ + 23 && v.town_ && v.town_->overland)),
-                "Unsupported saved travel mode");
-        unsigned area = v.current_area_;
-        field(area);
-        const auto wilderness = [&]()
-        {
-            const auto controller = buck_wilderness(v.game(), v.current_script_);
-            if (v.game() != GoldBoxGame::countdown_to_doomsday)
-            {
-                return controller;
-            }
-            // Countdown's first descent has no retained district and keeps
-            // previous script 34. Preserve that ordinary supported save; only
-            // its later retained-map mismatch needs this additional receipt.
-            if (!v.town_ || area == 0)
-            {
-                return std::optional<BuckWilderness>{};
-            }
-            const auto district = v.town_->districts.find(area);
-            if (district != v.town_->districts.end() &&
-                district->second->loaded_by(v.current_script_))
-            {
-                return std::optional<BuckWilderness>{};
-            }
-            return controller;
-        }();
-        // Only the new game has larger maps. Keep every released game's
-        // original 256-character encoding byte for byte in format 53.
-        const std::size_t knowledge_size =
-            v.game() == GoldBoxGame::dark_queen_of_krynn
-                ? por::GeoMap::max_cells
-                : por::GeoMap::default_width * por::GeoMap::default_height;
-        const auto stored_knowledge = [knowledge_size](const por::MapKnowledge &cells)
-        {
-            const auto bits = cells.to_string();
-            return bits.substr(bits.size() - knowledge_size);
-        };
-        std::map<unsigned, std::string> explored;
-        if constexpr (!reading)
-        {
-            for (const auto &[id, cells] : v.visited_areas_)
-            {
-                explored[id] = stored_knowledge(cells);
-            }
-            explored[v.current_area_] = stored_knowledge(v.snapshot_.visited);
-        }
-        field(explored);
+        return *machine.program_;
+    }
+
+    void machine_address(Visited<por::EclMachine> v)
+    {
+        auto address = v.address();
+        field(address);
         if constexpr (reading)
         {
-            require(v.town_ && (area == 0 || v.town_->districts.contains(area)),
-                    "Unsupported saved district");
-            // Pools of Darkness's area map runs its own script (17) over the
-            // map the party left, which that script does not load.
-            const bool darkness = v.game() == GoldBoxGame::pools_of_darkness;
-            // Champions' wilderness (16) and outposts (17) also retain
-            // the last 3D district while running their own scripts.
-            const bool champions_overland = (v.game() == GoldBoxGame::champions_of_krynn ||
-                                             v.game() == GoldBoxGame::death_knights_of_krynn) &&
-                                            (v.current_script_ == 16 || v.current_script_ == 17);
-            require(area == 0 ? !std::any_of(v.town_->districts.begin(), v.town_->districts.end(),
-                                             [&](const auto &d)
-                                             {
-                                                 return d.second->loaded_by(v.current_script_);
-                                             })
-                              : darkness || champions_overland || wilderness.has_value() ||
-                                    v.town_->districts.at(area)->loaded_by(v.current_script_),
-                    "Saved district and script disagree");
-            v.current_area_ = 0;
-            v.snapshot_.area_id = 0;
-            if (v.town_->map)
-            {
-                v.map_ = *v.town_->map;
-                v.wall_art_ = v.town_->wall_art;
-            }
-            v.change_area(area);
-            v.visited_areas_.clear();
-            for (const auto &[id, cells] : explored)
-            {
-                require((id == 0 || v.town_->districts.contains(id)) &&
-                            cells.size() == knowledge_size &&
-                            cells.find_first_not_of("01") == std::string::npos,
-                        "Invalid saved district exploration");
-                v.visited_areas_[id] = por::MapKnowledge(cells);
-            }
-        }
-        // Word of Recall's sanctuary: a town script and a square (LEVELS-3).
-        bool sanctuary = v.sanctuary_.has_value();
-        unsigned sanctuary_script = sanctuary ? v.sanctuary_->script : 0,
-                 sanctuary_x = sanctuary ? v.sanctuary_->pose.x : 0,
-                 sanctuary_y = sanctuary ? v.sanctuary_->pose.y : 0,
-                 sanctuary_facing =
-                     sanctuary ? static_cast<unsigned>(por::index(v.sanctuary_->pose.facing)) : 0;
-        fields(sanctuary, sanctuary_script, sanctuary_x, sanctuary_y, sanctuary_facing);
-        if constexpr (reading)
-        {
-            unsigned sanctuary_width = por::GeoMap::default_width,
-                     sanctuary_height = por::GeoMap::default_height;
-            if (v.game() == GoldBoxGame::dark_queen_of_krynn)
-            {
-                for (const auto &[id, district] : v.town_->districts)
-                {
-                    if (district->loaded_by(sanctuary_script) && district->map)
-                    {
-                        sanctuary_width = district->map->width;
-                        sanctuary_height = district->map->height;
-                        break;
-                    }
-                }
-            }
-            require(!sanctuary || (v.town_->programs.contains(sanctuary_script) &&
-                                   sanctuary_x < sanctuary_width &&
-                                   sanctuary_y < sanctuary_height && sanctuary_facing < 4),
-                    "Invalid saved sanctuary");
-            v.sanctuary_.reset();
-            if (sanctuary)
-            {
-                v.sanctuary_ = por::RolfTourSession::Sanctuary{
-                    sanctuary_script,
-                    {sanctuary_x, sanctuary_y,
-                     *por::map_direction(static_cast<std::uint16_t>(sanctuary_facing))}};
-            }
-        }
-        // The hidden entrances found or opened (SECRET-1), by their shop's id.
-        std::map<std::string, unsigned> entrances;
-        if constexpr (!reading)
-        {
-            for (const auto &[id, state] : v.entrances_)
-            {
-                entrances[id] = static_cast<unsigned>(state);
-            }
-        }
-        field(entrances);
-        if constexpr (reading)
-        {
-            v.entrances_.clear();
-            for (const auto &[id, state] : entrances)
-            {
-                require(state <= static_cast<unsigned>(por::RolfTourSession::EntranceState::open),
-                        "Invalid saved entrance");
-                v.entrances_[id] = static_cast<por::RolfTourSession::EntranceState>(state);
-            }
-            v.apply_entrances();
-        }
-        // The traps a Wand of Secrets pointed out (SECRET-1).
-        std::vector<unsigned> wand_traps(v.wand_traps_.begin(), v.wand_traps_.end());
-        field(wand_traps);
-        if constexpr (reading)
-        {
-            require(wand_traps.size() <= 256 * 256, "Too many saved wand traps");
-            v.wand_traps_ = std::set<unsigned>(wand_traps.begin(), wand_traps.end());
-        }
-        std::uint64_t pending = v.pending_loot_.size();
-        field(pending);
-        require(pending <= 1024, "Too many pending rewards");
-        if constexpr (reading)
-        {
-            v.pending_loot_.clear();
-        }
-        for (std::uint64_t index = 0; index < pending; ++index)
-        {
-            std::vector<unsigned> records;
-            std::string reward;
-            bool items = true;
-            std::array<unsigned, 7> wealth{};
-            unsigned loot_area{};
-            if constexpr (!reading)
-            {
-                const auto &loot = v.pending_loot_[index];
-                records = loot.records;
-                reward = loot.reward_id;
-                items = loot.include_items;
-                wealth = loot.wealth;
-                loot_area = loot.area;
-            }
-            fields(records, reward, items, wealth, loot_area);
-            // Script treasure has no creature records, and monsters may have
-            // used some of their gear (DIFF-1): the items are saved.
-            std::vector<por::Equipment> saved_items;
-            if constexpr (!reading)
-            {
-                saved_items = v.pending_loot_[index].items;
-            }
-            field(saved_items);
-            if (records.empty())
-            {
-                if constexpr (reading)
-                {
-                    require(!reward.empty() && reward.size() <= 160 && !items &&
-                                saved_items.size() <= 127,
-                            "Invalid pending script treasure");
-                    v.pending_loot_.push_back(
-                        {wealth, std::move(saved_items), std::move(reward), {}, false});
-                }
-            }
-            else if constexpr (reading)
-            {
-                v.pending_loot_.push_back(
-                    v.encounter_loot(loot_area, std::move(records), std::move(reward), items));
-                auto &loot = v.pending_loot_.back();
-                require(loot.wealth == wealth && original_gear_left(loot.items, saved_items),
-                        "Saved loot does not match its original creatures");
-                loot.items = std::move(saved_items);
-            }
-        }
-        if constexpr (reading)
-        {
-            // A script's scan of the party may stop on slot 8, which no member
-            // fills (ecl_scanned_slots).
-            require(v.town_ && v.town_->programs.contains(v.current_script_) &&
-                        v.selected_character_.index <= ecl_scanned_slots &&
-                        v.rest_checks_ <= std::numeric_limits<std::uint16_t>::max(),
-                    "Unsupported saved town context");
-            v.machine_ = por::EclMachine(v.town_->programs.at(v.current_script_));
-            v.enable_encounter_commands();
-            v.configure_town();
-        }
-        machine(v.machine_);
-        if constexpr (reading)
-        {
-            if (wilderness)
-            {
-                // Only defer the map association until the restored VM can
-                // authenticate this installed controller and its presentation.
-                const auto bank = v.town_->script_banks.find(v.current_script_);
-                bool controller_matches = false;
-                try
-                {
-                    const auto instruction =
-                        v.machine_.program_->instruction(wilderness->kind_instruction);
-                    controller_matches =
-                        v.machine_.program_->game() == v.game() && instruction.opcode == 9 &&
-                        instruction.operands.size() == 2 && instruction.operands[0].tag == 0 &&
-                        instruction.operands[0].value == wilderness->kind &&
-                        instruction.operands[1].tag == 1 && instruction.operands[1].value == 0x4BE6;
-                }
-                catch (const por::EclError &)
-                {
-                    // A different installed program is not this controller.
-                }
-                require(
-                    controller_matches && bank != v.town_->script_banks.end() &&
-                        bank->second == wilderness->bank &&
-                        v.machine_.variable(v.game_cell(por::ecl_script_bank)) ==
-                            wilderness->bank &&
-                        (v.machine_.variable(por::EclAddress{0x4BF2}) == v.current_script_ ||
-                         (v.machine_.variable(por::EclAddress{0x4BF2}) != 0 &&
-                          std::ranges::find(wilderness->return_scripts,
-                                            v.machine_.variable(por::EclAddress{0x4BF2})) !=
-                              wilderness->return_scripts.end()) ||
-                         (v.game() == GoldBoxGame::matrix_cubed &&
-                          matrix_venus_arrival(*v.machine_.program_, v.current_script_,
-                                               v.machine_.variable(por::EclAddress{0x4BF2}),
-                                               v.machine_.variable(por::EclAddress{0x4BC3}),
-                                               v.machine_.variable(por::EclAddress{0x4BC4})))) &&
-                        v.machine_.variable(por::EclAddress{0x4BE6}) == wilderness->kind &&
-                        v.machine_.variable(por::EclAddress{0x4BA6}) == 4,
-                    v.game() == GoldBoxGame::matrix_cubed
-                        ? "Invalid saved Matrix wilderness context"
-                        : "Saved district and script disagree");
-            }
-        }
-        bool matrix_won = false;
-        if (v.game() == GoldBoxGame::matrix_cubed)
-        {
-            if constexpr (!reading)
-            {
-                matrix_won = v.matrix_ending_completed();
-            }
-            require(format >= matrix_terminal_format || !matrix_won,
-                    "An older campaign format cannot record a Matrix victory");
-            if (format >= matrix_terminal_format)
-            {
-                field(matrix_won);
-                if (matrix_won)
-                {
-                    auto terminal_pc = v.machine_.address();
-                    field(terminal_pc);
-                    if constexpr (reading)
-                    {
-                        v.machine_.pc_ = terminal_pc;
-                        require(v.matrix_ending_completed(),
-                                "Invalid Matrix terminal victory receipt");
-                    }
-                }
-            }
-        }
-        if constexpr (reading)
-        {
-            v.combat_request_ = 0;
-            v.staged_treasure_.reset();
-            v.door_menu_ = v.pick_tried_ = false;
-            v.door_choices_.clear();
-            v.staged_enemies_.clear();
-            v.staged_art_.clear();
-            v.staged_undead_loads_ = 0;
-            v.staged_allies_.clear();
-            v.staged_ally_art_.clear();
-            v.encounter_.reset();
-            v.duel_ = v.mirror_duel_ = false;
-            v.turncoats_.clear();
-            v.monster_picture_id_.reset();
-            v.showing_monster_picture_ = false;
-        }
-        auto &s = v.snapshot_;
-        fields(s.dialogue, s.prompts, s.redraws, s.footsteps, s.event_runs);
-        std::string visited = stored_knowledge(s.visited);
-        field(visited);
-        if constexpr (reading)
-        {
-            require(visited.size() == knowledge_size &&
-                        visited.find_first_not_of("01") == std::string::npos,
-                    "Invalid visited map");
-            s.visited = por::MapKnowledge(visited);
-        }
-        std::map<unsigned, std::string> known;
-        if constexpr (!reading)
-        {
-            for (const auto &[id, cells] : v.seen_areas_)
-            {
-                known[id] = stored_knowledge(cells);
-            }
-            known[v.current_area_] = stored_knowledge(s.seen);
-        }
-        field(known);
-        if constexpr (reading)
-        {
-            v.seen_areas_.clear();
-            for (const auto &[id, cells] : known)
-            {
-                require((id == 0 || v.town_->districts.contains(id)) &&
-                            cells.size() == knowledge_size &&
-                            cells.find_first_not_of("01") == std::string::npos,
-                        "Invalid saved map knowledge");
-                v.seen_areas_[id] = por::MapKnowledge(cells);
-            }
-            require(v.seen_areas_.contains(v.current_area_), "Missing current map knowledge");
-            s.seen = v.seen_areas_.at(v.current_area_);
-            require((s.visited & ~s.seen).none(), "Visited cells must be known");
-            for (const auto &[id, cells] : v.visited_areas_)
-            {
-                require(v.seen_areas_.contains(id) && (cells & ~v.seen_areas_.at(id)).none(),
-                        "Missing visited district knowledge");
-            }
-        }
-        if constexpr (reading)
-        {
-            s.phase = por::TourPhase::completed;
-            s.tour_finished = true;
-            s.script_id = v.current_script_;
-            s.sprite_frame = -1;
-            s.choices.clear();
-            s.continue_ticket = 0;
-            s.diagnostic.clear();
-            ++s.picture_revision;
-            v.picture_.reset();
-            v.event_checkpoint_.reset();
-            v.pending_movement_.reset();
-            v.treasure_.clear();
-            v.who_slots_.clear();
-            v.encounter_outcome_.clear();
-            v.member_chosen_ = false;
-            v.meeting_pose_.reset();
-            v.robbed_ = false;
-            v.dark_queen_vault_visit_.reset();
-            v.temple_visit_.reset();
-            v.hall_visit_.reset();
-            v.menu_request_ = v.delayed_request_ = v.who_request_ = v.shop_request_ =
-                v.damage_request_ = 0;
-            v.damage_writes_.clear();
-            v.victory_ = false;
-            v.remaining_delay_ = 0;
-            v.transition_ = v.message_only_ = false;
-            v.event_stage_ = por::RolfTourSession::EventStage::none;
-            v.publish_pose();
-            if (v.game() == GoldBoxGame::matrix_cubed)
-            {
-                s.game_won = matrix_won;
-            }
-            v.campaign_.reset();
+            v.pc_ = address;
         }
     }
+
+    // The town session's fields (RolfTourSession::save).
+    void town(Visited<por::RolfTourSession> v)
+    {
+        por::RolfTourSession::save(*this, v);
+    }
 };
+
+namespace por
+{
+template <class Codec, class Camp> void CampService::save(Codec &codec, Camp &camp)
+{
+    codec.field(camp.rest_checks_);
+}
+
+template <class Codec, class Vault>
+void VaultService::save(Codec &codec, Vault &vault, bool recorded)
+{
+    if (recorded)
+    {
+        codec.fields(vault.dark_queen_vault_money_, vault.dark_queen_vault_items_);
+        require(vault.dark_queen_vault_items_.size() <= 50, "Native vault is over capacity");
+    }
+    else
+    {
+        require(Codec::reading || (vault.dark_queen_vault_items_.empty() &&
+                                   std::ranges::all_of(vault.dark_queen_vault_money_,
+                                                       [](unsigned amount)
+                                                       {
+                                                           return amount == 0;
+                                                       })),
+                "An older native save cannot record a vault");
+        if constexpr (Codec::reading)
+        {
+            vault.dark_queen_vault_money_ = {};
+            vault.dark_queen_vault_items_.clear();
+        }
+    }
+}
+
+template <class Codec, class Treasure, class EncounterLoot>
+void TreasureService::save(Codec &codec, Treasure &treasure, const EncounterLoot &encounter_loot)
+{
+    std::uint64_t pending = treasure.pending_loot_.size();
+    codec.field(pending);
+    require(pending <= 1024, "Too many pending rewards");
+    if constexpr (Codec::reading)
+    {
+        treasure.pending_loot_.clear();
+    }
+    for (std::uint64_t index = 0; index < pending; ++index)
+    {
+        std::vector<unsigned> records;
+        std::string reward;
+        bool items = true;
+        std::array<unsigned, 7> wealth{};
+        unsigned loot_area{};
+        if constexpr (!Codec::reading)
+        {
+            const auto &loot = treasure.pending_loot_[index];
+            records = loot.records;
+            reward = loot.reward_id;
+            items = loot.include_items;
+            wealth = loot.wealth;
+            loot_area = loot.area;
+        }
+        codec.fields(records, reward, items, wealth, loot_area);
+        // Script treasure has no creature records, and monsters may have
+        // used some of their gear (DIFF-1): the items are saved.
+        std::vector<por::Equipment> saved_items;
+        if constexpr (!Codec::reading)
+        {
+            saved_items = treasure.pending_loot_[index].items;
+        }
+        codec.field(saved_items);
+        if (records.empty())
+        {
+            if constexpr (Codec::reading)
+            {
+                require(!reward.empty() && reward.size() <= 160 && !items &&
+                            saved_items.size() <= 127,
+                        "Invalid pending script treasure");
+                treasure.pending_loot_.push_back(
+                    {wealth, std::move(saved_items), std::move(reward), {}, false});
+            }
+        }
+        else if constexpr (Codec::reading)
+        {
+            treasure.pending_loot_.push_back(
+                encounter_loot(loot_area, std::move(records), std::move(reward), items));
+            auto &loot = treasure.pending_loot_.back();
+            require(loot.wealth == wealth && original_gear_left(loot.items, saved_items),
+                    "Saved loot does not match its original creatures");
+            loot.items = std::move(saved_items);
+        }
+    }
+}
+
+template <class Codec, class Tour> void RolfTourSession::save(Codec &codec, Tour &tour)
+{
+    require(Codec::reading || (tour.can_leave() && tour.snapshot_.tour_finished &&
+                               !tour.event_checkpoint_ && !tour.pending_movement_),
+            "Save only during idle town exploration");
+    codec.fields(tour.current_script_, tour.selected_character_, tour.next_ticket_);
+    CampService::save(codec, tour.camp_service_);
+    codec.fields(tour.travel_mode_, tour.snapshot_.searching);
+    if (tour.game() == GoldBoxGame::dark_queen_of_krynn)
+    {
+        codec.field(tour.dark_queen_combat_set_);
+        require(tour.dark_queen_combat_set_ <= 255, "Invalid native combat tile set");
+        VaultService::save(codec, tour.vault_service_, codec.format >= native_vault_format);
+    }
+    // On the wilderness map only in a wilderness script, with its data.
+    require(tour.travel_mode_ >= 1 && tour.travel_mode_ <= 4 &&
+                (tour.travel_mode_ == 1 || (tour.current_script_ == tour.travel_mode_ + 23 &&
+                                            tour.town_ && tour.town_->overland)),
+            "Unsupported saved travel mode");
+    unsigned area = tour.current_area_;
+    codec.field(area);
+    const auto wilderness = [&]()
+    {
+        const auto controller = buck_wilderness(tour.game(), tour.current_script_);
+        if (tour.game() != GoldBoxGame::countdown_to_doomsday)
+        {
+            return controller;
+        }
+        // Countdown's first descent has no retained district and keeps
+        // previous script 34. Preserve that ordinary supported save; only
+        // its later retained-map mismatch needs this additional receipt.
+        if (!tour.town_ || area == 0)
+        {
+            return std::optional<BuckWilderness>{};
+        }
+        const auto district = tour.town_->districts.find(area);
+        if (district != tour.town_->districts.end() &&
+            district->second->loaded_by(tour.current_script_))
+        {
+            return std::optional<BuckWilderness>{};
+        }
+        return controller;
+    }();
+    // Only the new game has larger maps. Keep every released game's
+    // original 256-character encoding byte for byte in format 53.
+    const std::size_t knowledge_size =
+        tour.game() == GoldBoxGame::dark_queen_of_krynn
+            ? por::GeoMap::max_cells
+            : por::GeoMap::default_width * por::GeoMap::default_height;
+    const auto stored_knowledge = [knowledge_size](const por::MapKnowledge &cells)
+    {
+        const auto bits = cells.to_string();
+        return bits.substr(bits.size() - knowledge_size);
+    };
+    std::map<unsigned, std::string> explored;
+    if constexpr (!Codec::reading)
+    {
+        for (const auto &[id, cells] : tour.visited_areas_)
+        {
+            explored[id] = stored_knowledge(cells);
+        }
+        explored[tour.current_area_] = stored_knowledge(tour.snapshot_.visited);
+    }
+    codec.field(explored);
+    if constexpr (Codec::reading)
+    {
+        require(tour.town_ && (area == 0 || tour.town_->districts.contains(area)),
+                "Unsupported saved district");
+        // Pools of Darkness's area map runs its own script (17) over the
+        // map the party left, which that script does not load.
+        const bool darkness = tour.game() == GoldBoxGame::pools_of_darkness;
+        // Champions' wilderness (16) and outposts (17) also retain
+        // the last 3D district while running their own scripts.
+        const bool champions_overland = (tour.game() == GoldBoxGame::champions_of_krynn ||
+                                         tour.game() == GoldBoxGame::death_knights_of_krynn) &&
+                                        (tour.current_script_ == 16 || tour.current_script_ == 17);
+        require(area == 0 ? !std::any_of(tour.town_->districts.begin(), tour.town_->districts.end(),
+                                         [&](const auto &d)
+                                         {
+                                             return d.second->loaded_by(tour.current_script_);
+                                         })
+                          : darkness || champions_overland || wilderness.has_value() ||
+                                tour.town_->districts.at(area)->loaded_by(tour.current_script_),
+                "Saved district and script disagree");
+        tour.current_area_ = 0;
+        tour.snapshot_.area_id = 0;
+        if (tour.town_->map)
+        {
+            tour.map_ = *tour.town_->map;
+            tour.wall_art_ = tour.town_->wall_art;
+        }
+        tour.change_area(area);
+        tour.visited_areas_.clear();
+        for (const auto &[id, cells] : explored)
+        {
+            require((id == 0 || tour.town_->districts.contains(id)) &&
+                        cells.size() == knowledge_size &&
+                        cells.find_first_not_of("01") == std::string::npos,
+                    "Invalid saved district exploration");
+            tour.visited_areas_[id] = por::MapKnowledge(cells);
+        }
+    }
+    // Word of Recall's sanctuary: a town script and a square (LEVELS-3).
+    bool sanctuary = tour.sanctuary_.has_value();
+    unsigned sanctuary_script = sanctuary ? tour.sanctuary_->script : 0,
+             sanctuary_x = sanctuary ? tour.sanctuary_->pose.x : 0,
+             sanctuary_y = sanctuary ? tour.sanctuary_->pose.y : 0,
+             sanctuary_facing =
+                 sanctuary ? static_cast<unsigned>(por::index(tour.sanctuary_->pose.facing)) : 0;
+    codec.fields(sanctuary, sanctuary_script, sanctuary_x, sanctuary_y, sanctuary_facing);
+    if constexpr (Codec::reading)
+    {
+        unsigned sanctuary_width = por::GeoMap::default_width,
+                 sanctuary_height = por::GeoMap::default_height;
+        if (tour.game() == GoldBoxGame::dark_queen_of_krynn)
+        {
+            for (const auto &[id, district] : tour.town_->districts)
+            {
+                if (district->loaded_by(sanctuary_script) && district->map)
+                {
+                    sanctuary_width = district->map->width;
+                    sanctuary_height = district->map->height;
+                    break;
+                }
+            }
+        }
+        require(!sanctuary || (tour.town_->programs.contains(sanctuary_script) &&
+                               sanctuary_x < sanctuary_width && sanctuary_y < sanctuary_height &&
+                               sanctuary_facing < 4),
+                "Invalid saved sanctuary");
+        tour.sanctuary_.reset();
+        if (sanctuary)
+        {
+            tour.sanctuary_ =
+                Sanctuary{sanctuary_script,
+                          {sanctuary_x, sanctuary_y,
+                           *por::map_direction(static_cast<std::uint16_t>(sanctuary_facing))}};
+        }
+    }
+    // The hidden entrances found or opened (SECRET-1), by their shop's id.
+    std::map<std::string, unsigned> entrances;
+    if constexpr (!Codec::reading)
+    {
+        for (const auto &[id, state] : tour.entrances_)
+        {
+            entrances[id] = static_cast<unsigned>(state);
+        }
+    }
+    codec.field(entrances);
+    if constexpr (Codec::reading)
+    {
+        tour.entrances_.clear();
+        for (const auto &[id, state] : entrances)
+        {
+            require(state <= static_cast<unsigned>(EntranceState::open), "Invalid saved entrance");
+            tour.entrances_[id] = static_cast<EntranceState>(state);
+        }
+        tour.apply_entrances();
+    }
+    // The traps a Wand of Secrets pointed out (SECRET-1).
+    std::vector<unsigned> wand_traps(tour.wand_traps_.begin(), tour.wand_traps_.end());
+    codec.field(wand_traps);
+    if constexpr (Codec::reading)
+    {
+        require(wand_traps.size() <= 256 * 256, "Too many saved wand traps");
+        tour.wand_traps_ = std::set<unsigned>(wand_traps.begin(), wand_traps.end());
+    }
+    TreasureService::save(
+        codec, tour.treasure_service_,
+        [&tour](unsigned area, std::vector<unsigned> records, std::string reward, bool items)
+        {
+            return tour.encounter_loot(area, std::move(records), std::move(reward), items);
+        });
+    if constexpr (Codec::reading)
+    {
+        // A script's scan of the party may stop on slot 8, which no member
+        // fills (ecl_scanned_slots).
+        require(tour.town_ && tour.town_->programs.contains(tour.current_script_) &&
+                    tour.selected_character_.index <= ecl_scanned_slots &&
+                    tour.camp_service_.rest_checks() <= std::numeric_limits<std::uint16_t>::max(),
+                "Unsupported saved town context");
+        tour.machine_ = por::EclMachine(tour.town_->programs.at(tour.current_script_));
+        tour.enable_encounter_commands();
+        tour.configure_town();
+    }
+    codec.machine(tour.machine_);
+    if constexpr (Codec::reading)
+    {
+        if (wilderness)
+        {
+            // Only defer the map association until the restored VM can
+            // authenticate this installed controller and its presentation.
+            const auto bank = tour.town_->script_banks.find(tour.current_script_);
+            bool controller_matches = false;
+            try
+            {
+                const auto instruction =
+                    Codec::program(tour.machine_).instruction(wilderness->kind_instruction);
+                controller_matches = Codec::program(tour.machine_).game() == tour.game() &&
+                                     instruction.opcode == 9 && instruction.operands.size() == 2 &&
+                                     instruction.operands[0].tag == 0 &&
+                                     instruction.operands[0].value == wilderness->kind &&
+                                     instruction.operands[1].tag == 1 &&
+                                     instruction.operands[1].value == 0x4BE6;
+            }
+            catch (const por::EclError &)
+            {
+                // A different installed program is not this controller.
+            }
+            require(controller_matches && bank != tour.town_->script_banks.end() &&
+                        bank->second == wilderness->bank &&
+                        tour.machine_.variable(tour.game_cell(por::ecl_script_bank)) ==
+                            wilderness->bank &&
+                        (tour.machine_.variable(por::EclAddress{0x4BF2}) == tour.current_script_ ||
+                         (tour.machine_.variable(por::EclAddress{0x4BF2}) != 0 &&
+                          std::ranges::find(wilderness->return_scripts,
+                                            tour.machine_.variable(por::EclAddress{0x4BF2})) !=
+                              wilderness->return_scripts.end()) ||
+                         (tour.game() == GoldBoxGame::matrix_cubed &&
+                          matrix_venus_arrival(Codec::program(tour.machine_), tour.current_script_,
+                                               tour.machine_.variable(por::EclAddress{0x4BF2}),
+                                               tour.machine_.variable(por::EclAddress{0x4BC3}),
+                                               tour.machine_.variable(por::EclAddress{0x4BC4})))) &&
+                        tour.machine_.variable(por::EclAddress{0x4BE6}) == wilderness->kind &&
+                        tour.machine_.variable(por::EclAddress{0x4BA6}) == 4,
+                    tour.game() == GoldBoxGame::matrix_cubed
+                        ? "Invalid saved Matrix wilderness context"
+                        : "Saved district and script disagree");
+        }
+    }
+    bool matrix_won = false;
+    if (tour.game() == GoldBoxGame::matrix_cubed)
+    {
+        if constexpr (!Codec::reading)
+        {
+            matrix_won = tour.matrix_ending_completed();
+        }
+        require(codec.format >= matrix_terminal_format || !matrix_won,
+                "An older campaign format cannot record a Matrix victory");
+        if (codec.format >= matrix_terminal_format)
+        {
+            codec.field(matrix_won);
+            if (matrix_won)
+            {
+                codec.machine_address(tour.machine_);
+                if constexpr (Codec::reading)
+                {
+                    require(tour.matrix_ending_completed(),
+                            "Invalid Matrix terminal victory receipt");
+                }
+            }
+        }
+    }
+    if constexpr (Codec::reading)
+    {
+        tour.combat_request_ = 0;
+        tour.treasure_service_.forget_staged();
+        tour.door_menu_ = tour.pick_tried_ = false;
+        tour.door_choices_.clear();
+        tour.staged_enemies_.clear();
+        tour.staged_art_.clear();
+        tour.staged_undead_loads_ = 0;
+        tour.staged_allies_.clear();
+        tour.staged_ally_art_.clear();
+        tour.encounter_.reset();
+        tour.duel_ = tour.mirror_duel_ = false;
+        tour.turncoats_.clear();
+        tour.monster_picture_id_.reset();
+        tour.showing_monster_picture_ = false;
+    }
+    auto &s = tour.snapshot_;
+    codec.fields(s.dialogue, s.prompts, s.redraws, s.footsteps, s.event_runs);
+    std::string visited = stored_knowledge(s.visited);
+    codec.field(visited);
+    if constexpr (Codec::reading)
+    {
+        require(visited.size() == knowledge_size &&
+                    visited.find_first_not_of("01") == std::string::npos,
+                "Invalid visited map");
+        s.visited = por::MapKnowledge(visited);
+    }
+    std::map<unsigned, std::string> known;
+    if constexpr (!Codec::reading)
+    {
+        for (const auto &[id, cells] : tour.seen_areas_)
+        {
+            known[id] = stored_knowledge(cells);
+        }
+        known[tour.current_area_] = stored_knowledge(s.seen);
+    }
+    codec.field(known);
+    if constexpr (Codec::reading)
+    {
+        tour.seen_areas_.clear();
+        for (const auto &[id, cells] : known)
+        {
+            require((id == 0 || tour.town_->districts.contains(id)) &&
+                        cells.size() == knowledge_size &&
+                        cells.find_first_not_of("01") == std::string::npos,
+                    "Invalid saved map knowledge");
+            tour.seen_areas_[id] = por::MapKnowledge(cells);
+        }
+        require(tour.seen_areas_.contains(tour.current_area_), "Missing current map knowledge");
+        s.seen = tour.seen_areas_.at(tour.current_area_);
+        require((s.visited & ~s.seen).none(), "Visited cells must be known");
+        for (const auto &[id, cells] : tour.visited_areas_)
+        {
+            require(tour.seen_areas_.contains(id) && (cells & ~tour.seen_areas_.at(id)).none(),
+                    "Missing visited district knowledge");
+        }
+    }
+    if constexpr (Codec::reading)
+    {
+        s.phase = por::TourPhase::completed;
+        s.tour_finished = true;
+        s.script_id = tour.current_script_;
+        s.sprite_frame = -1;
+        s.choices.clear();
+        s.continue_ticket = 0;
+        s.diagnostic.clear();
+        ++s.picture_revision;
+        tour.picture_.reset();
+        tour.event_checkpoint_.reset();
+        tour.pending_movement_.reset();
+        tour.shop_service_.close();
+        tour.who_slots_.clear();
+        tour.encounter_outcome_.clear();
+        tour.member_chosen_ = false;
+        tour.meeting_pose_.reset();
+        tour.robbed_ = false;
+        tour.vault_service_.close();
+        tour.temple_service_.close();
+        tour.hall_service_.close();
+        tour.menu_request_ = tour.delayed_request_ = tour.who_request_ = tour.damage_request_ = 0;
+        tour.damage_writes_.clear();
+        tour.victory_ = false;
+        tour.remaining_delay_ = 0;
+        tour.transition_ = tour.message_only_ = false;
+        tour.event_stage_ = EventStage::none;
+        tour.publish_pose();
+        if (tour.game() == GoldBoxGame::matrix_cubed)
+        {
+            s.game_won = matrix_won;
+        }
+        tour.campaign_.reset();
+    }
+}
+} // namespace por
 
 using SaveReader = SaveCodec<true>;
 using SaveWriter = SaveCodec<false>;

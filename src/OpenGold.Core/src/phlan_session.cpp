@@ -1188,7 +1188,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
     // Loot left unclaimed until the party had room is named with this event.
     snapshot_.loot_taken.clear();
     snapshot_.gear_changes.clear();
-    claim_loot();
+    treasure_service_.claim_loot(*this);
     synchronize_clock();
     snapshot_.payments.clear();
     snapshot_.door_checks.clear();
@@ -1224,13 +1224,12 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                                         .seen_areas = seen_areas_,
                                         .entrances = entrances_,
                                         .wand_traps = wand_traps_,
-                                        .rest_checks = rest_checks_,
+                                        .rest_checks = camp_service_.rest_checks(),
                                         .travel_mode = travel_mode_,
                                         .dark_queen_combat_set = dark_queen_combat_set_,
-                                        .dark_queen_vault_money = dark_queen_vault_money_,
-                                        .dark_queen_vault_items = dark_queen_vault_items_,
+                                        .dark_queen_vault = vault_service_,
                                         .map = map_,
-                                        .pending_loot = pending_loot_,
+                                        .pending_loot = treasure_service_.pending_loot(),
                                         .snapshot = snapshot_,
                                         .selected_character = selected_character_};
     if (campaign_ && takes.count() > 0)
@@ -1992,8 +1991,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             const bool combine_script_experience =
                 game() == GoldBoxGame::pool_of_radiance && plays_original_records();
             const bool has_monster_loot = !paying.empty();
-            unsigned experience = combine_script_experience && staged_treasure_
-                                      ? treasure_experience(*staged_treasure_)
+            unsigned experience = combine_script_experience && treasure_service_.staged()
+                                      ? treasure_experience(*treasure_service_.staged())
                                       : 0;
             // Monsters that all got away leave no monster loot to pay.
             if (!paying.empty())
@@ -2010,8 +2009,8 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                                            machine_.variable(game_cell(EclAddress{0x6DE3})) != 1,
                                            std::move(spent));
                 experience += treasure_experience(loot);
-                pending_loot_.push_back(std::move(loot));
-                pile_loot();
+                treasure_service_.add_loot(std::move(loot));
+                treasure_service_.pile_loot(*this);
             }
             if (pays_experience && (has_monster_loot || experience))
             {
@@ -2019,7 +2018,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
                                             reward, champion);
             }
             // Treasure the script added to the fight is won with it.
-            if (staged_treasure_)
+            if (treasure_service_.staged())
             {
                 award_staged_treasure(!combine_script_experience);
             }
@@ -2031,7 +2030,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
             }
             for (const auto &item : turncoat_loot.items)
             {
-                treasure_pile_.push_back(item);
+                treasure_service_.add_to_pile(item);
             }
         }
         if (native_recovery && !fled)
@@ -2124,10 +2123,9 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
         }
         // The items the monsters leave wait for the party to take them; the
         // script hears the result once the party leaves the treasure.
-        if (!treasure_pile_.empty())
+        if (!treasure_service_.treasure_pile().empty())
         {
-            open_treasure(combat_request_, std::move(results));
-            treasure_conditions_ = conditions;
+            treasure_service_.open_treasure(*this, combat_request_, std::move(results), conditions);
         }
         else
         {
@@ -2156,7 +2154,7 @@ bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
     staged_ally_art_.clear();
     // A later script fault must never restore pre-combat HP or erase a victory.
     event_checkpoint_.reset();
-    if (!pending_loot_.empty())
+    if (!treasure_service_.pending_loot().empty())
     {
         snapshot_.dialogue += "\nLoot is retained until your party has room in its purses.";
     }
@@ -2381,21 +2379,21 @@ void RolfTourSession::finish_event()
                 return;
             }
         }
-        else if (camp_memorizing_)
+        else if (camp_service_.memorizing())
         {
             // The casters chose their spells, and the rest went on for them:
             // an interruption within that time comes now (gametime.pas,
             // CampRest rolls it each step), with the same dice foreseen.
-            const auto waited = *std::exchange(camp_memorizing_, std::nullopt);
+            const auto waited = camp_service_.end_memorizing();
             const auto went_on = static_cast<unsigned>(campaign_->last_rest_minutes() -
                                                        waited.rest.duration_minutes);
-            const auto broken = went_on
-                                    ? rest_interruption(interval, chance, went_on,
-                                                        [this](unsigned count)
-                                                        {
-                                                            return machine_.engine_random(count);
-                                                        })
-                                    : std::nullopt;
+            const auto broken =
+                went_on ? camp_service_.rest_interruption(interval, chance, went_on,
+                                                          [this](unsigned count)
+                                                          {
+                                                              return machine_.engine_random(count);
+                                                          })
+                        : std::nullopt;
             if (waited.interrupted || broken)
             {
                 if (broken)
@@ -2418,7 +2416,7 @@ void RolfTourSession::finish_event()
         else
         {
             const bool any_length = campaign_->rule_module().rests_any_length();
-            if (const auto rested = rest_interruption(interval, chance))
+            if (const auto rested = camp_service_.rest_interruption(*this, interval, chance))
             {
                 log_diagnostic(LogPriority::info, "camp",
                                "interrupted after " + std::to_string(*rested) + " minutes");
@@ -2439,20 +2437,20 @@ void RolfTourSession::finish_event()
                 synchronize_clock();
                 if (granted && campaign_->state().spell_rest)
                 {
-                    camp_memorizing_ =
-                        CampMemorizing{true, campaign_->state().time_minutes, *granted};
+                    camp_service_.wait_for_spells(
+                        {true, campaign_->state().time_minutes, *granted});
                     ++snapshot_.revision;
                     return;
                 }
                 interrupt_camp();
                 return;
             }
-            const auto rested = camp_rest();
+            const auto rested = camp_service_.camp_rest(*this);
             if (rested && any_length && campaign_->state().spell_rest)
             {
-                foresee_rest_interruption(interval, chance);
+                camp_service_.foresee_rest_interruption(*this, interval, chance);
                 synchronize_clock();
-                camp_memorizing_ = CampMemorizing{false, campaign_->state().time_minutes, *rested};
+                camp_service_.wait_for_spells({false, campaign_->state().time_minutes, *rested});
                 ++snapshot_.revision;
                 return;
             }
@@ -2490,7 +2488,7 @@ void RolfTourSession::finish_event()
         rest_warded_ = false;
         snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
                               std::string("The Magic Circle keeps the creatures away.");
-        if (const auto rested = camp_rest())
+        if (const auto rested = camp_service_.camp_rest(*this))
         {
             snapshot_.dialogue +=
                 "\n" + rest_complete_line(*rested, campaign_->rule_module().rests_any_length());
@@ -2505,7 +2503,7 @@ void RolfTourSession::finish_event()
     // A clock the event's script set is the campaign's before anything saves.
     synchronize_clock();
     event_checkpoint_.reset();
-    if (std::exchange(step_out_after_shop_, false))
+    if (shop_service_.take_step_out())
     {
         step_out_of_shop();
     }
@@ -2553,7 +2551,7 @@ void RolfTourSession::finish_event()
     if (event_stage_ == EventStage::search && !overland())
     {
         search_for_secret_door();
-        open_own_shop();
+        shop_service_.open_own_shop(*this);
     }
 }
 
@@ -2997,25 +2995,25 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         return false;
     }
     log_player("chooses \"" + snapshot_.choices[choice] + "\"");
-    if (buck_rogers_menu_)
+    if (buck_rogers_menus_.choosing())
     {
-        return choose_in_buck_rogers_menu(choice);
+        return buck_rogers_menus_.choose_in_buck_rogers_menu(*this, choice);
     }
     if (romance_scene_)
     {
         return choose_in_romance(choice);
     }
-    if (hall_visit_)
+    if (hall_service_.visiting())
     {
-        return choose_at_hall(choice);
+        return hall_service_.choose_at_hall(*this, choice);
     }
-    if (dark_queen_vault_visit_)
+    if (vault_service_.visiting())
     {
-        return choose_dark_queen_vault(choice);
+        return vault_service_.choose_dark_queen_vault(*this, choice);
     }
-    if (temple_visit_)
+    if (temple_service_.visiting())
     {
-        return choose_at_temple(choice);
+        return temple_service_.choose_at_temple(*this, choice);
     }
     if (damage_request_)
     {
@@ -3610,8 +3608,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 28:
-        treasure_.clear();
-        staged_treasure_.reset();
+        shop_service_.shop_stock().clear();
+        treasure_service_.forget_staged();
         staged_enemies_.clear();
         staged_art_.clear();
         staged_records_.clear();
@@ -3974,7 +3972,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             throw EclError("Unsupported town treasure list");
         }
         // A shop list without its arrows and quarrels: there is no ammunition.
-        std::ranges::copy_if(found->second, std::back_inserter(treasure_),
+        std::ranges::copy_if(found->second, std::back_inserter(shop_service_.shop_stock()),
                              [](const auto &item)
                              {
                                  return !opengold::original_item::is_ammunition(item.stored.type);
@@ -4251,7 +4249,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                 throw EclError("Vault service requires a campaign party");
             }
             read_character();
-            open_dark_queen_vault(request.id);
+            vault_service_.open_dark_queen_vault(*this, request.id);
             return true;
         }
         if (machine_.variable(game_cell(ecl_temple_service)) == 1)
@@ -4266,7 +4264,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             {
                 temple_square_ = Sanctuary{current_script_, snapshot_.pose};
             }
-            open_temple(request.id);
+            temple_service_.open_temple(*this, request.id);
             return true;
         }
         if (machine_.variable(game_cell(ecl_shop_service)) == 1)
@@ -4279,34 +4277,25 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             }
             read_character();
             // The shop data/shops places on this square sells its record's items.
-            bool stocked = false;
-            for (std::size_t n = 0; n < shops_.size(); ++n)
-            {
-                if (standing_at(shops_[n].archive, shops_[n].record, shops_[n].markers))
-                {
-                    treasure_ = shop_stocks_[n];
-                    stocked = true;
-                }
-            }
+            bool stocked = shop_service_.stock_from_site(*this);
             // Curse's shop sells the list its script's TREASURE named just before
             // (CMD_Treasure, then CityShop, in its reconstruction).
-            if (!stocked && staged_treasure_ && game() != GoldBoxGame::pool_of_radiance)
+            if (!stocked && treasure_service_.staged() && game() != GoldBoxGame::pool_of_radiance)
             {
-                treasure_ = staged_treasure_->items;
-                staged_treasure_.reset();
+                shop_service_.shop_stock() = treasure_service_.take_staged().items;
             }
-            enter_shop(request.id);
+            shop_service_.enter_shop(*this, request.id);
             return true;
         }
-        if (staged_treasure_)
+        if (treasure_service_.staged())
         {
             // With no monsters loaded, the original COMBAT only hands out the treasure.
             read_character();
             award_staged_treasure();
-            if (!treasure_pile_.empty())
+            if (!treasure_service_.treasure_pile().empty())
             {
-                open_treasure(request.id, {});
-                treasure_conditions_ = vga_combat_conditions(game(), true);
+                treasure_service_.open_treasure(*this, request.id, {},
+                                                vga_combat_conditions(game(), true));
                 return true;
             }
             reply = character_reply(selected_character_);
@@ -4875,7 +4864,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (arg(0) == 0 && campaign_)
         {
             read_character();
-            open_hall(request.id);
+            hall_service_.open_hall(*this, request.id);
             return true;
         }
         if (arg(0) == 3 && game() == GoldBoxGame::dark_queen_of_krynn && campaign_)
@@ -5105,7 +5094,7 @@ void RolfTourSession::apply_entrances()
             other.doors[index(reversed(side))] = door;
         }
     };
-    for (const auto &shop : shops_)
+    for (const auto &shop : shop_service_.shops())
     {
         if (!shop.entrance || !on_map(shop.archive, shop.record))
         {
@@ -5132,7 +5121,7 @@ void RolfTourSession::apply_entrances()
 const opengold::ShopSite *RolfTourSession::entrance_ahead() const
 {
     const auto edge = edge_ahead(map_, snapshot_.pose);
-    for (const auto &shop : shops_)
+    for (const auto &shop : shop_service_.shops())
     {
         if (!shop.entrance || !on_map(shop.archive, shop.record))
         {
@@ -5224,7 +5213,7 @@ std::optional<WandSign> RolfTourSession::point_wand_of_secrets(MemberId member, 
             trap = &candidate;
         }
     }
-    for (const auto &site : shops_)
+    for (const auto &site : shop_service_.shops())
     {
         if (!site.entrance || !on_map(site.archive, site.record) ||
             entrances_[site.id] != EntranceState::hidden)
@@ -5266,7 +5255,7 @@ void RolfTourSession::search_for_secret_door()
     {
         return;
     }
-    for (const auto &shop : shops_)
+    for (const auto &shop : shop_service_.shops())
     {
         if (!shop.entrance || !on_map(shop.archive, shop.record) ||
             entrances_[shop.id] != EntranceState::hidden)

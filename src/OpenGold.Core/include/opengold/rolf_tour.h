@@ -23,291 +23,38 @@
 #include "opengold/encounter_budget.h"
 #include "opengold/shop_data.h"
 #include "opengold/temple_catalog.h"
+#include "opengold/phlan_resources.h"
+#include "opengold/tour_snapshot.h"
+#include "opengold/town_service_host.h"
+#include "opengold/hall_service.h"
+#include "opengold/temple_service.h"
+#include "opengold/vault_service.h"
+#include "opengold/shop_service.h"
+#include "opengold/treasure_service.h"
+#include "opengold/camp_service.h"
+#include "opengold/ship_service.h"
+#include "opengold/buck_rogers_menu_service.h"
 #include <algorithm>
 #include <bitset>
 #include <map>
 #include <set>
 #include <string>
 
-namespace opengold
-{
-template <bool Reading> struct SaveCodec;
-
-namespace test
+namespace opengold::test
 {
 struct TourAccess;
-}
-} // namespace opengold
+} // namespace opengold::test
 
 namespace opengold::por
 {
-struct PartyPose
-{
-    unsigned x{}, y{}; // GEO coordinates.
-    MapDirection facing{MapDirection::north};
-    auto operator<=>(const PartyPose &) const = default;
-};
-
 // Squares the party sees ahead before a wall or door, at most two. As in the
 // original, a fight's encounter distance never exceeds it in a 3D area.
 [[nodiscard]] unsigned open_squares_ahead(const GeoMap &map, PartyPose pose);
-enum class TourPhase
-{
-    running,
-    awaiting_continue,
-    awaiting_input,
-    shopping,
-    completed,
-    faulted,
-    combat,
-    defeated,
-    // After a won fight or a script's treasure: the items left lie in a pile
-    // for the party to take; the script waits.
-    treasure,
-    // A Buck Rogers SHIP COMBAT waits for the ship fight (TourSnapshot's
-    // ship_combat): the ship-combat screen plays it (ship_fight) and gives
-    // the session its end (finish_ship_combat).
-    ship_combat,
-    // A Buck Rogers training waits for the trainee's choices
-    // (buck_rogers_training): a Warrior's specialization and the skill
-    // points; finish_buck_rogers_training keeps them and the team menu
-    // returns.
-    training
-};
-
-// A Buck Rogers training begun in the team menu (chargen.pas TrainingMenu):
-// the trainee and what is left to choose; the team menu shows again once the
-// choices are kept.
-struct BuckRogersTraining
-{
-    opengold::MemberId member{};
-    original::BuckRogersTrainingChoices choices;
-};
-
-// A Buck Rogers script's SHIP COMBAT (1Fh; shipcbt.pas ShipCombat): the
-// enemy ship's type, 1 to 5 (SHIPS.DAX record 39 + type), the operand the
-// original never reads, the enemy pilot's skill and its to-hit number.
-struct ShipCombatCall
-{
-    unsigned enemy_type{}, unused{}, pilot_skill{}, to_hit{};
-    bool operator==(const ShipCombatCall &) const = default;
-};
-
 // The ship fight's files and state (buck_rogers_ship_fight.h), which the
 // session holds without the rules' types.
 struct ShipFightFiles;
 struct ShipFightState;
 struct ShipFightAccess;
-
-struct TownParty
-{
-    std::string name{"Fighter"};
-    unsigned level{1}, hit_points{12}, max_hit_points{12};
-    Purse wealth{0, 0, 0, 9999, 0, 0, 0};
-    std::vector<Equipment> inventory;
-};
-
-// Uncollected rewards. Encounter loot comes from defeated creature records;
-// script treasure (TREASURE) has no records and carries only its money.
-struct PendingLoot
-{
-    std::array<unsigned, 7> wealth{};
-    std::vector<Equipment> items;
-    std::string reward_id;
-    std::vector<unsigned> records;
-    bool include_items{true};
-    unsigned area{}; // the district whose original creature records these are
-};
-
-// What a monster used of its gear in a fight (DIFF-1): its creature record and,
-// by each item's place in the record's gear, the uses it has left.
-struct SpentGear
-{
-    unsigned record{};
-    std::vector<std::pair<std::size_t, unsigned>> uses_left;
-};
-
-// Gateway's set of marks (8X8D1's record 202, its symbol set 4): the party's
-// arrows on the overland, by facing, and the automap's walls.
-inline constexpr unsigned gateway_marks = 202;
-
-struct DarkQueenResources;
-
-struct PhlanResources
-{
-    std::shared_ptr<const DarkQueenResources> dark_queen;
-    // A campaign that starts by running a script's load entry (Curse's script
-    // 1 of disk 2) rather than Rolf's tour of New Phlan.
-    std::optional<unsigned> opening_script;
-    // The walls a campaign's LOAD PIECES may load, by disk and the three banks
-    // (Curse's; Pool of Radiance's areas list their walls with their maps).
-    std::map<std::pair<unsigned, std::array<unsigned, 3>>, WallArtSet> wall_sets;
-    std::map<unsigned, std::shared_ptr<const EclProgram>> programs;
-    // Each area script's archive bank, including a script with no map of its
-    // own (the dragon's cave).
-    std::map<unsigned, unsigned> script_banks;
-    std::map<unsigned, std::vector<Equipment>> treasure;
-    // The 256-color engine's item definitions (ITEM0), by number from 1, which
-    // its TREASURE and STORE name; and each of its stores' definitions, as
-    // its program lists them (docs/games/darkness.md, Shops and treasure).
-    std::map<unsigned, Equipment> item_definitions;
-    std::vector<std::vector<std::uint8_t>> stores;
-
-    // On the town only: Treasures of the Savage Frontier's overland maps'
-    // pictures (OVER), by map, each with the color cycle it turns; the color
-    // tables of the records that only set colors, by record; and the party's
-    // arrow on them, by facing.
-    struct OverlandPicture
-    {
-        VgaImage pixels;
-        std::optional<VgaColorCycle> cycle;
-    };
-
-    std::map<unsigned, OverlandPicture> overland_pictures;
-    std::map<unsigned, VgaColorTable> overland_colors;
-    std::array<Image, 4> overland_arrows;
-    // Pools of Darkness's marker of the party's square on its area map
-    // (CURSOR record 1, drawn through color 13).
-    std::optional<Image> area_map_marker;
-    // Treasures' LUCK texts by record: the luck readings (0 to 14), the lucky
-    // papers' words and the romances' scenes.
-    std::map<unsigned, std::string> luck_texts;
-    // Treasures' PIC records as they decode, and the color runs of its PIC
-    // records that only set colors (PIC1 38, PIC1A 78 and the like), by record:
-    // the picture cell 4Eh names is shown in the colors of the record cell
-    // 4Fh names (its portrait.pas, LoadAnimation).
-    std::map<unsigned, VgaAnimation> pic_records;
-    std::map<unsigned, VgaPaletteRange> picture_colors;
-    // ITEMS templates, indexed by original item type, for generated treasure.
-    std::vector<ItemTemplate> item_templates;
-    std::vector<std::uint8_t> sprite_archive;
-    // Native cross-disk sprites, decoded once on the root resources.
-    std::map<unsigned, std::array<Image, 3>> shared_sprites;
-    std::map<unsigned, Image> heads, bodies, pictures;
-    // PIC records: monster close-ups shown before combat, looping until a key press.
-    std::map<unsigned, std::vector<AnimationFrame>> animations;
-    // Explicit converted NPC profiles scoped to this resource bank. No guessed ID conversion.
-    std::map<unsigned, opengold::Character> npc_profiles;
-    // Immutable district profiles. Root owns districts; children never own root.
-    std::map<unsigned, std::shared_ptr<const PhlanResources>> districts;
-    std::optional<GeoMap> map;
-    WallArtSet wall_art;
-    std::map<unsigned, Creature> encounter_creatures;
-    // On the town only: every creature record of every MONnCHA bank, from
-    // which an NPC who joins under rules that play the original's records is
-    // made.
-    std::shared_ptr<const CreatureCatalog> creatures;
-    std::map<unsigned, EncounterConversion> conversions;
-    // A district's script, archive bank and LOAD PIECES wall banks; zero for the town.
-    unsigned script{}, bank{};
-    // Other scripts that load this map: Valjevo Castle's share its quarters.
-    std::vector<unsigned> shared_with;
-
-    [[nodiscard]] bool loaded_by(unsigned id) const
-    {
-        return id == script ||
-               std::find(shared_with.begin(), shared_with.end(), id) != shared_with.end();
-    }
-
-    std::array<unsigned, 3> pieces{};
-    // On the town only: Gateway's sets of eight-by-eight symbols, by record,
-    // that its LOAD PIECES loads alone on the overland, outside a dungeon
-    // (8X8D6's sets of 70, with the files' own for the disks of the scripts
-    // that load maps by cells).
-    std::map<unsigned, WallTiles> symbol_sets;
-    std::vector<std::uint8_t> combat_archive;
-    std::vector<Image> terrain_art;
-    // On the town only: the wilderness from START.EXE, SQRPACI's 256 overland
-    // tiles, the party's overland icon and the wilderness battlefield art
-    // (WILDCOM, then RANDCOM). Null without START.EXE.
-    std::shared_ptr<const OverlandWorld> overland;
-    std::vector<Image> overland_tiles;
-    // The same tiles once the Pyramid's pollution is stopped and the valley
-    // heals (the original's Yarash ending).
-    std::vector<Image> healed_overland_tiles;
-    Image party_icon;
-    std::vector<Image> wilderness_art;
-    // Curse's: the battlefield tiles and places' terrain its fights out of
-    // doors are built from (curse_wilderness); empty for Pool of Radiance.
-    std::optional<CurseWilderness> curse_wilderness;
-    // Gateway's: the terrains and grounds its fights on the overland are
-    // built from (gateway_wilderness).
-    std::optional<GatewayWilderness> gateway_wilderness;
-    // On the town only: the original's closing story from GAME.OVR, one string
-    // per page. Empty without that file.
-    std::vector<std::string> closing_story;
-    // The Combat Sprite Catalog's export (#274), on the town only: creatures'
-    // names, gear and new art. Null without one.
-    std::shared_ptr<const MonsterBundle> monsters;
-    // On the town only: what scripts' LOAD MONSTER instructions load instead
-    // of the original's (data/encounters/overrides.json), checked against them.
-    std::map<EncounterSite, EncounterOverride> encounter_overrides;
-
-    // On the town only: the Buck Rogers games' creatures as LOAD MONSTER and
-    // ADD NPC take them (MON0CHA's records with MON0ITM's items of the same
-    // number), the item templates TREASURE and SHOP copy (ITEM0, template n
-    // at [n - 1]) and ITEMS' rows (docs/games/countdown.md, "The census").
-    struct BuckRogersCreature
-    {
-        buck_rogers::Creature creature;
-        std::vector<buck_rogers::Item> items;
-    };
-
-    std::map<unsigned, BuckRogersCreature> buck_rogers_creatures;
-    std::vector<buck_rogers::Item> buck_rogers_templates;
-    std::vector<buck_rogers::ItemType> buck_rogers_item_types;
-    // Their ground-combat tile sets (HITEK, LOTEK, MARSCOM, VENUSCOM), by file,
-    // each tile in the colors its picture sets.
-    std::map<std::string, std::vector<Image>, std::less<>> buck_rogers_tile_sets;
-    // Each disk's combat icons (CPICn), which LOAD MONSTER draws from by
-    // the disk its script is on (maptiles.pas LoadIconAnim).
-    std::map<unsigned, std::vector<std::uint8_t>> buck_rogers_icons;
-    // The team's combat icons (CHARS), by the record's icon byte.
-    std::vector<std::uint8_t> buck_rogers_team_icons;
-    // The team's ship as a new game starts with it (SHIPS record 50).
-    std::vector<std::uint8_t> buck_rogers_party_ship;
-    // The enemy ships and the pictures of the ship fight (SHIPS.DAX).
-    std::shared_ptr<const ShipFightFiles> buck_rogers_ship_fight_files;
-    // The words their items are named with (START.EXE).
-    std::vector<std::string> buck_rogers_item_words;
-    // Their solar map's art: its backdrop (SHIPS picture 128, 176 pixels
-    // square, 8 to a cell) and its tiles (8X8D0 record 1: the Sun, the bodies
-    // at each place on their orbits and the rocket at each heading), each in
-    // the colors its picture sets, the tiles' key color clear.
-    Image solar_map_backdrop;
-    std::vector<Image> solar_map_tiles;
-};
-
-// A script took coins the payer lacked and the purse made change.
-struct CoinPayment
-{
-    std::string payer;
-    opengold::CoinExchange coins;
-};
-
-// The money and items a fight or a treasure gave the party, for the view to
-// name.
-struct LootTaken
-{
-    std::array<unsigned, 7> wealth{};
-    std::vector<std::string> items; // Each item's name as the party knows it.
-};
-
-// One check made against a locked door, for the player's log.
-struct DoorCheck
-{
-    std::string member;
-    opengold::DoorMethod method{};
-    int die{}, total{}, difficulty{};
-    bool thieves_tools{}, magic_lock_picks{};
-};
-
-// One member's roll to find a secret door, for the player's log (SECRET-1).
-struct SecretDoorSearch
-{
-    std::string member;
-    int die{}, needed{};
-};
 
 // Where a Wand of Secrets points (SECRET-1): a trap on square (x, y), or a
 // secret door in its `side` wall, the square on the door's side nearer the
@@ -326,124 +73,6 @@ struct WandSign
 // where two words would touch, and closes a doubled space after a word (two
 // after a sentence's end are the original's style and stay).
 [[nodiscard]] std::string join_script_text(std::string shown, std::string_view added);
-
-// One creature an area's script loads (LOAD MONSTER), as the game stages it
-// for a fight: its converted fighter and its combat art. The game's scripts
-// and the developer tools that stage fights use this one way.
-struct StagedCreature
-{
-    rules::Participant fighter;
-    CombatArt art;
-};
-
-// Whether the area's creature `record` fights on the party's side: record byte
-// 0x10E (coab combat_team) is 0, as only Valhingen Graveyard's efreeti's is.
-[[nodiscard]] bool fights_for_party(const PhlanResources &area, unsigned record);
-
-// The name the creature shows: its export's, or its original record's.
-[[nodiscard]] std::string creature_name(const PhlanResources &area, unsigned record,
-                                        const ExportedMonster *exported);
-
-// The area's creature `record`, drawn with combat icon `icon`, as fighter `id`
-// named `name` on `side`. `exported` is the creature's Combat Sprite Catalog
-// export, or null. Under rules that play the original's records
-// (`original_record`) it fights as its record; otherwise as the area's
-// conversion of it. The area's icons are in the format of `game`. Throws when
-// the area converts no such record or lacks the icon.
-[[nodiscard]] StagedCreature
-stage_area_creature(const PhlanResources &area, unsigned record, unsigned icon,
-                    const ExportedMonster *exported, rules::EntityId id, std::string name,
-                    rules::Side side, Difficulty difficulty, bool original_record,
-                    GoldBoxGame game = GoldBoxGame::pool_of_radiance,
-                    std::optional<std::array<VgaColor, 256>> native_palette = {});
-
-struct TourSnapshot
-{
-    PartyPose pose;
-    TourPhase phase{TourPhase::running};
-    std::string dialogue, diagnostic;
-    // The script's WHO waits for a party member, offered as the choices. The
-    // dialogue keeps what the script said, such as the question being asked.
-    bool choosing_member{};
-    std::uint64_t revision{}, continue_ticket{};
-    unsigned prompts{}, redraws{}, footsteps{};
-    // The storm's thunder in Valhingen Graveyard (the original's fireball
-    // sound), counted as footsteps are; not saved, as no sound is pending
-    // once a save is made.
-    unsigned thunder{};
-    // The later games' scripts' sound effects other than the footstep: a
-    // PLAY SOUND of 2 to 12, the sounds their driver plays (sounddrv.pas,
-    // SoundCommand), the last one and the count, counted as footsteps are;
-    // not saved, as thunder is not.
-    unsigned script_sound{}, script_sounds{};
-    int sprite_frame{-1}; // -1 hidden; native near/medium/far frames are 0/1/2.
-    bool tour_finished{};
-    // The party has just won the game: its closing words are shown until the
-    // player goes on (the view plays the game's ending film first, if any).
-    bool game_won{};
-    // The script opened the camp menu (PROGRAM 9 outside an inn): the party
-    // may camp now, and the view shows its camp dialog.
-    bool camp_offered{};
-    // Treasures' camp menu is open (open_camp): its map's camp entry and the
-    // romance's scene are done, and the view shows the camp dialog.
-    bool camp_menu_open{};
-    // The later games' music, which a script's PLAY SOUND from 80h starts
-    // (eclvm.pas, EclPlaySound): the piece (MUSIC.DAX's record), none once a
-    // sound effect has stopped it (music.pas, SendSoundCommand), and the
-    // starts, counted as footsteps are, a piece started again counting too.
-    std::optional<unsigned> music;
-    unsigned music_starts{};
-    // Search mode is on (set_searching).
-    bool searching{};
-    unsigned script_id{}, event_runs{}, sprite_id{12};
-    unsigned area_id{};
-    std::vector<std::string> choices;
-    // Dialogue and choices our campaign host writes (a training hall's
-    // services), for the view to translate; empty while the script speaks.
-    std::vector<opengold::rules::Message> host_dialogue, host_choices;
-    bool number_input{};
-    std::uint64_t picture_revision{};
-    MapKnowledge visited;
-    MapKnowledge seen; // Persistent map knowledge: visited or visible in a shown 3D view.
-    std::vector<CoinPayment> payments; // This event's payments; cleared when the next begins.
-    std::vector<LootTaken> loot_taken; // This event's loot; cleared when the next begins.
-    // What auto-equip (EQUIP-1) put on from this event's loot, or from the
-    // last purchase while shopping; cleared with the loot and at each purchase.
-    std::vector<opengold::GearChange> gear_changes;
-    // This step's checks against a locked door and whether it opened.
-    std::vector<DoorCheck> door_checks;
-    bool door_opened{};
-    // This event's rolls to find a secret door, and whether one was found.
-    std::vector<SecretDoorSearch> secret_door_searches;
-    bool secret_door_found{};
-    // On the wilderness map: the party's square in its window's coordinates
-    // and the direction it last moved, 0 north and on clockwise to 7.
-    bool overland{};
-    unsigned overland_x{}, overland_y{}, overland_direction{};
-    // The Buck Rogers games' solar map is on screen (PICTURE MODE 2, or the
-    // area kind 70h): the screen that shows it drives the session from here.
-    bool solar_map{};
-    // The SHIP COMBAT the script waits on, while the phase is ship_combat.
-    std::optional<ShipCombatCall> ship_combat;
-};
-enum class ExplorationCommand
-{
-    turn_left,
-    turn_right,
-    turn_around,
-    forward,
-    look,
-    camp,
-    // On the wilderness map, a step in one of eight directions.
-    north,
-    northeast,
-    east,
-    southeast,
-    south,
-    southwest,
-    west,
-    northwest
-};
 
 // One answer at the original's encounter menu (eclvm.pas EclEncounter):
 // `result` is what the script receives (0 the monsters leave, 1 a fight, 2
@@ -465,7 +94,7 @@ struct EncounterTurn
 
 // Original tour followed by the New Phlan movement/search/script scheduler.
 // Bound VM position cells are authoritative; snapshots are read-only views.
-class RolfTourSession
+class RolfTourSession final : private TownServiceHost
 {
   public:
     // A session drives a shared party, so it is not copied by accident: a
@@ -490,19 +119,11 @@ class RolfTourSession
                     WallArtSet wall_art = {}, std::shared_ptr<const PhlanResources> town = {});
 
     // The game whose campaign this is, which its scripts belong to.
-    [[nodiscard]] GoldBoxGame game() const noexcept
+    [[nodiscard]] GoldBoxGame game() const noexcept override
     {
         return program_->game();
     }
 
-  private:
-    // A Pool of Radiance script cell where this campaign's game keeps it.
-    [[nodiscard]] EclAddress game_cell(EclAddress pool_of_radiance_cell) const
-    {
-        return game_address(pool_of_radiance_cell, game());
-    }
-
-  public:
     void restart();
     void campaign_party(std::shared_ptr<opengold::CampaignParty> party);
     // Attach an already validated replacement without restarting its restored VM.
@@ -571,12 +192,10 @@ class RolfTourSession
     [[nodiscard]] bool can_select_member() const
     {
         return can_leave() || snapshot_.phase == TourPhase::shopping ||
-               snapshot_.phase == TourPhase::treasure ||
-               (buck_rogers_menu_ && (buck_rogers_menu_->kind == BuckRogersMenu::Kind::shop ||
-                                      buck_rogers_menu_->kind == BuckRogersMenu::Kind::booty));
+               snapshot_.phase == TourPhase::treasure || buck_rogers_menus_.selects_member();
     }
 
-    void advance(double seconds);
+    void advance(double seconds) override;
     // Treasures' overland colors turn as time passes, a step each time the
     // map's color cycle's delay in hundredths of a second has passed (its
     // MenuCore.UpdateAnimation); true when they turned and the view is to be
@@ -659,10 +278,7 @@ class RolfTourSession
 
     // The training while snapshot().phase is training; null otherwise. The
     // trainee's record is unchanged until its choices are kept.
-    [[nodiscard]] const BuckRogersTraining *buck_rogers_training() const noexcept
-    {
-        return buck_rogers_training_ ? &*buck_rogers_training_ : nullptr;
-    }
+    [[nodiscard]] const BuckRogersTraining *buck_rogers_training() const noexcept;
 
     // The choices, made as the rules allow, a specialization only in a
     // weapon the menu offers (item templates 1 to 15); each throws
@@ -754,12 +370,12 @@ class RolfTourSession
     // offers the original's services and prices.
     void temples(std::vector<opengold::TempleSite> sites)
     {
-        temples_ = std::move(sites);
+        temple_service_.temples(std::move(sites));
     }
 
     [[nodiscard]] const std::vector<opengold::TempleSite> &temples() const noexcept
     {
-        return temples_;
+        return temple_service_.temples();
     }
 
     // The shops data/shops describes: each sells its record's items at its
@@ -779,13 +395,13 @@ class RolfTourSession
 
     [[nodiscard]] const std::vector<opengold::ShopSite> &shops() const noexcept
     {
-        return shops_;
+        return shop_service_.shops();
     }
 
     // Every shop's items, in the order of shops(), at their prices (SELL-1).
     [[nodiscard]] const std::vector<std::vector<Equipment>> &town_stock() const noexcept
     {
-        return shop_stocks_;
+        return shop_service_.town_stock();
     }
 
     [[nodiscard]] const TourSnapshot &snapshot() const noexcept
@@ -833,13 +449,13 @@ class RolfTourSession
 
     [[nodiscard]] const std::vector<Equipment> &shop_stock() const noexcept
     {
-        return treasure_;
+        return shop_service_.shop_stock();
     }
 
     // The items of the treasure the party stands at (TourPhase::treasure).
     [[nodiscard]] const std::vector<Equipment> &treasure_pile() const noexcept
     {
-        return treasure_pile_;
+        return treasure_service_.treasure_pile();
     }
 
     [[nodiscard]] const std::vector<std::string> &script_diagnostics() const noexcept
@@ -892,10 +508,13 @@ class RolfTourSession
     // Reject a pending handoff before combat starts, using the event rollback path.
     bool reject_combat(std::string diagnostic);
 
+    // Reads `tour` from a campaign save, or writes a const one, only while
+    // the party is idle between events (campaign_save.cpp, docs/SAVES.md).
+    template <class Codec, class Tour> static void save(Codec &codec, Tour &tour);
+
   private:
     RolfTourSession(const RolfTourSession &) = default;
     RolfTourSession &operator=(const RolfTourSession &) = default;
-    template <bool Reading> friend struct opengold::SaveCodec;
     // Tests set a flag the route cannot reach through the game (tests/tour_access.h).
     friend struct opengold::test::TourAccess;
     // Clears everything one run of the tour builds up; restart() also reloads
@@ -949,83 +568,8 @@ class RolfTourSession
     // to 1 wins the game as it ends.
     std::uint16_t won_cell_at_event_start_{};
 
-    // A training hall's PROGRAM 0: the script waits on `request` while the
-    // party buys sessions of experience and skill lessons from the list.
-    struct HallChoice
-    {
-        enum class Kind
-        {
-            session,
-            lessons,
-            lesson,
-            back,
-            leave,
-            // Under rules that train at halls (the original's): a member to
-            // train, training it, and a magic-user's new spell.
-            train,
-            confirm,
-            learn
-        };
-        Kind kind{};
-        opengold::MemberId member{};
-        std::string grant; // a lesson's skill or Expertise grant, or a spell
-    };
-
-    struct HallVisit
-    {
-        std::uint64_t request{};
-        opengold::TrainingHall hall{};
-        opengold::MemberId member{}; // whose lessons are listed; 0 lists the services
-        std::vector<HallChoice> choices;
-        // The classes the original's hall trains (its script's class mask).
-        unsigned class_mask{};
-    };
-
-    std::optional<HallVisit> hall_visit_;
-    void open_hall(std::uint64_t request);
-    void show_hall(std::vector<opengold::rules::Message> notice);
-    // The hall as the original runs it (chargen.pas, TrainingMenu): its
-    // members, what one will become, and a magic-user's new spell.
-    void show_original_hall(std::vector<opengold::rules::Message> notice);
-    void show_host_menu(std::vector<opengold::rules::Message> dialogue,
-                        std::vector<opengold::rules::Message> choices);
-    [[nodiscard]] bool choose_at_original_hall(const HallChoice &picked);
-    bool choose_at_hall(std::size_t choice);
-
-    // A temple's COMBAT request with the healing flag: the script waits on
-    // `request` while the party buys services from the temple's Heal list
-    // (TEMPLE-1). The list names the services; choosing one lists the members
-    // it would help, and choosing one of those asks to confirm the price.
-    struct TempleChoice
-    {
-        enum class Kind
-        {
-            service,
-            member,
-            beyond_raising, // dead too long or turned to dust, on Hard and above
-            confirm,
-            back,
-            leave
-        };
-        Kind kind{};
-        opengold::MemberId member{};
-        opengold::TempleOffering offering;
-    };
-
-    struct TempleVisit
-    {
-        std::uint64_t request{};
-        std::vector<opengold::TempleOffering> offerings;
-        std::optional<opengold::TempleOffering> chosen; // the service whose members are listed
-        opengold::MemberId member{};                    // whose purchase awaits confirmation
-        std::vector<TempleChoice> choices;
-    };
-
-    std::vector<opengold::TempleSite> temples_;
     std::shared_ptr<const rules::CharacterRules> companion_rules_;
     std::shared_ptr<const std::vector<CompanionDefinition>> companions_;
-    std::vector<opengold::ShopSite> shops_;
-    std::vector<std::vector<Equipment>> shop_stocks_; // each shop's items, as shops_
     // OpenGoldBox's shops with a hidden entrance (SECRET-1): each entrance's
     // state by its shop's data/shops id (saved).
     enum class EntranceState : std::uint8_t
@@ -1040,55 +584,35 @@ class RolfTourSession
     // + x: on such a square a script asking for Find Traps finds it.
     std::set<unsigned> wand_traps_;
     [[nodiscard]] bool on_wand_trap() const;
-    [[nodiscard]] bool standing_at(const std::string &archive, unsigned record,
-                                   const std::vector<std::pair<unsigned, unsigned>> &markers) const;
-    // Native vault contents belong to this campaign save, shared by its
-    // vault entrances, never to the user's original VAULT*.DAT files.
-    std::array<unsigned, 3> dark_queen_vault_money_{};
-    std::vector<Equipment> dark_queen_vault_items_;
-    enum class VaultMenu
-    {
-        home,
-        deposit,
-        withdraw,
-        recipient
-    };
-    enum class VaultAction
-    {
-        money,
-        deposit,
-        withdraw,
-        leave,
-        deposit_item,
-        withdraw_money,
-        withdraw_item,
-        recipient,
-        back
-    };
-
-    struct VaultChoice
-    {
-        VaultAction action{};
-        opengold::MemberId member{};
-        std::uint64_t item{};
-    };
-
-    struct VaultVisit
-    {
-        std::uint64_t request{};
-        std::size_t item{};
-        std::vector<VaultChoice> choices;
-    };
-
-    std::optional<VaultVisit> dark_queen_vault_visit_;
-    void open_dark_queen_vault(std::uint64_t request);
-    void show_dark_queen_vault(VaultMenu menu, std::vector<opengold::rules::Message> notice = {});
-    bool choose_dark_queen_vault(std::size_t choice);
-
-    std::optional<TempleVisit> temple_visit_;
-    void open_temple(std::uint64_t request);
-    void show_temple(std::vector<opengold::rules::Message> notice);
-    bool choose_at_temple(std::size_t choice);
+    // What the town services reach of the tour (town_service_host.h).
+    [[nodiscard]] EclMachine &script_machine() noexcept override;
+    [[nodiscard]] const EclMachine &script_machine() const noexcept override;
+    [[nodiscard]] CampaignParty *campaign() const noexcept override;
+    [[nodiscard]] TourSnapshot &screen() noexcept override;
+    [[nodiscard]] std::uint64_t new_ticket() noexcept override;
+    [[nodiscard]] PartySlot selected_character() const noexcept override;
+    void select_character(PartySlot slot) noexcept override;
+    [[nodiscard]] EclHostReply character_reply(PartySlot slot) const override;
+    [[nodiscard]] bool
+    standing_at(const std::string &archive, unsigned record,
+                const std::vector<std::pair<unsigned, unsigned>> &markers) const override;
+    [[nodiscard]] Difficulty played_difficulty() const noexcept override;
+    void log_player(const std::string &action) const override;
+    [[nodiscard]] const PhlanResources &town_resources() const override;
+    [[nodiscard]] TownParty &town_party() noexcept override;
+    [[nodiscard]] HeldItems held_items() const override;
+    void equip_gained(const HeldItems &before) override;
+    void choose_shopper() override;
+    void step_out_of_shop() override;
+    // The town services, each the session's to forward to.
+    HallService hall_service_;
+    TempleService temple_service_;
+    VaultService vault_service_;
+    ShopService shop_service_;
+    TreasureService treasure_service_;
+    CampService camp_service_;
+    ShipService ship_service_;
+    BuckRogersMenuService buck_rogers_menus_;
     std::vector<PartySlot> who_slots_;
     // How a pre-combat meeting ended without a fight, said when its event ends.
     std::string encounter_outcome_;
@@ -1097,14 +621,6 @@ class RolfTourSession
     // Where the party met monsters this event, and whether it was robbed.
     std::optional<PartyPose> meeting_pose_;
     bool robbed_{};
-    std::vector<Equipment> treasure_;
-    // Records a player's action in the game's log, with where the party stands.
-    void log_player(const std::string &action) const;
-    // Auto-equip for each weapon, armor, shield or worn item a member gained since
-    // `before`, each member's items then.
-    using HeldItems = std::vector<std::pair<opengold::MemberId, std::uint64_t>>;
-    [[nodiscard]] HeldItems held_items() const;
-    void equip_gained(const HeldItems &before);
     std::optional<opengold::UnidentifiedMagic> auto_equip_;
     std::optional<Image> picture_;
     std::optional<unsigned> picture_animation_id_; // The PIC record picture_ begins.
@@ -1134,8 +650,7 @@ class RolfTourSession
         unsigned rest_checks{};
         unsigned travel_mode{};
         unsigned dark_queen_combat_set{};
-        std::array<unsigned, 3> dark_queen_vault_money{};
-        std::vector<Equipment> dark_queen_vault_items;
+        VaultService dark_queen_vault;
         GeoMap map;
         std::vector<PendingLoot> pending_loot;
         TourSnapshot snapshot;
@@ -1236,14 +751,9 @@ class RolfTourSession
     void roll_plaza_group(const EclRequest &request, EclHostReply &reply);
     bool showing_monster_picture_{};
     std::uint64_t combat_request_{};
-    // The Buck Rogers SHIP COMBAT request the ship fight answers.
-    std::uint64_t ship_combat_request_{};
 
-    // The ship fight SHIP COMBAT opened, what followed it and a boarded
-    // ship (buck_rogers_ship_fight.h); shared, as a copied session (a
-    // campaign's template) holds none.
+    // The ship fight's side of the session (buck_rogers_ship_fight.h).
     friend struct ShipFightAccess;
-    std::shared_ptr<ShipFightState> ship_fight_;
     unsigned encounter_challenge_{opengold::default_encounter_challenge};
     opengold::Difficulty difficulty_{opengold::default_difficulty};
     // Runtime option, like difficulty_: saves retain their existing layout.
@@ -1251,25 +761,12 @@ class RolfTourSession
         opengold::difficulty_setting(opengold::default_difficulty)};
     // The original encounter before fitting: its experience and loot are awarded.
     std::vector<unsigned> encounter_records_;
-    std::vector<PendingLoot> pending_loot_;
-    // Money from a non-shop TREASURE, awarded by the COMBAT that follows it.
-    std::optional<PendingLoot> staged_treasure_;
     // Doors forced open stay open until the district map is reloaded; the
     // event checkpoint keeps the map as the event found it.
     bool door_menu_{};
     // As in the original, one Pick per lock until the party moves again.
     bool pick_tried_{};
     std::vector<opengold::DoorMethod> door_choices_;
-    void claim_loot();
-    // Like claim_loot, but the items go to the treasure pile, not the members.
-    void pile_loot();
-    // Shows the treasure pile; `request` resumes with `writes` once it closes.
-    void open_treasure(std::uint64_t request, std::vector<EclMemoryWrite> writes);
-    std::vector<Equipment> treasure_pile_;
-    std::uint64_t treasure_request_{};
-    std::vector<EclMemoryWrite> treasure_writes_;
-    // The compare flags the script hears with them (Pools of Darkness's COMBAT).
-    std::optional<EclConditions> treasure_conditions_;
     void stage_treasure(const EclRequest &request);
     void award_staged_treasure(bool with_experience = true);
     [[nodiscard]] std::string treasure_identity(std::uint16_t address) const;
@@ -1311,10 +808,6 @@ class RolfTourSession
     };
 
     EventStage event_stage_{EventStage::none};
-    RestKind camp_kind_{RestKind::long_rest};
-    // The length camp(std::chrono::minutes) asked for; none for a rest of
-    // camp_kind_'s own length.
-    std::optional<std::chrono::minutes> camp_length_;
     // The camp running is Treasures' Fix (camp_fix), not a rest.
     bool camp_fixing_{};
 
@@ -1350,43 +843,10 @@ class RolfTourSession
     // The third member a scene names last (romance.pas, otherPartyMember),
     // which the original keeps only while it runs.
     MemberId romance_bystander_{};
-    // Five-minute rest steps since the last interruption check. Like the
-    // original engine's counter, it carries over between rests; it is saved.
-    unsigned rest_checks_{};
-    // Dice of [0, count): the engine's between scripts, the request's
-    // (host_random) while a script waits on the host.
-    using Dice = std::function<unsigned(unsigned)>;
+    using Dice = CampService::Dice;
     bool start_camp(RestKind kind, std::optional<std::chrono::minutes> length);
     // The party is idle where it may camp, out of a fight and any rest.
     [[nodiscard]] bool can_camp() const;
-    // The campaign's rest for the camp running: camp_kind_'s, of camp_length_
-    // when one was asked for.
-    [[nodiscard]] std::optional<RestResult> camp_rest();
-    // How long the camp running rests before its preparation lengthens it.
-    [[nodiscard]] unsigned camp_minutes() const;
-    [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance);
-    // Over a rest of `minutes`, rolled with `dice`.
-    [[nodiscard]] std::optional<unsigned> rest_interruption(unsigned interval, unsigned chance,
-                                                            unsigned minutes, const Dice &dice);
-
-    // The camp waits while its casters choose their spells, under rules that
-    // rest any length (gametime.pas, CampRest): the rest, interrupted already
-    // or not, goes on for their preparation, and a rest encounter comes once
-    // they have chosen.
-    struct CampMemorizing
-    {
-        // An interruption ended the rest's own time.
-        bool interrupted{};
-        // The campaign's clock as the rest's own time ended.
-        std::uint64_t rest_end_minutes{};
-        RestResult rest;
-    };
-
-    std::optional<CampMemorizing> camp_memorizing_;
-    // Where the rest going on for its casters' spells would be interrupted,
-    // rolled ahead on the engine's dice and taken back (the rolls come again
-    // as the rest goes on), tells the party's rest.
-    void foresee_rest_interruption(unsigned interval, unsigned chance);
     // The rest's encounter comes: the camp's interruption script.
     void interrupt_camp();
     void announce_camp_attack();
@@ -1422,15 +882,6 @@ class RolfTourSession
     void enable_encounter_commands();
     // Another script takes over at `arrival`, and its entry runs.
     void enter_script(unsigned script, const TeleportArrival &arrival);
-    // The script's shop request the party is shopping for; 0 at a shop
-    // OpenGoldBox opens itself (SECRET-1).
-    std::uint64_t shop_request_{};
-    // Set when the party leaves a shop: once the shop's script ends, the party
-    // stands outside its door (step_out_of_shop).
-    bool step_out_after_shop_{};
-    // Puts the party on the square it stepped into the shop from, outside the
-    // door, facing away from the door (the user's request, 2026-11-09).
-    void step_out_of_shop();
     // Whether this event searched: a Look, or a step in Search mode.
     bool event_searched_{};
     // Whether a data/shops location's map is the one the party is on.
@@ -1444,9 +895,6 @@ class RolfTourSession
     // After a step or a Look: the rolls to find a hidden secret door the
     // party stands outside of, and OpenGoldBox's shop on its square opening.
     void search_for_secret_door();
-    void open_own_shop();
-    // The leader deals with shopkeepers unless the event already asked who.
-    void choose_shopper();
     void configure_town();
     void synchronize_clock();
     // Moves the campaign clock on to a time a script instruction wrote into
@@ -1573,65 +1021,6 @@ class RolfTourSession
     // repairs, the captured ship's fuel and the ship fight's experience.
     void repair_after_boarding(std::uint64_t request);
 
-    // The Buck Rogers menus the session offers in the original's place: the
-    // booty after a fight, a shop, the team menu with its training, and the
-    // rest menu (buck_rogers_host.cpp).
-    struct BuckRogersMenu
-    {
-        enum class Kind : std::uint8_t
-        {
-            booty,
-            shop,
-            shop_buy,
-            shop_sell,
-            shop_ammunition,
-            team,
-            rest
-        };
-        enum class Action : std::uint8_t
-        {
-            take_item,
-            take_credits,
-            share_credits,
-            pool_credits,
-            buy,
-            sell,
-            ammunition_clip,
-            ammunition_fill,
-            open_buy,
-            open_sell,
-            open_ammunition,
-            back,
-            train,
-            rest_a_day,
-            leave
-        };
-
-        struct Choice
-        {
-            Action action{};
-            std::size_t index{};
-        };
-
-        Kind kind{};
-        std::uint64_t request{};
-        std::vector<Choice> choices;
-        std::vector<buck_rogers::Item> stock;
-    };
-
-    void show_buck_rogers_menu(BuckRogersMenu::Kind kind, std::vector<rules::Message> notice = {});
-    bool choose_in_buck_rogers_menu(std::size_t choice);
-    void close_buck_rogers_menu();
-    [[nodiscard]] std::string buck_rogers_item_name(const buck_rogers::Item &item) const;
-    std::optional<BuckRogersMenu> buck_rogers_menu_;
-
-    // It is not saved: saving waits for the script, which waits for the menu.
-    std::optional<BuckRogersTraining> buck_rogers_training_;
-    [[nodiscard]] original::BuckRogersTrainingChoices &training_in_progress();
-    // The fight's or the script's booty (gdvars.pas availableItems) and the
-    // team's pool of credits (poolCredits), kept while a script runs.
-    std::vector<buck_rogers::Item> buck_rogers_booty_;
-    std::uint32_t buck_rogers_pool_{};
     // Whether the solar map is on screen, from the area kind the scripts set
     // and the PICTURE MODE they give, `picture_mode_given` when one is given
     // (TourSnapshot::solar_map).
@@ -1645,8 +1034,6 @@ class RolfTourSession
     // The rocket's step the explore() command asked for, unless a script
     // holds it (moveBlocked, 7EC9h, at FFh), and the team's three days.
     void solar_map_step();
-    // Days of rest for the team (gametime.pas RestAndHeal), the clock moved on.
-    void rest_buck_rogers_team(int days);
     // The solar map as the original draws it: the backdrop, the Sun, each
     // body at its place and the rocket.
     [[nodiscard]] Image render_solar_map() const;
@@ -1701,7 +1088,6 @@ class RolfTourSession
     void read_character();
     // Whether the script blanked the selected companion's record to send it away.
     [[nodiscard]] bool dismissed_companion() const;
-    [[nodiscard]] EclHostReply character_reply(PartySlot slot) const;
     [[nodiscard]] std::uint16_t native_cell_flags(unsigned x, unsigned y) const;
     void bind_pose(PartyPose pose);
     bool move_party(ExplorationCommand command);
@@ -1709,9 +1095,6 @@ class RolfTourSession
     // Waits for Continue on what the snapshot shows, then answers the script's
     // `request` (a DAMAGE or a program's report).
     void await_continue(std::uint64_t request);
-    // Opens the shop screen on the stock in treasure_, answering the script's
-    // `request` when the party leaves, or 0 for a shop the party walked into.
-    void enter_shop(std::uint64_t request);
     // Each arrow attacks a random conscious active member; returns a report line for each.
     [[nodiscard]] std::string shoot_arrows(unsigned arrows, std::string_view missile,
                                            const rules::HazardAttack &arrow);
@@ -1721,7 +1104,7 @@ class RolfTourSession
                                    unsigned sides) const;
     void publish_pose();
     void handle_host(const EclRequest &request);
-    void fail(std::string diagnostic);
+    void fail(std::string diagnostic) override;
     // Set when a step leads to an area the game does not have yet: fail()
     // then rolls the step back with this notice instead of a diagnostic.
     std::string closed_way_;

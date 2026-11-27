@@ -1,4 +1,5 @@
 #include "opengold/rolf_tour.h"
+#include "opengold/treasure_service.h"
 #include "opengold/authored_items.h"
 #include "opengold/creature_art.h"
 #include "opengold/random_treasure.h"
@@ -8,26 +9,49 @@
 
 namespace opengold::por
 {
-void RolfTourSession::claim_loot()
+bool TreasureService::awaits(const std::string &reward_id) const
 {
-    if (!campaign_)
+    return std::any_of(pending_loot_.begin(), pending_loot_.end(),
+                       [&](const auto &pending)
+                       {
+                           return pending.reward_id == reward_id;
+                       });
+}
+
+void TreasureService::restore_loot(std::vector<PendingLoot> loot)
+{
+    pending_loot_ = std::move(loot);
+    staged_treasure_.reset();
+}
+
+PendingLoot TreasureService::take_staged()
+{
+    auto loot = std::move(*staged_treasure_);
+    staged_treasure_.reset();
+    return loot;
+}
+
+void TreasureService::claim_loot(TownServiceHost &host)
+{
+    auto *campaign = host.campaign();
+    if (!campaign)
     {
         return;
     }
     for (auto it = pending_loot_.begin(); it != pending_loot_.end();)
     {
-        const auto before = held_items();
-        if (campaign_->award_loot(it->wealth, it->items, it->reward_id))
+        const auto before = host.held_items();
+        if (campaign->award_loot(it->wealth, it->items, it->reward_id))
         {
-            equip_gained(before);
+            host.equip_gained(before);
             LootTaken taken{.wealth = it->wealth};
             for (const auto &item : it->items)
             {
                 taken.items.push_back(item.label());
             }
-            snapshot_.loot_taken.push_back(std::move(taken));
+            host.screen().loot_taken.push_back(std::move(taken));
             it = pending_loot_.erase(it);
-            ++snapshot_.revision;
+            ++host.screen().revision;
         }
         else
         {
@@ -36,104 +60,111 @@ void RolfTourSession::claim_loot()
     }
 }
 
-void RolfTourSession::pile_loot()
+void TreasureService::pile_loot(TownServiceHost &host)
 {
-    if (!campaign_)
+    auto *campaign = host.campaign();
+    if (!campaign)
     {
         return;
     }
     for (auto it = pending_loot_.begin(); it != pending_loot_.end();)
     {
-        const auto &claimed = campaign_->state().claimed_rewards;
+        const auto &claimed = campaign->state().claimed_rewards;
         const bool repeat =
             std::find(claimed.begin(), claimed.end(), it->reward_id) != claimed.end();
-        if (!campaign_->award_loot(it->wealth, {}, it->reward_id))
+        if (!campaign->award_loot(it->wealth, {}, it->reward_id))
         {
             ++it;
             continue;
         }
         if (!repeat)
         {
-            snapshot_.loot_taken.push_back({.wealth = it->wealth});
+            host.screen().loot_taken.push_back({.wealth = it->wealth});
             for (auto &item : it->items)
             {
                 treasure_pile_.push_back(std::move(item));
             }
         }
         it = pending_loot_.erase(it);
-        ++snapshot_.revision;
+        ++host.screen().revision;
     }
 }
 
-void RolfTourSession::open_treasure(std::uint64_t request, std::vector<EclMemoryWrite> writes)
+void TreasureService::open_treasure(TownServiceHost &host, std::uint64_t request,
+                                    std::vector<EclMemoryWrite> writes,
+                                    std::optional<EclConditions> conditions)
 {
-    log_player("finds a treasure of " + std::to_string(treasure_pile_.size()) + " items");
+    host.log_player("finds a treasure of " + std::to_string(treasure_pile_.size()) + " items");
     treasure_request_ = request;
     treasure_writes_ = std::move(writes);
-    snapshot_.phase = TourPhase::treasure;
-    snapshot_.continue_ticket = ++next_ticket_;
-    snapshot_.choices.clear();
-    snapshot_.diagnostic.clear();
-    ++snapshot_.revision;
+    host.screen().phase = TourPhase::treasure;
+    host.screen().continue_ticket = host.new_ticket();
+    host.screen().choices.clear();
+    host.screen().diagnostic.clear();
+    ++host.screen().revision;
+    treasure_conditions_ = conditions;
 }
 
-bool RolfTourSession::take_treasure(std::uint64_t ticket, std::size_t item)
+bool TreasureService::take_treasure(TownServiceHost &host, std::uint64_t ticket, std::size_t item)
 {
-    if (snapshot_.phase != TourPhase::treasure || !ticket || ticket != snapshot_.continue_ticket ||
-        item >= treasure_pile_.size() || !campaign_ || !campaign_->selected())
+    if (host.screen().phase != TourPhase::treasure || !ticket ||
+        ticket != host.screen().continue_ticket || item >= treasure_pile_.size() ||
+        !host.campaign() || !host.campaign()->selected())
     {
         return false;
     }
-    const auto taker = campaign_->selected();
-    log_player("takes " + treasure_pile_[item].label() + " (item " + std::to_string(item + 1) +
-               " of " + std::to_string(treasure_pile_.size()) + ")");
-    snapshot_.gear_changes.clear();
-    const auto before = held_items();
+    auto *campaign = host.campaign();
+    const auto taker = campaign->selected();
+    host.log_player("takes " + treasure_pile_[item].label() + " (item " + std::to_string(item + 1) +
+                    " of " + std::to_string(treasure_pile_.size()) + ")");
+    host.screen().gear_changes.clear();
+    const auto before = host.held_items();
     try
     {
-        campaign_->take_item(taker, treasure_pile_[item]);
+        campaign->take_item(taker, treasure_pile_[item]);
     }
     catch (const std::exception &e)
     {
-        snapshot_.diagnostic = e.what();
-        ++snapshot_.revision;
+        host.screen().diagnostic = e.what();
+        ++host.screen().revision;
         return false;
     }
-    equip_gained(before);
+    host.equip_gained(before);
     treasure_pile_.erase(treasure_pile_.begin() + static_cast<std::ptrdiff_t>(item));
-    snapshot_.diagnostic.clear();
+    host.screen().diagnostic.clear();
     // A new ticket: the list the view shows has changed.
-    snapshot_.continue_ticket = ++next_ticket_;
-    ++snapshot_.revision;
+    host.screen().continue_ticket = host.new_ticket();
+    ++host.screen().revision;
     return true;
 }
 
-bool RolfTourSession::leave_treasure(std::uint64_t ticket)
+bool TreasureService::leave_treasure(TownServiceHost &host, std::uint64_t ticket)
 {
-    if (snapshot_.phase != TourPhase::treasure || !ticket || ticket != snapshot_.continue_ticket)
+    if (host.screen().phase != TourPhase::treasure || !ticket ||
+        ticket != host.screen().continue_ticket)
     {
         return false;
     }
-    log_player(treasure_pile_.empty()
-                   ? "leaves the treasure"
-                   : "leaves " + std::to_string(treasure_pile_.size()) + " items behind");
+    host.log_player(treasure_pile_.empty()
+                        ? "leaves the treasure"
+                        : "leaves " + std::to_string(treasure_pile_.size()) + " items behind");
     // The script reads its character afresh: the member may have taken items.
-    auto reply = character_reply(selected_character_);
+    auto reply = host.character_reply(host.selected_character());
     reply.writes.insert(reply.writes.end(), treasure_writes_.begin(), treasure_writes_.end());
     reply.conditions = std::exchange(treasure_conditions_, std::nullopt);
-    if (!machine_.resume_host(treasure_request_, reply))
+    if (!host.script_machine().resume_host(treasure_request_, reply))
     {
-        fail("The script did not take the treasure's end");
+        host.fail("The script did not take the treasure's end");
         return true;
     }
     treasure_pile_.clear();
     treasure_writes_.clear();
     treasure_request_ = 0;
-    snapshot_.continue_ticket = 0;
-    snapshot_.diagnostic.clear();
-    snapshot_.phase = TourPhase::running;
-    ++snapshot_.revision;
-    advance(0);
+    host.screen().continue_ticket = 0;
+    host.screen().diagnostic.clear();
+    host.screen().phase = TourPhase::running;
+    ++host.screen().revision;
+    host.advance(0);
     return true;
 }
 
@@ -178,6 +209,16 @@ std::vector<Equipment> added_gear(const ExportedMonster *exported, const PhlanRe
 // The item key of the item a creature fights with: its original item, or a
 // plain item of the type the catalog added. Empty for none.
 } // namespace
+
+bool RolfTourSession::take_treasure(std::uint64_t ticket, std::size_t item)
+{
+    return treasure_service_.take_treasure(*this, ticket, item);
+}
+
+bool RolfTourSession::leave_treasure(std::uint64_t ticket)
+{
+    return treasure_service_.leave_treasure(*this, ticket);
+}
 
 PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned> records,
                                             std::string reward, bool items,
@@ -332,22 +373,17 @@ void RolfTourSession::stage_treasure(const EclRequest &request)
             loot.items.push_back(std::move(item));
         }
     }
-    staged_treasure_ = std::move(loot);
+    treasure_service_.stage(std::move(loot));
 }
 
 void RolfTourSession::award_staged_treasure(bool with_experience)
 {
-    auto loot = std::move(*staged_treasure_);
-    staged_treasure_.reset();
+    auto loot = treasure_service_.take_staged();
     const auto &claimed = campaign_->state().claimed_rewards;
     const auto awarded = [&](const std::string &id)
     {
         return std::find(claimed.begin(), claimed.end(), id) != claimed.end() ||
-               std::any_of(pending_loot_.begin(), pending_loot_.end(),
-                           [&](const auto &pending)
-                           {
-                               return pending.reward_id == id;
-                           });
+               treasure_service_.awaits(id);
     };
     // The script decides whether a treasure repeats, as the original's flags
     // did: City Hall pays every reward through one instruction. Each award
@@ -370,9 +406,9 @@ void RolfTourSession::award_staged_treasure(bool with_experience)
                                         loot.reward_id + ":experience");
         }
     }
-    pending_loot_.push_back(std::move(loot));
-    pile_loot();
-    if (!pending_loot_.empty())
+    treasure_service_.add_loot(std::move(loot));
+    treasure_service_.pile_loot(*this);
+    if (!treasure_service_.pending_loot().empty())
     {
         snapshot_.dialogue += "\nLoot is retained until your party has room in its purses.";
     }

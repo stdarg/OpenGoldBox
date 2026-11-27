@@ -3106,6 +3106,25 @@ Expedition load_expedition(const std::filesystem::path &save,
     return trip;
 }
 
+// Every saved game in `folder` and below loads as the game loads it and saves
+// again byte for byte: the expedition fixtures, or the saves another build of
+// the game wrote (#399).
+void resaves_byte_for_byte(const std::filesystem::path &folder,
+                           const std::filesystem::path &directory)
+{
+    std::size_t saves = 0;
+    for (const auto &entry : std::filesystem::recursive_directory_iterator(folder))
+    {
+        if (entry.is_regular_file() && entry.path().extension() == ".ogs")
+        {
+            static_cast<void>(load_expedition(entry.path(), directory));
+            ++saves;
+        }
+    }
+    check(saves > 0, "The folder holds saved games");
+    std::cout << saves << " saved games load and save again byte for byte\n";
+}
+
 // Runs in a fresh process: load the save, revisit the orcs and Ohlo, camp in the
 // Slums and record the result.
 void reload_and_revisit(const std::filesystem::path &save, const std::filesystem::path &directory)
@@ -9729,6 +9748,16 @@ int main(int argc, char **argv)
             original_rules_orcs(directory);
             original_script_treasure_experience();
             std::cout << "Original-rules campaign tests passed\n";
+            return 0;
+        }
+        if (argc == 3 && std::string_view(argv[1]) == "--resave")
+        {
+            if (directory.empty() || !std::filesystem::is_directory(argv[2]))
+            {
+                std::cout << "Skipped: Pool of Radiance's files or the saves are not here.\n";
+                return 0;
+            }
+            resaves_byte_for_byte(argv[2], directory);
             return 0;
         }
         if (argc == 3 && std::string_view(argv[1]) == "--revisit")

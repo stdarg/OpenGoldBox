@@ -244,6 +244,23 @@ Responsible for engine behavior implemented by OpenGoldBox:
 
 This layer must have no dependency on Godot. It should be runnable directly under the native test suite.
 
+The town session, `RolfTourSession` (`rolf_tour.h`), hosts every Gold Box
+game's scripts: the events, encounters, doors, travel and clock. Each town
+service is a class of its own, with its own header, that owns its state and
+the visit in progress: `HallService` (training halls), `TempleService`,
+`ShopService` (the shops' stock and the open shop), `TreasureService` (loot
+waiting for room, the script's staged treasure and the treasure pile),
+`VaultService` (Dark Queen's vault), `CampService` (a camp's rest, its
+interruption rolls and the wait for spells), `ShipService` (Buck Rogers'
+ship fight) and `BuckRogersMenuService` (Buck Rogers' booty, shop, team and
+rest menus). The session holds one of each and forwards to it. A service
+reaches the session only through `TownServiceHost`
+(`town_service_host.h`), which the session implements and lends it for one
+call, so a service keeps no pointer into a session that is copied or moved,
+and a test can serve a service from a host of its own. The session's own
+types live beside it: what the view shows in `tour_snapshot.h`, the areas it
+loads in `phlan_resources.h`.
+
 ### `OpenGold.Rules` and `OpenGold.Rules.Srd5`
 
 The C++20 rules interface provides encounter creation, immutable display

@@ -1,4 +1,5 @@
-#include "opengold/rolf_tour.h"
+#include "opengold/hall_service.h"
+#include "opengold/town_service_host.h"
 #include "host_services.h"
 
 #include <algorithm>
@@ -51,13 +52,14 @@ Message refusal(opengold::TrainingDenial denial, const std::string &name, std::u
 }
 } // namespace
 
-void RolfTourSession::open_hall(std::uint64_t request)
+void HallService::open_hall(TownServiceHost &host, std::uint64_t request)
 {
     // Pool of Radiance's halls name their classes; the later games' set a
     // class mask (TRAIN_MASK), every class (127) in each of Curse's halls.
-    if (game() == GoldBoxGame::pool_of_radiance)
+    if (host.game() == GoldBoxGame::pool_of_radiance)
     {
-        const auto hall = opengold::training_hall_named(machine_.string(ecl_training_hall_name));
+        const auto hall =
+            opengold::training_hall_named(host.script_machine().string(ecl_training_hall_name));
         if (!hall)
         {
             throw EclError("Training hall without a known class word");
@@ -66,24 +68,25 @@ void RolfTourSession::open_hall(std::uint64_t request)
     }
     else
     {
-        const unsigned mask = machine_.variable(game_cell(ecl_training_class_mask)) & 0x7FU;
+        const unsigned mask =
+            host.script_machine().variable(host.game_cell(ecl_training_class_mask)) & 0x7FU;
         hall_visit_ = HallVisit{request, opengold::TrainingHall::every_class, 0, {}, mask};
     }
-    show_hall({});
+    show_hall(host, {});
 }
 
-void RolfTourSession::show_hall(std::vector<Message> notice)
+void HallService::show_hall(TownServiceHost &host, std::vector<Message> notice)
 {
     using opengold::TrainingDenial;
-    if (campaign_->rule_module().trains_at_halls())
+    if (host.campaign()->rule_module().trains_at_halls())
     {
-        show_original_hall(std::move(notice));
+        show_original_hall(host, std::move(notice));
         return;
     }
     auto &visit = *hall_visit_;
     const auto name_of = [&](opengold::MemberId id)
     {
-        return campaign_->member(id).character.sheet().name;
+        return host.campaign()->member(id).character.sheet().name;
     };
     auto dialogue = std::move(notice);
     std::vector<Message> choices;
@@ -100,7 +103,7 @@ void RolfTourSession::show_hall(std::vector<Message> notice)
         {
             dialogue.push_back({"Choose a lesson for {name}.", {{"name", name_of(visit.member)}}});
         }
-        for (const auto &lesson : campaign_->skill_lessons(visit.member, visit.hall).options)
+        for (const auto &lesson : host.campaign()->skill_lessons(visit.member, visit.hall).options)
         {
             add({lesson.id.starts_with("expertise:") ? "{skill} Expertise ({fee} gp)"
                                                      : "{skill} ({fee} gp)",
@@ -116,13 +119,13 @@ void RolfTourSession::show_hall(std::vector<Message> notice)
         {
             dialogue.push_back(hall_welcome(visit.hall));
         }
-        for (const auto id : campaign_->state().slots)
+        for (const auto id : host.campaign()->state().slots)
         {
             if (!id)
             {
                 continue;
             }
-            const auto offer = campaign_->experience_offer(id, visit.hall);
+            const auto offer = host.campaign()->experience_offer(id, visit.hall);
             if (offer.denial == TrainingDenial::other_hall ||
                 offer.denial == TrainingDenial::not_active)
             {
@@ -149,13 +152,13 @@ void RolfTourSession::show_hall(std::vector<Message> notice)
                 }
             }();
             add(std::move(session), {HallChoice::Kind::session, id});
-            const auto lessons = campaign_->skill_lessons(id, visit.hall);
+            const auto lessons = host.campaign()->skill_lessons(id, visit.hall);
             if (lessons.options.empty())
             {
                 continue;
             }
-            const bool learned =
-                campaign_->skill_training_denial(id, visit.hall) == TrainingDenial::already_trained;
+            const bool learned = host.campaign()->skill_training_denial(id, visit.hall) ==
+                                 TrainingDenial::already_trained;
             add(Message{learned ? "{name}: skill lesson (learned at this level)"
                                 : "{name}: skill lesson",
                         {{"name", name}}},
@@ -163,94 +166,96 @@ void RolfTourSession::show_hall(std::vector<Message> notice)
         }
         add({"Leave", {}}, {HallChoice::Kind::leave});
     }
-    show_host_menu(std::move(dialogue), std::move(choices));
+    host.show_host_menu(std::move(dialogue), std::move(choices));
 }
 
-bool RolfTourSession::choose_at_hall(std::size_t choice)
+bool HallService::choose_at_hall(TownServiceHost &host, std::size_t choice)
 {
     using opengold::TrainingDenial;
     auto &visit = *hall_visit_;
     const auto picked = visit.choices.at(choice);
-    const auto name =
-        picked.member ? campaign_->member(picked.member).character.sheet().name : std::string{};
+    const auto name = picked.member ? host.campaign()->member(picked.member).character.sheet().name
+                                    : std::string{};
     switch (picked.kind)
     {
     case HallChoice::Kind::train:
     case HallChoice::Kind::confirm:
     case HallChoice::Kind::learn:
-        return choose_at_original_hall(picked);
+        return choose_at_original_hall(host, picked);
     case HallChoice::Kind::leave:
     {
-        if (!machine_.resume_host(visit.request, character_reply(selected_character_)))
+        if (!host.script_machine().resume_host(visit.request,
+                                               host.character_reply(host.selected_character())))
         {
             throw EclError("Training hall reply rejected");
         }
         hall_visit_.reset();
-        snapshot_.host_dialogue.clear();
-        snapshot_.host_choices.clear();
-        snapshot_.dialogue.clear();
-        snapshot_.phase = TourPhase::running;
-        ++snapshot_.revision;
+        host.screen().host_dialogue.clear();
+        host.screen().host_choices.clear();
+        host.screen().dialogue.clear();
+        host.screen().phase = TourPhase::running;
+        ++host.screen().revision;
         return true;
     }
     case HallChoice::Kind::back:
         visit.member = 0;
-        show_hall({});
+        show_hall(host, {});
         return true;
     case HallChoice::Kind::lessons:
     {
-        const auto denial = campaign_->skill_training_denial(picked.member, visit.hall);
+        const auto denial = host.campaign()->skill_training_denial(picked.member, visit.hall);
         if (denial != TrainingDenial::none && denial != TrainingDenial::gold)
         {
-            show_hall({refusal(denial, name, 0)});
+            show_hall(host, {refusal(denial, name, 0)});
             return true;
         }
         visit.member = picked.member;
-        show_hall({});
+        show_hall(host, {});
         return true;
     }
     case HallChoice::Kind::session:
     {
-        const auto offer = campaign_->experience_offer(picked.member, visit.hall);
+        const auto offer = host.campaign()->experience_offer(picked.member, visit.hall);
         if (offer.denial != TrainingDenial::none)
         {
-            show_hall({refusal(offer.denial, name, offer.fee)});
+            show_hall(host, {refusal(offer.denial, name, offer.fee)});
             return true;
         }
-        campaign_->buy_experience(picked.member, visit.hall);
-        show_hall({{"{name} gains {experience} experience.",
-                    {{"name", name}, {"experience", amount(offer.experience)}}}});
+        host.campaign()->buy_experience(picked.member, visit.hall);
+        show_hall(host, {{"{name} gains {experience} experience.",
+                          {{"name", name}, {"experience", amount(offer.experience)}}}});
         return true;
     }
     case HallChoice::Kind::lesson:
     {
-        if (campaign_->rule_module().trains_at_halls())
+        if (host.campaign()->rule_module().trains_at_halls())
         {
-            campaign_->train_hall_lesson(picked.member, visit.class_mask, picked.grant);
+            host.campaign()->train_hall_lesson(picked.member, visit.class_mask, picked.grant);
             visit.member = 0;
-            show_hall({{"{name}'s petition was accepted.", {{"name", name}}}});
+            show_hall(host, {{"{name}'s petition was accepted.", {{"name", name}}}});
             return true;
         }
         const auto fee = opengold::skill_training_fee(picked.grant);
-        auto denial = campaign_->skill_training_denial(picked.member, visit.hall);
-        if (denial == TrainingDenial::none && campaign_->purse_gold() < fee)
+        auto denial = host.campaign()->skill_training_denial(picked.member, visit.hall);
+        if (denial == TrainingDenial::none && host.campaign()->purse_gold() < fee)
         {
             denial = TrainingDenial::gold;
         }
         if (denial != TrainingDenial::none)
         {
-            show_hall({refusal(denial, name, fee)});
+            show_hall(host, {refusal(denial, name, fee)});
             return true;
         }
-        const auto lessons = campaign_->skill_lessons(picked.member, visit.hall).options;
+        const auto lessons = host.campaign()->skill_lessons(picked.member, visit.hall).options;
         const auto lesson = std::find_if(lessons.begin(), lessons.end(),
                                          [&](const auto &option)
                                          {
                                              return option.id == picked.grant;
                                          });
-        campaign_->train_skill(picked.member, visit.hall, picked.grant);
+        host.campaign()->train_skill(picked.member, visit.hall, picked.grant);
         visit.member = 0;
-        show_hall({{picked.grant.starts_with("expertise:") ? "{name} gains Expertise in {skill}."
+        show_hall(host,
+                  {{picked.grant.starts_with("expertise:") ? "{name} gains Expertise in {skill}."
                                                            : "{name} learns {skill}.",
                     {{"name", name}, {"skill", lesson->label, true}}}});
         return true;
@@ -291,23 +296,7 @@ constexpr std::array<std::pair<std::string_view, std::string_view>, 8> original_
      {"monk", "Monk"}}};
 } // namespace
 
-void RolfTourSession::show_host_menu(std::vector<Message> dialogue, std::vector<Message> choices)
-{
-    snapshot_.host_dialogue = dialogue;
-    snapshot_.dialogue = english(dialogue);
-    snapshot_.host_choices = choices;
-    snapshot_.choices.clear();
-    for (const auto &choice : choices)
-    {
-        snapshot_.choices.push_back(english(choice));
-    }
-    snapshot_.diagnostic.clear();
-    snapshot_.phase = TourPhase::awaiting_continue;
-    snapshot_.continue_ticket = ++next_ticket_;
-    ++snapshot_.revision;
-}
-
-void RolfTourSession::show_original_hall(std::vector<Message> notice)
+void HallService::show_original_hall(TownServiceHost &host, std::vector<Message> notice)
 {
     auto &visit = *hall_visit_;
     auto dialogue = std::move(notice);
@@ -327,7 +316,8 @@ void RolfTourSession::show_original_hall(std::vector<Message> notice)
     {
         // Pools of Darkness trains for nothing, and its hall names no price
         // (chargen.pas, TrainingMenu).
-        if (dialogue.empty() && (game() == GoldBoxGame::pools_of_darkness || krynn_game(game())))
+        if (dialogue.empty() &&
+            (host.game() == GoldBoxGame::pools_of_darkness || krynn_game(host.game())))
         {
             dialogue.push_back({"Who will train?", {}});
         }
@@ -335,16 +325,17 @@ void RolfTourSession::show_original_hall(std::vector<Message> notice)
         {
             dialogue.push_back({"Training costs 1000 gp. Who will train?", {}});
         }
-        for (const auto id : campaign_->state().slots)
+        for (const auto id : host.campaign()->state().slots)
         {
             if (id)
             {
-                add({"{name}", {{"name", campaign_->member(id).character.sheet().name}}},
+                add({"{name}", {{"name", host.campaign()->member(id).character.sheet().name}}},
                     {HallChoice::Kind::train, id});
-                for (const auto &lesson : campaign_->hall_lessons(id, visit.class_mask).options)
+                for (const auto &lesson :
+                     host.campaign()->hall_lessons(id, visit.class_mask).options)
                 {
                     add({"{name}: {lesson}",
-                         {{"name", campaign_->member(id).character.sheet().name},
+                         {{"name", host.campaign()->member(id).character.sheet().name},
                           {"lesson", lesson.label, true}}},
                         {HallChoice::Kind::lesson, id, lesson.id});
                 }
@@ -352,20 +343,20 @@ void RolfTourSession::show_original_hall(std::vector<Message> notice)
         }
         add({"Leave", {}}, {HallChoice::Kind::leave});
     }
-    show_host_menu(std::move(dialogue), std::move(choices));
+    host.show_host_menu(std::move(dialogue), std::move(choices));
 }
 
-bool RolfTourSession::choose_at_original_hall(const HallChoice &picked)
+bool HallService::choose_at_original_hall(TownServiceHost &host, const HallChoice &picked)
 {
     using opengold::TrainingDenial;
     auto &visit = *hall_visit_;
-    const auto &member = campaign_->member(picked.member);
+    const auto &member = host.campaign()->member(picked.member);
     const auto name = member.character.sheet().name;
-    const auto offer = campaign_->hall_training(picked.member, visit.class_mask);
+    const auto offer = host.campaign()->hall_training(picked.member, visit.class_mask);
     if (offer.denial != TrainingDenial::none)
     {
         visit.member = 0;
-        show_hall({original_refusal(offer.denial)});
+        show_hall(host, {original_refusal(offer.denial)});
         return true;
     }
     if (picked.kind == HallChoice::Kind::train)
@@ -385,15 +376,15 @@ bool RolfTourSession::choose_at_original_hall(const HallChoice &picked)
                                 {"class", std::string(label), true}}});
         }
         visit.member = picked.member;
-        show_hall(std::move(becomes));
+        show_hall(host, std::move(becomes));
         return true;
     }
     // A magic-user's level learns a spell (chargen.pas, TrainingMenu).
     const bool learns = std::ranges::find(offer.classes, "magic_user") != offer.classes.end();
     const auto options =
-        learns ? campaign_
+        learns ? host.campaign()
                      ->advancement_options(picked.member,
-                                           campaign_->default_advancement(picked.member))
+                                           host.campaign()->default_advancement(picked.member))
                      .spells
                : std::vector<rules::AdvancementOption>{};
     if (picked.kind == HallChoice::Kind::confirm && !options.empty())
@@ -405,8 +396,8 @@ bool RolfTourSession::choose_at_original_hall(const HallChoice &picked)
             choices.push_back({"{spell}", {{"spell", option.label, true}}});
             visit.choices.push_back({HallChoice::Kind::learn, picked.member, option.id});
         }
-        show_host_menu({{"Choose a spell for {name} to learn.", {{"name", name}}}},
-                       std::move(choices));
+        host.show_host_menu({{"Choose a spell for {name} to learn.", {{"name", name}}}},
+                            std::move(choices));
         return true;
     }
     std::vector<std::string> spells;
@@ -414,9 +405,9 @@ bool RolfTourSession::choose_at_original_hall(const HallChoice &picked)
     {
         spells.push_back(picked.grant);
     }
-    campaign_->train_at_hall_level(picked.member, visit.class_mask, std::move(spells));
+    host.campaign()->train_at_hall_level(picked.member, visit.class_mask, std::move(spells));
     visit.member = 0;
-    show_hall({{"Congratulations... {name} has trained.", {{"name", name}}}});
+    show_hall(host, {{"Congratulations... {name} has trained.", {{"name", name}}}});
     return true;
 }
 

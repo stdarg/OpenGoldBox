@@ -3,6 +3,8 @@
 // their scripts read and write it (docs/games/countdown.md, "Scripts"; the
 // game in the engine, B3).
 #include "opengold/rolf_tour.h"
+#include "opengold/buck_rogers_menu_service.h"
+#include "opengold/ship_service.h"
 #include "opengold/buck_rogers_characters.h"
 #include "opengold/buck_rogers_rules.h"
 #include "opengold/buck_rogers_battlefield.h"
@@ -626,7 +628,7 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     {
         // Credits to the pool and the templates to the booty (EclTreasure),
         // which the next fight's end offers.
-        buck_rogers_pool_ += static_cast<std::uint32_t>(value(0));
+        buck_rogers_menus_.add_credits(static_cast<std::uint32_t>(value(0)));
         for (std::size_t n = 2; n < operands.size(); ++n)
         {
             const auto number = static_cast<std::size_t>(value(n) & 0xFF);
@@ -634,7 +636,7 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
             if (number >= 1 && number <= templates.size() &&
                 templates[number - 1].type != buck_rogers::Item::no_type)
             {
-                buck_rogers_booty_.insert(buck_rogers_booty_.begin(), templates[number - 1]);
+                buck_rogers_menus_.add_booty(templates[number - 1]);
             }
         }
         break;
@@ -643,15 +645,10 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     {
         // The list's templates, its last first, then the shop (EclShop).
         read_character();
-        buck_rogers_booty_.clear();
-        buck_rogers_pool_ = 0;
-        BuckRogersMenu menu;
-        menu.kind = BuckRogersMenu::Kind::shop;
-        menu.request = request.id;
-        menu.stock = original::shop_stock(static_cast<unsigned>(value(0) & 0xFF),
-                                          town_->buck_rogers_templates);
-        buck_rogers_menu_ = std::move(menu);
-        show_buck_rogers_menu(BuckRogersMenu::Kind::shop);
+        buck_rogers_menus_.clear_booty();
+        buck_rogers_menus_.open_menu(*this, BuckRogersMenuService::Kind::shop, request.id,
+                                     original::shop_stock(static_cast<unsigned>(value(0) & 0xFF),
+                                                          town_->buck_rogers_templates));
         return true;
     }
     case add_npc:
@@ -701,11 +698,10 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         }
         if (number == 0 || number == 9)
         {
-            BuckRogersMenu menu;
-            menu.kind = number == 0 ? BuckRogersMenu::Kind::team : BuckRogersMenu::Kind::rest;
-            menu.request = request.id;
-            buck_rogers_menu_ = std::move(menu);
-            show_buck_rogers_menu(buck_rogers_menu_->kind);
+            buck_rogers_menus_.open_menu(*this,
+                                         number == 0 ? BuckRogersMenuService::Kind::team
+                                                     : BuckRogersMenuService::Kind::rest,
+                                         request.id);
             return true;
         }
         break;
@@ -715,14 +711,11 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         // The ship fight is the ship-combat screen's: the script waits for
         // its end (ship_fight, finish_ship_combat).
         read_character();
-        snapshot_.ship_combat = ShipCombatCall{
-            static_cast<unsigned>(value(0) & 0xFF), static_cast<unsigned>(value(1) & 0xFF),
-            static_cast<unsigned>(value(2) & 0xFF), static_cast<unsigned>(value(3) & 0xFF)};
-        ship_combat_request_ = request.id;
-        ship_fight_ = std::make_shared<ShipFightState>();
-        snapshot_.continue_ticket = ++next_ticket_;
-        snapshot_.phase = TourPhase::ship_combat;
-        ++snapshot_.revision;
+        ship_service_.begin(*this, request.id,
+                            ShipCombatCall{static_cast<unsigned>(value(0) & 0xFF),
+                                           static_cast<unsigned>(value(1) & 0xFF),
+                                           static_cast<unsigned>(value(2) & 0xFF),
+                                           static_cast<unsigned>(value(3) & 0xFF)});
         return true;
     }
     case picture_mode:
@@ -835,11 +828,14 @@ namespace
 struct ShipFightAccess
 {
     static original::ShipCombat &open(RolfTourSession &session,
-                                      const original::ShipCombatOptions &options);
+                                      const original::ShipCombatOptions &options)
+    {
+        return session.ship_service_.open(session, session.town_.get(), options);
+    }
 
     static const ShipFightState *state(const RolfTourSession &session)
     {
-        return session.ship_fight_.get();
+        return session.ship_service_.state();
     }
 };
 
@@ -865,13 +861,23 @@ const ShipFightAftermath *ship_fight_aftermath(const RolfTourSession &session)
     return state && state->aftermath ? &*state->aftermath : nullptr;
 }
 
-original::ShipCombat &ShipFightAccess::open(RolfTourSession &session,
-                                            const original::ShipCombatOptions &options)
+void ShipService::begin(TownServiceHost &host, std::uint64_t request, ShipCombatCall call)
 {
-    auto &snapshot = session.snapshot_;
-    auto &state = session.ship_fight_;
-    const auto &town = session.town_;
-    if (snapshot.phase != TourPhase::ship_combat || !snapshot.ship_combat || !session.campaign_ ||
+    auto &snapshot = host.screen();
+    snapshot.ship_combat = call;
+    ship_combat_request_ = request;
+    ship_fight_ = std::make_shared<ShipFightState>();
+    snapshot.continue_ticket = host.new_ticket();
+    snapshot.phase = TourPhase::ship_combat;
+    ++snapshot.revision;
+}
+
+original::ShipCombat &ShipService::open(TownServiceHost &host, const PhlanResources *town,
+                                        const original::ShipCombatOptions &options)
+{
+    auto &snapshot = host.screen();
+    auto &state = ship_fight_;
+    if (snapshot.phase != TourPhase::ship_combat || !snapshot.ship_combat || !host.campaign() ||
         !town || !state || !town->buck_rogers_ship_fight_files)
     {
         throw EclError("No ship fight waits");
@@ -888,8 +894,8 @@ original::ShipCombat &ShipFightAccess::open(RolfTourSession &session,
     }
     // A new enemy ship of its type takes the next of its names
     // (saveload.pas LoadShipData).
-    auto &machine = session.machine_;
-    const auto request = session.ship_combat_request_;
+    auto &machine = host.script_machine();
+    const auto request = ship_combat_request_;
     const EclAddress count_cell{enemy_ship_count_cell(call.enemy_type)};
     const auto count = machine.variable(count_cell) & 0xFFu;
     const std::array named{
@@ -899,7 +905,7 @@ original::ShipCombat &ShipFightAccess::open(RolfTourSession &session,
         throw EclError("The ship-name count is not the script's");
     }
     std::vector<original::TeamMember> crew;
-    for (const auto &member : team_of(*session.campaign_))
+    for (const auto &member : team_of(*host.campaign()))
     {
         crew.push_back({member.record.creature, member.record.items, false, false});
     }
@@ -907,10 +913,10 @@ original::ShipCombat &ShipFightAccess::open(RolfTourSession &session,
     auto dice = std::make_shared<RandomState>(
         RandomState{(static_cast<std::uint64_t>(machine.host_random(request, 65536)) << 16) |
                     machine.host_random(request, 65536)});
-    auto start = ship_combat_start(
-        session.game(), party_ship_in(machine, town->buck_rogers_party_ship.size()),
-        *town->buck_rogers_ship_fight_files, call, enemy_ship_name(call.enemy_type, count),
-        std::move(crew), options);
+    auto start =
+        ship_combat_start(host.game(), party_ship_in(machine, town->buck_rogers_party_ship.size()),
+                          *town->buck_rogers_ship_fight_files, call,
+                          enemy_ship_name(call.enemy_type, count), std::move(crew), options);
     state->open.emplace(ShipFightState::Open{options, dice,
                                              original::ShipCombat(std::move(start),
                                                                   [dice](int sides)
@@ -942,22 +948,29 @@ std::vector<CombatArt> RolfTourSession::buck_rogers_team_art() const
 
 bool RolfTourSession::finish_ship_combat(std::uint64_t ticket)
 {
-    if (snapshot_.phase != TourPhase::ship_combat || ticket != snapshot_.continue_ticket ||
+    return ship_service_.finish_ship_combat(*this, ticket);
+}
+
+bool ShipService::finish_ship_combat(TownServiceHost &host, std::uint64_t ticket)
+{
+    auto &snapshot = host.screen();
+    auto *campaign = host.campaign();
+    if (snapshot.phase != TourPhase::ship_combat || ticket != snapshot.continue_ticket ||
         !ship_combat_request_ || !ship_fight_ || !ship_fight_->open ||
-        !ship_fight_->open->combat.over() || !campaign_)
+        !ship_fight_->open->combat.over() || !campaign)
     {
         return false;
     }
     auto &fight = *ship_fight_->open;
-    auto aftermath = follow_ship_fight(game(), fight.combat.end(), fight.options, *fight.dice);
+    auto aftermath = follow_ship_fight(host.game(), fight.combat.end(), fight.options, *fight.dice);
     // The team's records as the fight and what followed it left them.
-    const auto team = team_of(*campaign_);
+    const auto team = team_of(*campaign);
     for (std::size_t n = 0; n < team.size() && n < aftermath.end.crew.size(); ++n)
     {
         auto record = team[n].record;
         record.creature = aftermath.end.crew[n].character;
         record.items = aftermath.end.crew[n].items;
-        campaign_->keep_game_record(team[n].id, original::encode_ground_record(record));
+        campaign->keep_game_record(team[n].id, original::encode_ground_record(record));
     }
     if (aftermath.end.boarded)
     {
@@ -966,17 +979,17 @@ bool RolfTourSession::finish_ship_combat(std::uint64_t ticket)
     }
     const bool destroyed = aftermath.team_destroyed;
     ship_fight_->aftermath = std::move(aftermath);
-    snapshot_.ship_combat.reset();
+    snapshot.ship_combat.reset();
     if (destroyed)
     {
         // The team is destroyed (postcbt.pas PostCombat).
         ship_combat_request_ = 0;
-        snapshot_.dialogue = "YOUR TEAM HAS BEEN DESTROYED.";
-        snapshot_.phase = TourPhase::defeated;
-        ++snapshot_.revision;
+        snapshot.dialogue = "YOUR TEAM HAS BEEN DESTROYED.";
+        snapshot.phase = TourPhase::defeated;
+        ++snapshot.revision;
         return true;
     }
-    EclHostReply reply = character_reply(selected_character_);
+    EclHostReply reply = host.character_reply(host.selected_character());
     for (const auto &cell :
          ship_memory_cells(original::ship_combat_memory(ship_fight_->aftermath->end)))
     {
@@ -988,13 +1001,13 @@ bool RolfTourSession::finish_ship_combat(std::uint64_t ticket)
                       });
         reply.writes.push_back({address, cell.value});
     }
-    if (!machine_.resume_host(std::exchange(ship_combat_request_, 0), reply))
+    if (!host.script_machine().resume_host(std::exchange(ship_combat_request_, 0), reply))
     {
         throw EclError("Ship fight reply rejected");
     }
-    snapshot_.phase = TourPhase::running;
-    ++snapshot_.revision;
-    advance(0);
+    snapshot.phase = TourPhase::running;
+    ++snapshot.revision;
+    host.advance(0);
     return true;
 }
 
@@ -1208,11 +1221,12 @@ void RolfTourSession::configure_buck_rogers()
     solar_area_kind_seen_.reset();
 }
 
-std::string RolfTourSession::buck_rogers_item_name(const buck_rogers::Item &item) const
+std::string BuckRogersMenuService::buck_rogers_item_name(const PhlanResources &town,
+                                                         const buck_rogers::Item &item)
 {
     // Its words in reverse order (charhlp.pas PrintItemString).
     std::string name;
-    const auto &words = town_->buck_rogers_item_words;
+    const auto &words = town.buck_rogers_item_words;
     for (const auto part : item.name_parts)
     {
         if (part != 0 && part < words.size())
@@ -1392,14 +1406,14 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
         loot_experience += record->creature.experience_award;
         if (!solo)
         {
-            buck_rogers_pool_ += record->creature.credits;
+            buck_rogers_menus_.add_credits(record->creature.credits);
             for (auto item : record->items)
             {
                 if (takes_gear && (item.flags & 0x40) == 0)
                 {
                     item.flags =
                         static_cast<std::uint8_t>(item.flags & ~buck_rogers::Item::readied);
-                    buck_rogers_booty_.insert(buck_rogers_booty_.begin(), item);
+                    buck_rogers_menus_.add_booty(item);
                 }
             }
         }
@@ -1496,8 +1510,7 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
                 campaign_->remove(unit.id);
             }
         }
-        buck_rogers_booty_.clear();
-        buck_rogers_pool_ = 0;
+        buck_rogers_menus_.clear_booty();
     }
     repair_after_boarding(combat_request_);
     const auto request = std::exchange(combat_request_, 0);
@@ -1522,7 +1535,8 @@ void RolfTourSession::repair_after_boarding(std::uint64_t request)
     auto team = team_of(*campaign_);
     const auto crew = team_members(team);
     auto ship = party_ship_in(machine_, town_->buck_rogers_party_ship.size());
-    auto *boarded = ship_fight_ && ship_fight_->boarded ? &*ship_fight_->boarded : nullptr;
+    auto *fight = ship_service_.state();
+    auto *boarded = fight && fight->boarded ? &*fight->boarded : nullptr;
     const auto options = boarded ? boarded->options : original::ShipCombatOptions{};
     auto *captured = boarded ? &boarded->ship : nullptr;
     const int experience = boarded ? boarded->experience : 0;
@@ -1535,9 +1549,9 @@ void RolfTourSession::repair_after_boarding(std::uint64_t request)
                               {
                                   return roll_die(random, sides);
                               });
-    if (ship_fight_)
+    if (fight)
     {
-        ship_fight_->boarded.reset();
+        fight->boarded.reset();
     }
     if (report.experience_share > 0)
     {
@@ -1595,13 +1609,9 @@ void RolfTourSession::finish_buck_rogers_fight(std::uint64_t request, std::uint1
     {
         throw EclError("The fight's end cells are not the script's");
     }
-    if (!buck_rogers_booty_.empty() || buck_rogers_pool_ != 0)
+    if (buck_rogers_menus_.booty_waiting())
     {
-        BuckRogersMenu menu;
-        menu.kind = BuckRogersMenu::Kind::booty;
-        menu.request = request;
-        buck_rogers_menu_ = std::move(menu);
-        show_buck_rogers_menu(BuckRogersMenu::Kind::booty);
+        buck_rogers_menus_.open_menu(*this, BuckRogersMenuService::Kind::booty, request);
         return;
     }
     if (!machine_.resume_host(request, character_reply(selected_character_)))
@@ -1611,14 +1621,25 @@ void RolfTourSession::finish_buck_rogers_fight(std::uint64_t request, std::uint1
     ++snapshot_.revision;
 }
 
-void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
-                                            std::vector<rules::Message> notice)
+void BuckRogersMenuService::open_menu(TownServiceHost &host, Kind kind, std::uint64_t request,
+                                      std::vector<buck_rogers::Item> stock)
+{
+    BuckRogersMenu menu;
+    menu.kind = kind;
+    menu.request = request;
+    menu.stock = std::move(stock);
+    buck_rogers_menu_ = std::move(menu);
+    show_buck_rogers_menu(host, kind);
+}
+
+void BuckRogersMenuService::show_buck_rogers_menu(TownServiceHost &host, BuckRogersMenu::Kind kind,
+                                                  std::vector<rules::Message> notice)
 {
     if (kind != BuckRogersMenu::Kind::team && kind != BuckRogersMenu::Kind::rest)
     {
         // Shop and booty use the member selected in the party list. A
         // script's last LOAD CHARACTER must not lock every purchase to it.
-        selected_character_ = campaign_->state().selected_slot;
+        host.select_character(host.campaign()->state().selected_slot);
     }
     auto &menu = *buck_rogers_menu_;
     menu.kind = kind;
@@ -1630,8 +1651,9 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         choices.push_back(std::move(label));
         menu.choices.push_back({action, index});
     };
-    const auto id = campaign_->state().slots.at(acting_slot(*campaign_, selected_character_));
-    const auto shopper = id ? original::buck_rogers_record_of(campaign_->game_record(id))
+    const auto id =
+        host.campaign()->state().slots.at(acting_slot(*host.campaign(), host.selected_character()));
+    const auto shopper = id ? original::buck_rogers_record_of(host.campaign()->game_record(id))
                             : std::optional<original::GroundRecord>{};
     const auto credits_notice = [&]
     {
@@ -1641,14 +1663,16 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
                                {"pool", std::to_string(buck_rogers_pool_)}}};
     };
     std::vector<rules::Message> dialogue = std::move(notice);
-    const auto multiplier = static_cast<std::uint8_t>(machine_.variable(EclAddress{0x7F6D}) & 0xFF);
+    const auto multiplier =
+        static_cast<std::uint8_t>(host.script_machine().variable(EclAddress{0x7F6D}) & 0xFF);
     switch (kind)
     {
     case BuckRogersMenu::Kind::booty:
         dialogue.push_back({"The booty:", {}});
         for (std::size_t n = 0; n < buck_rogers_booty_.size(); ++n)
         {
-            add({"Take {item}", {{"item", buck_rogers_item_name(buck_rogers_booty_[n])}}},
+            add({"Take {item}",
+                 {{"item", buck_rogers_item_name(host.town_resources(), buck_rogers_booty_[n])}}},
                 Action::take_item, n);
         }
         if (buck_rogers_pool_ != 0)
@@ -1678,7 +1702,7 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         for (std::size_t n = 0; n < menu.stock.size(); ++n)
         {
             add({"{item}: {price} credits",
-                 {{"item", buck_rogers_item_name(menu.stock[n])},
+                 {{"item", buck_rogers_item_name(host.town_resources(), menu.stock[n])},
                   {"price", std::to_string(original::shop_price(menu.stock[n], multiplier))}}},
                 Action::buy, n);
         }
@@ -1689,7 +1713,7 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         for (std::size_t n = 0; shopper && n < shopper->items.size(); ++n)
         {
             add({"{item}: {price} credits",
-                 {{"item", buck_rogers_item_name(shopper->items[n])},
+                 {{"item", buck_rogers_item_name(host.town_resources(), shopper->items[n])},
                   {"price", std::to_string(original::sale_price(shopper->items[n]))}}},
                 Action::sell, n);
         }
@@ -1700,21 +1724,21 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         for (std::size_t n = 0; shopper && n < shopper->items.size(); ++n)
         {
             const auto &weapon = shopper->items[n];
-            if (!original::takes_ammunition(weapon, town_->buck_rogers_item_types))
+            if (!original::takes_ammunition(weapon, host.town_resources().buck_rogers_item_types))
             {
                 continue;
             }
-            const auto clip =
-                original::ammunition_offer(weapon, town_->buck_rogers_item_types, false);
-            const auto fill =
-                original::ammunition_offer(weapon, town_->buck_rogers_item_types, true);
+            const auto clip = original::ammunition_offer(
+                weapon, host.town_resources().buck_rogers_item_types, false);
+            const auto fill = original::ammunition_offer(
+                weapon, host.town_resources().buck_rogers_item_types, true);
             add({"{item}: {rounds} rounds for {price} credits",
-                 {{"item", buck_rogers_item_name(weapon)},
+                 {{"item", buck_rogers_item_name(host.town_resources(), weapon)},
                   {"rounds", std::to_string(clip.rounds)},
                   {"price", std::to_string(clip.cost)}}},
                 Action::ammunition_clip, n);
             add({"{item}: {rounds} rounds for {price} credits",
-                 {{"item", buck_rogers_item_name(weapon)},
+                 {{"item", buck_rogers_item_name(host.town_resources(), weapon)},
                   {"rounds", std::to_string(fill.rounds)},
                   {"price", std::to_string(fill.cost)}}},
                 Action::ammunition_fill, n);
@@ -1723,13 +1747,13 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         break;
     case BuckRogersMenu::Kind::team:
         dialogue.push_back({"Who will train?", {}});
-        for (std::size_t slot = 0; slot < campaign_->state().slots.size(); ++slot)
+        for (std::size_t slot = 0; slot < host.campaign()->state().slots.size(); ++slot)
         {
-            const auto member = campaign_->state().slots[slot];
+            const auto member = host.campaign()->state().slots[slot];
             const auto record =
-                member ? original::buck_rogers_record_of(campaign_->game_record(member))
+                member ? original::buck_rogers_record_of(host.campaign()->game_record(member))
                        : std::optional<original::GroundRecord>{};
-            if (record && original::training_refusal(record->creature, game()) ==
+            if (record && original::training_refusal(record->creature, host.game()) ==
                               original::TrainingRefusal::none)
             {
                 add({"Train {name}", {{"name", record->creature.name}}}, Action::train, slot);
@@ -1742,10 +1766,10 @@ void RolfTourSession::show_buck_rogers_menu(BuckRogersMenu::Kind kind,
         add({"Exit", {}}, Action::leave);
         break;
     }
-    show_host_menu(std::move(dialogue), std::move(choices));
+    host.show_host_menu(std::move(dialogue), std::move(choices));
 }
 
-bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
+bool BuckRogersMenuService::choose_in_buck_rogers_menu(TownServiceHost &host, std::size_t choice)
 {
     auto &menu = *buck_rogers_menu_;
     if (choice >= menu.choices.size())
@@ -1756,13 +1780,14 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
     using Kind = BuckRogersMenu::Kind;
     if (menu.kind != Kind::team && menu.kind != Kind::rest)
     {
-        selected_character_ = campaign_->state().selected_slot;
+        host.select_character(host.campaign()->state().selected_slot);
     }
     const auto picked = menu.choices[choice];
-    const auto id = campaign_->state().slots.at(acting_slot(*campaign_, selected_character_));
-    auto team = team_of(*campaign_);
-    const auto current =
-        std::ranges::find(team, acting_slot(*campaign_, selected_character_), &TeamPlace::slot);
+    const auto id =
+        host.campaign()->state().slots.at(acting_slot(*host.campaign(), host.selected_character()));
+    auto team = team_of(*host.campaign());
+    const auto current = std::ranges::find(
+        team, acting_slot(*host.campaign(), host.selected_character()), &TeamPlace::slot);
     std::vector<rules::Message> notice;
     const auto keep_team = [&](std::vector<original::TeamMember> &members)
     {
@@ -1770,7 +1795,8 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
         {
             team[n].record.creature = members[n].character;
             team[n].record.items = members[n].items;
-            campaign_->keep_game_record(team[n].id, original::encode_ground_record(team[n].record));
+            host.campaign()->keep_game_record(team[n].id,
+                                              original::encode_ground_record(team[n].record));
         }
     };
     const auto keep_current = [&](const original::TeamMember &member)
@@ -1779,10 +1805,12 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
         current->record.items = member.items;
         // Native saves cache only the types their items used. A purchase or
         // loot pickup can add another type, whose row comes from this game.
-        current->record.types = town_->buck_rogers_item_types;
-        campaign_->keep_game_record(current->id, original::encode_ground_record(current->record));
+        current->record.types = host.town_resources().buck_rogers_item_types;
+        host.campaign()->keep_game_record(current->id,
+                                          original::encode_ground_record(current->record));
     };
-    const auto multiplier = static_cast<std::uint8_t>(machine_.variable(EclAddress{0x7F6D}) & 0xFF);
+    const auto multiplier =
+        static_cast<std::uint8_t>(host.script_machine().variable(EclAddress{0x7F6D}) & 0xFF);
     original::CreditPool pool{buck_rogers_pool_};
     auto next = menu.kind;
     switch (picked.action)
@@ -1880,9 +1908,9 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
         }
         else
         {
-            const auto bought =
-                original::buy_ammunition(member, picked.index, town_->buck_rogers_item_types,
-                                         picked.action == Action::ammunition_fill, pool);
+            const auto bought = original::buy_ammunition(
+                member, picked.index, host.town_resources().buck_rogers_item_types,
+                picked.action == Action::ammunition_fill, pool);
             if (bought == original::AmmunitionResult::not_enough_money)
             {
                 notice.push_back({"Not enough credits.", {}});
@@ -1907,34 +1935,35 @@ bool RolfTourSession::choose_in_buck_rogers_menu(std::size_t choice)
             return false;
         }
         RandomState random{
-            (static_cast<std::uint64_t>(machine_.host_random(menu.request, 65536)) << 16) |
-            machine_.host_random(menu.request, 65536)};
+            (static_cast<std::uint64_t>(host.script_machine().host_random(menu.request, 65536))
+             << 16) |
+            host.script_machine().host_random(menu.request, 65536)};
         auto trained = member->record.creature;
-        original::train_buck_rogers_character(trained, game(), random);
+        original::train_buck_rogers_character(trained, host.game(), random);
         buck_rogers_training_.emplace(BuckRogersTraining{
-            member->id, original::BuckRogersTrainingChoices(std::move(trained), game())});
-        snapshot_.choices.clear();
-        snapshot_.host_choices.clear();
-        snapshot_.phase = TourPhase::training;
-        ++snapshot_.revision;
+            member->id, original::BuckRogersTrainingChoices(std::move(trained), host.game())});
+        host.screen().choices.clear();
+        host.screen().host_choices.clear();
+        host.screen().phase = TourPhase::training;
+        ++host.screen().revision;
         return true;
     }
     case Action::rest_a_day:
-        rest_buck_rogers_team(original::rest_days);
+        rest_buck_rogers_team(*host.campaign(), original::rest_days);
         notice.push_back({"The team rests a day.", {}});
         break;
     case Action::leave:
         buck_rogers_pool_ = pool.credits;
-        close_buck_rogers_menu();
+        close_buck_rogers_menu(host);
         return true;
     }
     (void)id;
     buck_rogers_pool_ = pool.credits;
-    show_buck_rogers_menu(next, std::move(notice));
+    show_buck_rogers_menu(host, next, std::move(notice));
     return true;
 }
 
-original::BuckRogersTrainingChoices &RolfTourSession::training_in_progress()
+original::BuckRogersTrainingChoices &BuckRogersMenuService::training_in_progress()
 {
     if (!buck_rogers_training_)
     {
@@ -1943,38 +1972,40 @@ original::BuckRogersTrainingChoices &RolfTourSession::training_in_progress()
     return buck_rogers_training_->choices;
 }
 
-original::SkillRefusal RolfTourSession::raise_training_skill(original::Skill skill)
+original::SkillRefusal BuckRogersMenuService::raise_training_skill(TownServiceHost &host,
+                                                                   original::Skill skill)
 {
     const auto refusal = training_in_progress().add_skill(skill);
-    ++snapshot_.revision;
+    ++host.screen().revision;
     return refusal;
 }
 
-bool RolfTourSession::lower_training_skill(original::Skill skill)
+bool BuckRogersMenuService::lower_training_skill(TownServiceHost &host, original::Skill skill)
 {
     const bool lowered = training_in_progress().subtract_skill(skill);
-    ++snapshot_.revision;
+    ++host.screen().revision;
     return lowered;
 }
 
-bool RolfTourSession::specialize_in_training(std::uint8_t item_type)
+bool BuckRogersMenuService::specialize_in_training(TownServiceHost &host, std::uint8_t item_type)
 {
     auto &choices = training_in_progress();
-    const auto offered = original::specializable_weapon_types(town_->buck_rogers_templates);
+    const auto offered =
+        original::specializable_weapon_types(host.town_resources().buck_rogers_templates);
     const bool chosen =
         std::ranges::find(offered, item_type) != offered.end() && choices.specialize(item_type);
-    ++snapshot_.revision;
+    ++host.screen().revision;
     return chosen;
 }
 
-bool RolfTourSession::unspecialize_in_training(std::uint8_t item_type)
+bool BuckRogersMenuService::unspecialize_in_training(TownServiceHost &host, std::uint8_t item_type)
 {
     const bool taken_back = training_in_progress().unspecialize(item_type);
-    ++snapshot_.revision;
+    ++host.screen().revision;
     return taken_back;
 }
 
-void RolfTourSession::finish_buck_rogers_training()
+void BuckRogersMenuService::finish_buck_rogers_training(TownServiceHost &host)
 {
     const auto &choices = training_in_progress();
     if (!choices.complete())
@@ -1982,50 +2013,81 @@ void RolfTourSession::finish_buck_rogers_training()
         throw std::logic_error("Choose the weapon specialization first");
     }
     const auto id = buck_rogers_training_->member;
-    auto record = original::buck_rogers_record_of(campaign_->game_record(id));
+    auto record = original::buck_rogers_record_of(host.campaign()->game_record(id));
     if (!record)
     {
         throw std::logic_error("The trainee has no record");
     }
     record->creature = choices.character();
-    campaign_->keep_game_record(id, original::encode_ground_record(*record));
+    host.campaign()->keep_game_record(id, original::encode_ground_record(*record));
     buck_rogers_training_.reset();
     show_buck_rogers_menu(
-        BuckRogersMenu::Kind::team,
+        host, BuckRogersMenu::Kind::team,
         {{"{name} trains to level {level}.",
           {{"name", record->creature.name}, {"level", std::to_string(record->creature.level)}}}});
 }
 
-void RolfTourSession::rest_buck_rogers_team(int days)
+void BuckRogersMenuService::rest_buck_rogers_team(CampaignParty &campaign, int days)
 {
-    auto team = team_of(*campaign_);
+    auto team = team_of(campaign);
     auto members = team_members(team);
     original::rest_and_heal(members, days);
     for (std::size_t n = 0; n < team.size(); ++n)
     {
         team[n].record.creature = members[n].character;
-        campaign_->keep_game_record(team[n].id, original::encode_ground_record(team[n].record));
+        campaign.keep_game_record(team[n].id, original::encode_ground_record(team[n].record));
     }
-    campaign_->advance_time(std::chrono::hours{24} * days);
+    campaign.advance_time(std::chrono::hours{24} * days);
 }
 
-void RolfTourSession::close_buck_rogers_menu()
+void BuckRogersMenuService::close_buck_rogers_menu(TownServiceHost &host)
 {
     const auto request = buck_rogers_menu_->request;
     // Booty or credits left behind are lost (postcbt.pas LootMenu, shop.pas).
     buck_rogers_booty_.clear();
     buck_rogers_pool_ = 0;
     buck_rogers_menu_.reset();
-    snapshot_.host_dialogue.clear();
-    snapshot_.host_choices.clear();
-    snapshot_.choices.clear();
-    snapshot_.phase = TourPhase::running;
-    if (!machine_.resume_host(request, character_reply(selected_character_)))
+    host.screen().host_dialogue.clear();
+    host.screen().host_choices.clear();
+    host.screen().choices.clear();
+    host.screen().phase = TourPhase::running;
+    if (!host.script_machine().resume_host(request,
+                                           host.character_reply(host.selected_character())))
     {
         throw EclError("The menu's end was rejected");
     }
-    ++snapshot_.revision;
-    advance(0);
+    ++host.screen().revision;
+    host.advance(0);
+}
+
+const BuckRogersTraining *RolfTourSession::buck_rogers_training() const noexcept
+{
+    return buck_rogers_menus_.buck_rogers_training();
+}
+
+original::SkillRefusal RolfTourSession::raise_training_skill(original::Skill skill)
+{
+    return buck_rogers_menus_.raise_training_skill(*this, skill);
+}
+
+bool RolfTourSession::lower_training_skill(original::Skill skill)
+{
+    return buck_rogers_menus_.lower_training_skill(*this, skill);
+}
+
+bool RolfTourSession::specialize_in_training(std::uint8_t item_type)
+{
+    return buck_rogers_menus_.specialize_in_training(*this, item_type);
+}
+
+bool RolfTourSession::unspecialize_in_training(std::uint8_t item_type)
+{
+    return buck_rogers_menus_.unspecialize_in_training(*this, item_type);
+}
+
+void RolfTourSession::finish_buck_rogers_training()
+{
+    buck_rogers_menus_.finish_buck_rogers_training(*this);
 }
 
 } // namespace opengold::por
