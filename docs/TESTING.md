@@ -26,47 +26,37 @@ constexpr functions and in lambdas run to initialize a constexpr value, where
 C++20 forbids it. `tools/static_tables.py` finds them; the
 `opengold_static_tables` check fails on a new one.
 
-Still failing on Windows: `opengold_curse_earned_ending`,
-`opengold_treasure_earned_ending` (loses at Luskan, map 31, first reached at
-beat 725) and `opengold_darkness_route`, which runs several times longer than
-on Linux. Each Windows run is deterministic.
+Then still failing on Windows: `opengold_curse_earned_ending` and
+`opengold_treasure_earned_ending`; `opengold_darkness_route` passed but ran
+about eight times as long as on the Mac. All three are resolved: see
+"Windows earned endings (2026-11-27)" below.
 
-- The Curse ending now matches the recorded Linux run
-  ([PLAYABILITY.md](PLAYABILITY.md): 187 beats, 84 fights, warriors and
-  clerics level 8, the mage 9) through beat 186. Run alone, it loses only the
-  final battle with Tyranthraxus, at map 67 (6,1), in 1,890 s. That battle's
-  tries are seeded the same on every platform (7 + try), so the difference
-  lies inside one battle's play.
-- Ruled out: dice order across call arguments (no call has two arguments that
-  roll), floating point (the rules use none), sorts with ties, the game files
-  (byte-identical to Steam's), and other function-local `constexpr` objects
-  (all scalars or addresses).
-- Played from a save at beat 186, Windows loses all of the battle's tries,
-  each within 4 to 8 rounds. Hundreds of them under an MSVC
-  AddressSanitizer build (`/fsanitize=address`) and a checked build (`/MDd
-  /O2`, debug iterators on) report no fault.
-- The Treasures ending is the same kind of failure. At beat 746 the route
-  walks through the Luskan captain's stronghold to Redleg's refuge. Its six
-  Hosttower sorceresses' Lightning Bolts and Fireballs win about 2,935 of
-  2,950 tries on Windows; on Linux the same plan gets through.
-- To find the difference, play one battle from the same save on Windows and
-  on macOS and compare its first try:
+### Windows earned endings (2026-11-27)
 
-  ```sh
-  # Windows: make the saves (each takes the route up to the battle).
-  OPENGOLD_ROUTE_BEATS=186 OPENGOLD_ROUTE_SAVE=curse-beat186.sav \
-    opengold_gold_box_games_tests --curse-earned-ending
-  OPENGOLD_ROUTE_BEATS=724 OPENGOLD_ROUTE_SAVE=treasure-beat724.sav \
-    OPENGOLD_GATEWAY_WINNERS=gateway-earned-winners.sav \
-    opengold_gold_box_games_tests --treasure-earned-ending
-  # Each platform, from the same save: every try's log.
-  OPENGOLD_ROUTE_RESUME=curse-beat186.sav OPENGOLD_FIGHT_LOG_ALL=1 \
-    OPENGOLD_FIGHT_SCORES=1 opengold_gold_box_games_tests --curse-earned-ending
-  ```
+There was no Windows bug (#461). The difference was on the Mac.
 
-  The two first tries of the Tyranthraxus battle (the lines after the first
-  `try 0` following a `fight:` line with TYRANTHRAXUS) should read the same;
-  the first line where they part is the bug.
+- **The cause.** Before 16ef74866, Clang on Apple Silicon fused multiply-adds
+  in the combat AI's area-spell aiming (FMA); MSVC never does. Since
+  `-ffp-contract=off`, the Mac plays every battle exactly as Windows does.
+  Darkness's 46,936 fight tries, 12,840 of them at map 70 (4,10), are what
+  both machines play: its Windows time is the true cost, not slow code.
+- **Why it looked like Windows.** The Curse save these tests were compared
+  from was made before 59189b68c taught the route to keep its spells for
+  Tyranthraxus, so it loses on any machine.
+- **Ruled out on Windows on the way:** MSVC code generation (clang-cl 21 plays
+  identically), unset values (`-ftrivial-auto-var-init=zero` and `=pattern`,
+  and MSVC `/analyze`), UBSan in trap mode, AddressSanitizer, checked
+  iterators, and CRLF data files.
+- **Result.** At 425fe7e6 with the MSVC build fixes, run the way ctest runs
+  them: `opengold_gateway_earned_ending` passes in 380 s,
+  `opengold_curse_earned_ending` in 794 s and
+  `opengold_treasure_earned_ending` in 4,638 s.
+
+To compare one battle across platforms again, save the route just before it
+(`OPENGOLD_ROUTE_BEATS=N OPENGOLD_ROUTE_SAVE=file`) from the code being
+compared, replay it on each machine (`OPENGOLD_ROUTE_RESUME=file
+OPENGOLD_FIGHT_LOG_ALL=1 OPENGOLD_FIGHT_SCORES=1`), and diff the logs after
+stripping Windows line endings.
 
 Run on a busy machine, the Secret route (820 s alone, limit 1,500 s), the
 Curse earned ending, the DOS probe experiments (about 1,450 s alone) and the
