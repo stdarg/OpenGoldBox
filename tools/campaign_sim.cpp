@@ -759,37 +759,42 @@ unsigned enemy_record(const Fight &fight, rules::EntityId id)
     throw std::out_of_range("No such enemy");
 }
 
-// An open area `width` squares wide between walls: the party at the west end,
-// the monsters 14 squares east (ogres in front of trolls in a one-square
-// corridor, side by side when there is room).
+// An open area `width` squares wide between walls: the party at the north end,
+// the monsters 14 squares south (ogres in front of trolls in a one-square
+// corridor, side by side when there is room). It runs north to south because
+// ogres and trolls fill 1 by 2 squares: in file, they fit a one-square corridor.
 CampaignEncounter arena_encounter(const ToolContext &context, unsigned width, const Fight &fight,
                                   std::size_t members)
 {
-    const int length = 30, height = static_cast<int>(width) + 2;
     CampaignEncounter arena;
-    arena.field.geometry = {length, height,
-                            std::vector<rules::Terrain>(static_cast<std::size_t>(length * height))};
-    for (int x = 0; x < length; ++x)
+    const auto column = [&](std::size_t n)
     {
-        arena.field.geometry.terrain[static_cast<std::size_t>(x)] =
-            arena.field.geometry.terrain[static_cast<std::size_t>((height - 1) * length + x)] =
-                rules::Terrain::obstacle;
-    }
-    arena.field.tiles.resize(static_cast<std::size_t>(length * height), 7);
-    const auto place = [&](std::size_t n, int front, int step)
-    {
-        return rules::Cell{front + step * static_cast<int>(n / width),
-                           1 + static_cast<int>(n % width)};
+        return 1 + static_cast<int>(n % width);
     };
     for (std::size_t n = 0; n < members; ++n)
     {
-        arena.positions.push_back(place(n, 6, -1));
+        arena.positions.push_back({column(n), 6 - static_cast<int>(n / width)});
     }
     add_enemies(context, arena, fight);
+    // A monster stands behind the one before it in its column.
+    std::vector<int> next_row(width, 20);
     for (std::size_t n = 0; n < arena.enemies.size(); ++n)
     {
-        arena.positions.push_back(place(n, 20, 1));
+        auto &row = next_row[n % width];
+        arena.positions.push_back({column(n), row});
+        row += arena.enemies[n].footprint.height;
     }
+    const int across = static_cast<int>(width) + 2;
+    const int length = std::max(30, std::ranges::max(next_row));
+    arena.field.geometry = {across, length,
+                            std::vector<rules::Terrain>(static_cast<std::size_t>(across * length))};
+    for (int y = 0; y < length; ++y)
+    {
+        arena.field.geometry.terrain[static_cast<std::size_t>(y * across)] =
+            arena.field.geometry.terrain[static_cast<std::size_t>(y * across + across - 1)] =
+                rules::Terrain::obstacle;
+    }
+    arena.field.tiles.resize(static_cast<std::size_t>(across * length), 7);
     return arena;
 }
 
