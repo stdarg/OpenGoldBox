@@ -2,20 +2,25 @@
 #define OPENGOLD_COMBAT_DEMO_H
 #include "opengold/campaign_encounter.h"
 #include "opengold/rules.h"
-#include "opengold/ecl_machine.h"
-#include "opengold/creature_catalog.h"
-#include "opengold/formats.h"
-#include "opengold/campaign_party.h"
+#include "opengold/character_rules.h"
 #include "opengold/difficulty.h"
-#include "opengold/dungeon_battlefield.h"
-#include "opengold/monster_bundle.h"
+#include "opengold/ecl_address.h"
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace opengold
 {
+namespace por
+{
+struct MonsterBundle;
+}
+
+class CampaignParty;
+
 // A bounded demonstration/campaign adapter. It depends on the rules interface,
 // never on a specific edition. The application supplies the selected module.
 class CombatDemo
@@ -33,10 +38,7 @@ class CombatDemo
 
     // When a campaign fight ends every member is back under the player's
     // control, unless the Options screen keeps Quick for the next fight.
-    void keep_quick(bool keep) noexcept
-    {
-        keep_quick_ = keep;
-    }
+    void keep_quick(bool keep) noexcept;
 
     void training(std::uint64_t seed = 42, bool conditions = false);
     void slums(const std::filesystem::path &game_directory, std::uint64_t seed = 42,
@@ -44,15 +46,8 @@ class CombatDemo
                Difficulty difficulty = default_difficulty);
     void encounter(CampaignEncounter encounter, std::uint64_t seed);
 
-    [[nodiscard]] const auto &battlefield_tiles() const
-    {
-        return battlefield_tiles_;
-    }
-
-    [[nodiscard]] const auto &terrain_art() const
-    {
-        return terrain_art_;
-    }
+    [[nodiscard]] const std::vector<std::uint8_t> &battlefield_tiles() const;
+    [[nodiscard]] const std::vector<Image> &terrain_art() const;
 
     [[nodiscard]] const rules::CombatSession &combat() const;
     bool submit(const rules::Command &command);
@@ -65,80 +60,26 @@ class CombatDemo
     [[nodiscard]] std::string save_combat() const;
     void restore_combat(std::string_view checkpoint);
 
-    [[nodiscard]] const std::string &dialogue() const noexcept
-    {
-        return dialogue_;
-    }
-
-    [[nodiscard]] const std::string &status() const noexcept
-    {
-        return status_;
-    }
-
-    [[nodiscard]] bool waiting() const noexcept
-    {
-        return menu_ticket_ != 0;
-    }
-
-    [[nodiscard]] bool has_combat() const noexcept
-    {
-        return combat_ != nullptr;
-    }
-
-    [[nodiscard]] bool is_slums() const noexcept
-    {
-        return vm_.has_value();
-    }
-
-    [[nodiscard]] bool script_complete() const noexcept
-    {
-        return vm_ && vm_->state() == por::EclState::completed;
-    }
-
+    [[nodiscard]] const std::string &dialogue() const noexcept;
+    [[nodiscard]] const std::string &status() const noexcept;
+    [[nodiscard]] bool waiting() const noexcept;
+    [[nodiscard]] bool has_combat() const noexcept;
+    [[nodiscard]] bool is_slums() const noexcept;
+    [[nodiscard]] bool script_complete() const noexcept;
     [[nodiscard]] unsigned script_variable(por::EclAddress address) const;
-
-    [[nodiscard]] const auto &art() const noexcept
-    {
-        return art_;
-    }
+    [[nodiscard]] const std::vector<CombatArt> &art() const noexcept;
 
   private:
-    class CampaignCombat
-    {
-      public:
-        explicit CampaignCombat(std::shared_ptr<CampaignParty> party);
-        ~CampaignCombat();
-        CampaignCombat(const CampaignCombat &) = delete;
-        CampaignCombat &operator=(const CampaignCombat &) = delete;
-        CampaignCombat(CampaignCombat &&) noexcept = default;
-        CampaignCombat &operator=(CampaignCombat &&) = delete;
+    // The fight's state lives in the .cpp so includers do not compile the
+    // script machine, the catalogs or the party (Effective Modern C++ Item 22).
+    class CampaignCombat;
+    struct Impl;
 
-      private:
-        std::shared_ptr<CampaignParty> party_;
-    };
-
-    std::unique_ptr<rules::RulesModule> module_;
-    std::unique_ptr<rules::CombatSession> combat_;
-    std::shared_ptr<CampaignParty> campaign_;
-    std::optional<CampaignCombat> campaign_combat_;
+    std::unique_ptr<Impl> impl_;
     void install_combat(std::unique_ptr<rules::CombatSession> next, std::string reward_id);
     void finish_campaign_combat(rules::Outcome outcome);
     void start_encounter(std::vector<rules::Participant> enemies, std::string reward_id);
     void synchronize_party();
-    std::optional<por::EclMachine> vm_;
-    std::optional<por::CreatureCatalog> creatures_;
-    std::vector<rules::Participant> enemies_;
-    std::vector<CombatArt> art_;
-    std::vector<std::uint8_t> battlefield_tiles_;
-    std::vector<Image> terrain_art_;
-    std::filesystem::path game_directory_;
-    std::shared_ptr<const por::MonsterBundle> monsters_;
-    Difficulty difficulty_{default_difficulty};
-    std::string dialogue_, status_;
-    std::uint64_t menu_ticket_{}, combat_ticket_{}, seed_{};
-    unsigned encounters_{};
-    std::string reward_id_;
-    bool keep_quick_{};
     void pump();
     void finish_combat();
 };

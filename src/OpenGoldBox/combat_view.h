@@ -1,6 +1,7 @@
 #ifndef OPENGOLD_COMBAT_VIEW_H
 #define OPENGOLD_COMBAT_VIEW_H
 #include "cached_combat.h"
+#include "opengold/character_art.h"
 #include "opengold/combat_demo.h"
 #include "spell_effects.h"
 #include <godot_cpp/classes/control.hpp>
