@@ -51,6 +51,16 @@ There was no Windows bug (#461). The difference was on the Mac.
   them: `opengold_gateway_earned_ending` passes in 380 s,
   `opengold_curse_earned_ending` in 794 s and
   `opengold_treasure_earned_ending` in 4,638 s.
+- **Full game suite** (`ctest -j6`, 12,263 s): 435 of 446 pass. The other
+  11 pass run alone: `opengold_expedition_fixtures` (680 s alone, limit
+  1,300 s) timed out under load, and the 10 Godot checks that need its
+  fixtures did not run. The Darkness route passed in 12,246 s and the Dark
+  Queen earned ending in 8,369 s.
+- **Main did not build under MSVC again.** Clang accepts `const auto *it =
+  std::find(...)` on a `std::array`, whose iterators are pointers in libc++;
+  MSVC's are classes. MSVC /W4 also rejected narrowing in braced loop lists,
+  `optional<unsigned>` compared with `int` literals and shadowed locals.
+  These are fixed.
 
 To compare one battle across platforms again, save the route just before it
 (`OPENGOLD_ROUTE_BEATS=N OPENGOLD_ROUTE_SAVE=file`) from the code being
