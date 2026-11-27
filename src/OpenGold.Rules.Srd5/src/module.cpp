@@ -4136,20 +4136,20 @@ class Module final : public RulesModule, public RestResourceRules
                                    detail::sneak_attack_dice(d.sneak_level).count *
                                    average_die(6, false);
         }
-        std::vector<std::size_t> weapons;
+        std::vector<std::size_t> weapon_slots;
         for (std::size_t i = 0; i < gear.size(); ++i)
         {
             if (detail::weapon(gear[i]))
             {
-                weapons.push_back(i);
+                weapon_slots.push_back(i);
             }
         }
-        if (weapons.size() == 2 && detail::weapon(gear[weapons[0]])->light &&
-            detail::weapon(gear[weapons[1]])->light)
+        if (weapon_slots.size() == 2 && detail::weapon(gear[weapon_slots[0]])->light &&
+            detail::weapon(gear[weapon_slots[1]])->light)
         {
             // The gear without the first weapon holds the second as its own.
             std::vector<std::string> other_hand(gear.begin(), gear.end());
-            other_hand.erase(other_hand.begin() + static_cast<std::ptrdiff_t>(weapons[0]));
+            other_hand.erase(other_hand.begin() + static_cast<std::ptrdiff_t>(weapon_slots[0]));
             auto attack =
                 melee_attack(character_definition(character_profile(sheet, other_hand).data));
             // Without Two-Weapon Fighting the ability adds no positive damage.
