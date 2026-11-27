@@ -40,7 +40,7 @@ struct TourAccess
     // for a sound no script near a test's party plays.
     static void play_sound(por::RolfTourSession &town, unsigned sound)
     {
-        town.vga_play_sound(sound);
+        town.vga_.vga_play_sound(town, sound);
     }
 
     // A copy of the script machine, to try dice on without touching the session.
@@ -73,7 +73,7 @@ struct TourAccess
         town.snapshot_.script_id = script;
         town.snapshot_.tour_finished = true;
         town.snapshot_.phase = por::TourPhase::running;
-        town.event_stage_ = por::RolfTourSession::EventStage::none;
+        town.event_stage_ = por::EventStage::none;
         town.delayed_request_ = 0;
         town.remaining_delay_ = 0;
         town.transition_ = false;
@@ -225,7 +225,7 @@ struct TourAccess
         {
             throw std::runtime_error("The script has no instruction there");
         }
-        town.event_stage_ = por::RolfTourSession::EventStage::search;
+        town.event_stage_ = por::EventStage::search;
         town.snapshot_.phase = por::TourPhase::running;
         ++town.snapshot_.revision;
         town.advance(0);

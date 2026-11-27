@@ -852,6 +852,37 @@ void TreasureService::save(Codec &codec, Treasure &treasure, const EncounterLoot
     }
 }
 
+template <class Codec, class Doors> void DoorHost::save(Codec &codec, Doors &doors)
+{
+    // The hidden entrances found or opened (SECRET-1), by their shop's id.
+    std::map<std::string, unsigned> entrances;
+    if constexpr (!Codec::reading)
+    {
+        for (const auto &[id, state] : doors.entrances_)
+        {
+            entrances[id] = static_cast<unsigned>(state);
+        }
+    }
+    codec.field(entrances);
+    if constexpr (Codec::reading)
+    {
+        doors.entrances_.clear();
+        for (const auto &[id, state] : entrances)
+        {
+            require(state <= static_cast<unsigned>(EntranceState::open), "Invalid saved entrance");
+            doors.entrances_[id] = static_cast<EntranceState>(state);
+        }
+    }
+    // The traps a Wand of Secrets pointed out (SECRET-1).
+    std::vector<unsigned> wand_traps(doors.wand_traps_.begin(), doors.wand_traps_.end());
+    codec.field(wand_traps);
+    if constexpr (Codec::reading)
+    {
+        require(wand_traps.size() <= 256 * 256, "Too many saved wand traps");
+        doors.wand_traps_ = std::set<unsigned>(wand_traps.begin(), wand_traps.end());
+    }
+}
+
 template <class Codec, class Tour> void RolfTourSession::save(Codec &codec, Tour &tour)
 {
     require(Codec::reading || (tour.can_leave() && tour.snapshot_.tour_finished &&
@@ -991,33 +1022,10 @@ template <class Codec, class Tour> void RolfTourSession::save(Codec &codec, Tour
                            *por::map_direction(static_cast<std::uint16_t>(sanctuary_facing))}};
         }
     }
-    // The hidden entrances found or opened (SECRET-1), by their shop's id.
-    std::map<std::string, unsigned> entrances;
-    if constexpr (!Codec::reading)
-    {
-        for (const auto &[id, state] : tour.entrances_)
-        {
-            entrances[id] = static_cast<unsigned>(state);
-        }
-    }
-    codec.field(entrances);
+    DoorHost::save(codec, tour.doors_);
     if constexpr (Codec::reading)
     {
-        tour.entrances_.clear();
-        for (const auto &[id, state] : entrances)
-        {
-            require(state <= static_cast<unsigned>(EntranceState::open), "Invalid saved entrance");
-            tour.entrances_[id] = static_cast<EntranceState>(state);
-        }
-        tour.apply_entrances();
-    }
-    // The traps a Wand of Secrets pointed out (SECRET-1).
-    std::vector<unsigned> wand_traps(tour.wand_traps_.begin(), tour.wand_traps_.end());
-    codec.field(wand_traps);
-    if constexpr (Codec::reading)
-    {
-        require(wand_traps.size() <= 256 * 256, "Too many saved wand traps");
-        tour.wand_traps_ = std::set<unsigned>(wand_traps.begin(), wand_traps.end());
+        tour.doors_.apply_entrances(tour);
     }
     TreasureService::save(
         codec, tour.treasure_service_,
@@ -1107,20 +1115,9 @@ template <class Codec, class Tour> void RolfTourSession::save(Codec &codec, Tour
     }
     if constexpr (Codec::reading)
     {
-        tour.combat_request_ = 0;
+        tour.encounters_.forget_for_load();
         tour.treasure_service_.forget_staged();
-        tour.door_menu_ = tour.pick_tried_ = false;
-        tour.door_choices_.clear();
-        tour.staged_enemies_.clear();
-        tour.staged_art_.clear();
-        tour.staged_undead_loads_ = 0;
-        tour.staged_allies_.clear();
-        tour.staged_ally_art_.clear();
-        tour.encounter_.reset();
-        tour.duel_ = tour.mirror_duel_ = false;
-        tour.turncoats_.clear();
-        tour.monster_picture_id_.reset();
-        tour.showing_monster_picture_ = false;
+        tour.doors_.forget_menu();
     }
     auto &s = tour.snapshot_;
     codec.fields(s.dialogue, s.prompts, s.redraws, s.footsteps, s.event_runs);
@@ -1178,10 +1175,7 @@ template <class Codec, class Tour> void RolfTourSession::save(Codec &codec, Tour
         tour.pending_movement_.reset();
         tour.shop_service_.close();
         tour.who_slots_.clear();
-        tour.encounter_outcome_.clear();
         tour.member_chosen_ = false;
-        tour.meeting_pose_.reset();
-        tour.robbed_ = false;
         tour.vault_service_.close();
         tour.temple_service_.close();
         tour.hall_service_.close();

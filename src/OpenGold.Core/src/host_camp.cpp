@@ -131,7 +131,7 @@ bool RolfTourSession::camp_warded() const
         party.push_back({sheets[n], vitals[n]});
     }
     std::vector<std::string> definitions;
-    for (const auto &enemy : staged_enemies_)
+    for (const auto &enemy : encounters_.staged_enemies())
     {
         definitions.push_back(enemy.definition);
     }

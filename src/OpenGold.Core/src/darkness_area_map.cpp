@@ -68,43 +68,48 @@ std::optional<Image> load_darkness_area_map_marker(const AreaFiles &files)
 
 } // namespace detail
 
-bool RolfTourSession::darkness_area_map() const
+bool VgaHost::darkness_area_map(const TourHost &tour) const
 {
-    return (game() == GoldBoxGame::pools_of_darkness || krynn_game(game())) && vga_area_map();
+    return (tour.game() == GoldBoxGame::pools_of_darkness || krynn_game(tour.game())) &&
+           vga_area_map(tour);
 }
 
-void RolfTourSession::publish_darkness_area_square()
+void VgaHost::publish_darkness_area_square(TourHost &tour)
 {
-    snapshot_.overland = true;
-    snapshot_.overland_x =
-        machine_.variable(krynn_game(game()) ? game_cell(ecl_overland_x) : column_cell);
-    snapshot_.overland_y =
-        machine_.variable(krynn_game(game()) ? game_cell(ecl_overland_y) : row_cell);
-    snapshot_.overland_direction = machine_.variable(game_cell(ecl_overland_direction)) % 8;
+    tour.screen().overland = true;
+    tour.screen().overland_x = tour.script_machine().variable(
+        krynn_game(tour.game()) ? tour.game_cell(ecl_overland_x) : column_cell);
+    tour.screen().overland_y = tour.script_machine().variable(
+        krynn_game(tour.game()) ? tour.game_cell(ecl_overland_y) : row_cell);
+    tour.screen().overland_direction =
+        tour.script_machine().variable(tour.game_cell(ecl_overland_direction)) % 8;
 }
 
-Image RolfTourSession::render_darkness_area_map() const
+Image VgaHost::render_darkness_area_map(const TourHost &tour) const
 {
-    const auto tile_set = krynn_game(game()) ? 0U : machine_.variable(tile_set_cell);
-    const auto picture_id = game() == GoldBoxGame::dark_queen_of_krynn
-                                ? machine_.variable(EclAddress{0x3E})
-                            : game() == GoldBoxGame::death_knights_of_krynn ? 112
-                            : game() == GoldBoxGame::champions_of_krynn     ? 121
+    const auto tile_set =
+        krynn_game(tour.game()) ? 0U : tour.script_machine().variable(tile_set_cell);
+    const auto picture_id = tour.game() == GoldBoxGame::dark_queen_of_krynn
+                                ? tour.script_machine().variable(EclAddress{0x3E})
+                            : tour.game() == GoldBoxGame::death_knights_of_krynn ? 112
+                            : tour.game() == GoldBoxGame::champions_of_krynn     ? 121
                             : tile_set < area_pictures.size() ? area_pictures[tile_set]
                                                               : 0;
-    const auto &pictures = area_resources().pictures;
+    const auto &pictures = tour.area_resources().pictures;
     const auto found = pictures.find(picture_id);
     if (found == pictures.end())
     {
         return {};
     }
     auto map = found->second;
-    if (town_->area_map_marker)
+    if (tour.town_resources().area_map_marker)
     {
-        const auto x =
-            machine_.variable(krynn_game(game()) ? game_cell(ecl_overland_x) : column_cell);
-        const auto y = machine_.variable(krynn_game(game()) ? game_cell(ecl_overland_y) : row_cell);
-        detail::draw_over(map, *town_->area_map_marker, x * square_size, y * square_size);
+        const auto x = tour.script_machine().variable(
+            krynn_game(tour.game()) ? tour.game_cell(ecl_overland_x) : column_cell);
+        const auto y = tour.script_machine().variable(
+            krynn_game(tour.game()) ? tour.game_cell(ecl_overland_y) : row_cell);
+        detail::draw_over(map, *tour.town_resources().area_map_marker, x * square_size,
+                          y * square_size);
     }
     return map;
 }

@@ -53,29 +53,6 @@ const PhlanResources &RolfTourSession::area_resources() const
     return current_area_ ? *town_->districts.at(current_area_) : *town_;
 }
 
-const EncounterOverride *
-RolfTourSession::encounter_override(const EclInstruction &instruction) const
-{
-    if (!town_)
-    {
-        return nullptr;
-    }
-    const auto bank = town_->script_banks.find(current_script_);
-    if (bank == town_->script_banks.end())
-    {
-        return nullptr;
-    }
-    const auto found =
-        town_->encounter_overrides.find({bank->second, current_script_, instruction.address});
-    return found == town_->encounter_overrides.end() ? nullptr : &found->second;
-}
-
-const ExportedMonster *RolfTourSession::exported_creature(const PhlanResources &area,
-                                                          unsigned record) const
-{
-    return town_ && town_->monsters ? town_->monsters->creature(area.bank, record) : nullptr;
-}
-
 void RolfTourSession::change_area(unsigned id)
 {
     if (id == current_area_)
@@ -109,7 +86,7 @@ void RolfTourSession::change_area(unsigned id)
     {
         wall_art_ = resource.wall_art;
     }
-    apply_entrances();
+    doors_.apply_entrances(*this);
     snapshot_.visited = visited_areas_[id];
     snapshot_.seen = seen_areas_[id];
     picture_.reset();
@@ -124,7 +101,7 @@ void RolfTourSession::enable_party_commands()
 {
     if (is_buck_rogers(game()))
     {
-        enable_buck_rogers_party_commands();
+        buck_rogers_.enable_buck_rogers_party_commands(*this);
         return;
     }
     const bool later = later_ecl_commands(game());
@@ -173,19 +150,6 @@ void RolfTourSession::attach_restored_party(std::shared_ptr<opengold::CampaignPa
 namespace
 {
 
-// The 256-color engine's scripts (Pools of Darkness's and Treasures') read a
-// fight's result with IF right after COMBAT: its PostCombat sets "equal" when
-// the party won or came through, and "not equal" when it fled (postcbt.pas).
-// The other games keep the flags and leave the result in a cell.
-[[nodiscard]] std::optional<EclConditions> vga_combat_conditions(GoldBoxGame game, bool party_stood)
-{
-    if (!vga_engine(game))
-    {
-        return std::nullopt;
-    }
-    return EclConditions{party_stood, !party_stood, false, false, false, false};
-}
-
 // GEO door code 2. The original engine answers it with "Locked." and Bash/Pick/
 // Knock/Exit; code 3 (wizard locked) needs magic or exceptional AD&D Strength.
 constexpr std::uint8_t locked_door = 2, wizard_locked_door = 3;
@@ -214,47 +178,12 @@ Edge edge_ahead(const GeoMap &map, PartyPose pose)
     return {pose.x, pose.y, pose.facing, map.wrapped_x(x), map.wrapped_y(y), reversed(pose.facing)};
 }
 
-// The script's surprise bits (0x6DCB). SURPRISE writes only 0 to 3, but a
-// script may store any number there.
-opengold::Surprise script_surprise(std::uint16_t bits)
-{
-    if (bits > static_cast<std::uint16_t>(opengold::Surprise::both))
-    {
-        throw EclError("Unsupported encounter surprise " + std::to_string(bits));
-    }
-    return static_cast<opengold::Surprise>(bits);
-}
-
-// The original's close-up portrait: an 88 x 40 HEAD record above an 88 x 48
-// BODY record.
-Image close_up_portrait(const PhlanResources &resources, unsigned head_id, unsigned body_id)
-{
-    const auto head = resources.heads.find(head_id), body = resources.bodies.find(body_id);
-    if (head == resources.heads.end() || body == resources.bodies.end() ||
-        head->second.width != 88 || body->second.width != 88 || head->second.height != 40 ||
-        body->second.height != 48)
-    {
-        throw EclError("Unsupported town portrait composition");
-    }
-    Image portrait;
-    portrait.width = portrait.height = 88;
-    portrait.rgba = head->second.rgba;
-    portrait.rgba.insert(portrait.rgba.end(), body->second.rgba.begin(), body->second.rgba.end());
-    return portrait;
-}
-
 // City Hall's script (ECL3:8), and the Cadorna Textile House's quest cells it
 // reads: the family treasure (1 sealed, 128 opened) and its reward slot.
 constexpr unsigned city_hall_script = 8;
 // The Pyramid's poisoned rivers open once its sorcerer is beaten.
 constexpr EclAddress pyramid_valley_healed{0x4AA2};
 constexpr EclAddress cadorna_box{0x4AC8}, cadorna_payment{0x4AB8};
-
-// The minute of the day on the campaign clock, which starts at noon.
-std::uint64_t clock_minute_of_day(std::uint64_t minutes)
-{
-    return (minutes % 1440 + 720) % 1440;
-}
 
 // The areas next to the loaded ones that the game cannot enter yet.
 // The original's saving throws (paralysis, poison or death; petrification or
@@ -563,7 +492,7 @@ void RolfTourSession::configure_town()
     }
     if (is_buck_rogers(game()))
     {
-        configure_buck_rogers();
+        buck_rogers_.configure_buck_rogers(*this);
     }
     synchronize_clock();
 }
@@ -624,7 +553,7 @@ bool RolfTourSession::adopt_script_clock()
     return true;
 }
 
-RolfTourSession::GameClock RolfTourSession::game_clock() const
+GameClock RolfTourSession::game_clock() const
 {
     if (!campaign_)
     {
@@ -677,26 +606,13 @@ EclHostReply RolfTourSession::clock_reply() const
     return reply;
 }
 
-// The original makes creature record 24 hostile as it joins, whatever the
-// area (eclvm.pas EclAddNpc): Valhingen Graveyard's mystic, who turns on the
-// party and fights for the vampire.
-constexpr unsigned joins_against_party = 24;
-
-bool RolfTourSession::turncoat(MemberId id) const
-{
-    const auto &source = campaign_->member(id).npc_source;
-    return turncoats_.contains(id) ||
-           (source.starts_with("por:MON") &&
-            source.ends_with("CHA:" + std::to_string(joins_against_party)));
-}
-
 EclHostReply RolfTourSession::character_reply(PartySlot slot) const
 {
     // A Buck Rogers character is its record (buck_rogers_host.cpp).
     if (campaign_ && is_buck_rogers(game()))
     {
         EclHostReply reply;
-        add_buck_rogers_record(slot, reply);
+        buck_rogers_.add_buck_rogers_record(*this, slot, reply);
         const auto &slots = campaign_->state().slots;
         reply.writes.push_back(
             {game_cell(ecl_party_size),
@@ -846,7 +762,7 @@ EclHostReply RolfTourSession::character_reply(PartySlot slot) const
         }
         if (vga_engine(game()))
         {
-            add_vga_record(slot, reply);
+            vga_.add_vga_record(*this, slot, reply);
         }
         return reply;
     }
@@ -894,7 +810,7 @@ void RolfTourSession::read_character()
 {
     if (campaign_ && is_buck_rogers(game()))
     {
-        read_buck_rogers_character();
+        buck_rogers_.read_buck_rogers_character(*this);
         return;
     }
     if (campaign_)
@@ -951,11 +867,11 @@ void RolfTourSession::read_character()
             const auto allegiance = machine_.variable(game_cell(ecl_character_allegiance));
             if (allegiance == 0x81)
             {
-                turncoats_.insert(id);
+                encounters_.turn(id, true);
             }
             else if (allegiance == 0 || allegiance == 0x80)
             {
-                turncoats_.erase(id);
+                encounters_.turn(id, false);
             }
         }
         if (exchange)
@@ -1106,7 +1022,7 @@ bool RolfTourSession::move_party(ExplorationCommand command)
         }
         pose.x = wrapped_x;
         pose.y = wrapped_y;
-        pick_tried_ = false;
+        doors_.party_moved();
         ++snapshot_.footsteps;
         sound_effect_played();
     }
@@ -1179,7 +1095,8 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                 machine_.bind_variable(EclAddress{address}, 0);
             }
         }
-        machine_.bind_variable(EclAddress{0x4BB6}, buck_rogers_difficulty_level());
+        machine_.bind_variable(EclAddress{0x4BB6},
+                               BuckRogersHost::buck_rogers_difficulty_level(*this));
     }
     if (const auto won = traits(game()).won_cell)
     {
@@ -1222,8 +1139,8 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                                         .area = current_area_,
                                         .visited_areas = visited_areas_,
                                         .seen_areas = seen_areas_,
-                                        .entrances = entrances_,
-                                        .wand_traps = wand_traps_,
+                                        .entrances = doors_.entrances(),
+                                        .wand_traps = doors_.wand_traps(),
                                         .rest_checks = camp_service_.rest_checks(),
                                         .travel_mode = travel_mode_,
                                         .dark_queen_combat_set = dark_queen_combat_set_,
@@ -1241,9 +1158,7 @@ void RolfTourSession::begin_event(EventTrigger trigger, std::optional<std::size_
                    : trigger == EventTrigger::camp ? EventStage::pre_camp
                                                    : EventStage::search;
     machine_.bind_variable(game_cell(EclAddress{0x6DC9}), 0);
-    encounter_outcome_.clear();
-    meeting_pose_.reset();
-    robbed_ = false;
+    encounters_.begin_event();
     member_chosen_ = false;
     bool off_map = false;
     if (trigger == EventTrigger::step && pending_movement_ && !overland())
@@ -1443,15 +1358,6 @@ void RolfTourSession::arrive(const TeleportArrival &arrival)
     bind_pose(arrival.pose);
 }
 
-const std::vector<AnimationFrame> *RolfTourSession::monster_picture() const
-{
-    if (!showing_monster_picture_)
-    {
-        return nullptr;
-    }
-    return pic_frames(*monster_picture_id_);
-}
-
 const std::vector<AnimationFrame> *RolfTourSession::pic_frames(unsigned id) const
 {
     const auto &animations = area_resources().animations;
@@ -1494,9 +1400,9 @@ const std::vector<AnimationFrame> *RolfTourSession::pic_frames(unsigned id) cons
 
 std::optional<unsigned> RolfTourSession::scene_animation_record() const
 {
-    if (showing_monster_picture_)
+    if (encounters_.showing_monster_picture())
     {
-        return monster_picture_id_;
+        return encounters_.monster_picture_id();
     }
     // The close-up has played: the fight takes over.
     if (snapshot_.phase == TourPhase::combat)
@@ -1506,7 +1412,7 @@ std::optional<unsigned> RolfTourSession::scene_animation_record() const
     const auto beside_the_party =
         snapshot_.sprite_frame == 0 && machine_.variable(game_cell(EclAddress{0x6DE1})) == 255;
     const auto id = picture_           ? picture_animation_id_
-                    : beside_the_party ? monster_picture_id_
+                    : beside_the_party ? encounters_.monster_picture_id()
                                        : std::nullopt;
     if (!id)
     {
@@ -1519,7 +1425,7 @@ std::optional<unsigned> RolfTourSession::scene_animation_record() const
 
 const std::vector<AnimationFrame> *RolfTourSession::scene_animation() const
 {
-    if (showing_monster_picture_)
+    if (encounters_.showing_monster_picture())
     {
         return monster_picture();
     }
@@ -1535,637 +1441,6 @@ std::optional<std::pair<unsigned, unsigned>> RolfTourSession::scene_animation_so
         return std::nullopt;
     }
     return std::pair{area_resources().bank, *record};
-}
-
-bool RolfTourSession::start_encounter()
-{
-    if (snapshot_.phase != TourPhase::combat || !showing_monster_picture_)
-    {
-        return false;
-    }
-    showing_monster_picture_ = false;
-    ++snapshot_.revision;
-    return true;
-}
-
-bool RolfTourSession::reject_combat(std::string diagnostic)
-{
-    if (snapshot_.phase != TourPhase::combat || !encounter_ || !combat_request_ || !campaign_ ||
-        campaign_->in_combat())
-    {
-        return false;
-    }
-    fail(std::move(diagnostic));
-    return true;
-}
-
-// The arena's copy has no creature record of its own.
-constexpr unsigned mirror_record = std::numeric_limits<unsigned>::max();
-
-void RolfTourSession::stage_mirror()
-{
-    // The fight builds the copy from the duelist; here it gets its place
-    // among the enemies and the original's combat icon 11.
-    auto art = creature_art(area_resources().combat_archive, 11, nullptr, false, game());
-    if (!art)
-    {
-        throw EclError("Invalid original combat icon");
-    }
-    art->entity = opengold::mirror_id;
-    staged_enemies_.push_back({.id = opengold::mirror_id, .name = "Rolf"});
-    staged_art_.push_back(std::move(*art));
-    staged_records_.push_back(mirror_record);
-}
-
-unsigned RolfTourSession::record_experience(unsigned record) const
-{
-    if (!plays_original_records())
-    {
-        return area_resources().conversions.at(record).award_xp;
-    }
-    // The original's award: the record's own and so much for each of its Hit
-    // Points (postcbt.pas, DetermineLootExp).
-    const auto &stored = area_resources().encounter_creatures.at(record).stored;
-    return stored.base_xp_award + unsigned{stored.xp_per_hit_point} * stored.rolled_hit_points;
-}
-
-unsigned RolfTourSession::treasure_experience(const PendingLoot &loot) const
-{
-    if (!plays_original_records())
-    {
-        return 0;
-    }
-    // The original's worth of the monsters' coins, gems and jewelry, and 400
-    // for each plus of a magic item (postcbt.pas, DetermineLootExp).
-    const auto &w = loot.wealth;
-    unsigned experience = w[0] / 200 + w[1] / 20 + w[2] / 2 + w[3] +
-                          w[4] * traits(game()).gem_experience + w[5] * 250 + w[6] * 2200;
-    for (const auto &item : loot.items)
-    {
-        if (item.stored.magic_bonus > 0)
-        {
-            experience += static_cast<unsigned>(item.stored.magic_bonus) * 400;
-        }
-    }
-    return experience;
-}
-
-unsigned RolfTourSession::experience_share(unsigned total) const
-{
-    if (!plays_original_records())
-    {
-        return total;
-    }
-    // The original divides a fight's experience among the party's members
-    // (postcbt.pas, DetermineLootExp); the rules then share each member's
-    // among its classes.
-    const auto members =
-        std::ranges::count_if(campaign_->state().slots,
-                              [this](MemberId id)
-                              {
-                                  if (!id)
-                                  {
-                                      return false;
-                                  }
-                                  if (game() != GoldBoxGame::dark_queen_of_krynn)
-                                  {
-                                      return true;
-                                  }
-                                  const auto &member = campaign_->member(id);
-                                  return campaign_->rule_module().receives_experience(
-                                      member.character.sheet(), member.vitals);
-                              });
-    return members ? total / static_cast<unsigned>(members) : total;
-}
-
-RolfTourSession::TurncoatLoot RolfTourSession::part_with_turncoats(const rules::Snapshot &result)
-{
-    TurncoatLoot loot;
-    for (const auto id : encounter_->turncoats)
-    {
-        const auto unit = std::ranges::find(result.combatants, id, &rules::CombatantView::id);
-        // Under the original rules a creature down may be below 0.
-        const bool beaten = unit != result.combatants.end() && unit->hit_points <= 0;
-        const auto &member = campaign_->member(id);
-        if (beaten && result.outcome == rules::Outcome::victory)
-        {
-            ++loot.defeated;
-            for (const auto &item : member.character.inventory().items())
-            {
-                if (const auto source = member.item_sources.find(item.id);
-                    source != member.item_sources.end())
-                {
-                    loot.items.push_back(source->second);
-                }
-            }
-            // A companion's original record pays its experience, as the
-            // monster it fought as.
-            const auto &source = member.npc_source;
-            const auto prefix = "por:MON" + std::to_string(area_resources().bank) + "CHA:";
-            if (source.starts_with(prefix))
-            {
-                const auto record = static_cast<unsigned>(std::stoul(source.substr(prefix.size())));
-                if (plays_original_records() || area_resources().conversions.contains(record))
-                {
-                    loot.experience += record_experience(record);
-                }
-            }
-        }
-        else if (beaten)
-        {
-            ++loot.defeated;
-        }
-        // The original takes every hostile creature off its list after a fight.
-        if (beaten)
-        {
-            campaign_->lose(id);
-        }
-        else
-        {
-            campaign_->remove(id);
-        }
-        turncoats_.erase(id);
-    }
-    return loot;
-}
-
-namespace
-{
-// The DOS 1.1 finale reuses Xoham's monster-count cell as the index of its
-// recovery loop, without initializing it. Recognize that exact loop before
-// supplying its missing initial value with the final combat's reply.
-bool darkness_recovery_uses_monster_count(const EclProgram &program)
-{
-    try
-    {
-        const auto load = program.instruction(0x95BF);
-        const auto increment = program.instruction(0x95D0);
-        return ecl_opcode(load.opcode, GoldBoxGame::pools_of_darkness).name == "LOAD CHARACTER" &&
-               load.operands.size() == 1 && load.operands[0].tag == 1 &&
-               load.operands[0].value == 0xC4 &&
-               ecl_opcode(increment.opcode, GoldBoxGame::pools_of_darkness).name == "ADD" &&
-               increment.operands.size() == 3 && increment.operands[0].tag == 0 &&
-               increment.operands[0].value == 1 && increment.operands[1].tag == 1 &&
-               increment.operands[1].value == 0xC4 && increment.operands[2].tag == 1 &&
-               increment.operands[2].value == 0xC4;
-    }
-    catch (const EclError &)
-    {
-        return false;
-    }
-}
-} // namespace
-
-bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
-{
-    if (is_buck_rogers(game()))
-    {
-        return resolve_buck_rogers_combat(result);
-    }
-    if (diagnostic_log_enabled())
-    {
-        log_diagnostic(LogPriority::info, "fight",
-                       "ends in area " + std::to_string(snapshot_.area_id) + ", outcome " +
-                           std::to_string(static_cast<int>(result.outcome)));
-    }
-    if (snapshot_.phase != TourPhase::combat || !encounter_ || !combat_request_ || !campaign_ ||
-        campaign_->in_combat() || result.outcome == rules::Outcome::ongoing ||
-        result.identity != campaign_->identity())
-    {
-        return false;
-    }
-    unsigned defeated = 0;
-    // Monsters that ran off the field, or that the original placement had no
-    // room for (PLACE-1), are worth neither experience nor treasure.
-    std::vector<unsigned> unpaid_records;
-    std::set<rules::EntityId> enemies, party_ids;
-    // Companions who turned on the party when one of its members attacked
-    // its own side are its turncoats now, and leave it after the fight.
-    if (result.allies_attacked)
-    {
-        for (const auto &unit : result.combatants)
-        {
-            const auto &slots = campaign_->state().slots;
-            if (unit.side == rules::Side::opposition &&
-                std::ranges::find(slots, unit.id) != slots.end() &&
-                std::ranges::find(encounter_->turncoats, unit.id) == encounter_->turncoats.end())
-            {
-                encounter_->turncoats.push_back(unit.id);
-            }
-        }
-    }
-    // In a duel only the champion fights; the rest of the party stands by.
-    const auto champion = encounter_->champion;
-    const auto &turned = encounter_->turncoats;
-    std::set<rules::EntityId> expected_party, turncoats_seen;
-    for (auto id : campaign_->state().slots)
-    {
-        if (id && (!champion || id == champion) && std::ranges::find(turned, id) == turned.end())
-        {
-            expected_party.insert(id);
-        }
-    }
-    for (const auto &unit : result.combatants)
-    {
-        // A member who fought for the monsters is beaten, or got away with them.
-        if (unit.side == rules::Side::opposition &&
-            std::ranges::find(turned, unit.id) != turned.end())
-        {
-            if (!turncoats_seen.insert(unit.id).second ||
-                (result.outcome == rules::Outcome::victory && unit.hit_points > 0 && !unit.fled &&
-                 !result.round_limit_reached))
-            {
-                return false;
-            }
-            continue;
-        }
-        // A creature that fought beside the party until it was attacked, or
-        // until a spell charmed it onto the monsters' side (Treasures'
-        // dwarves in Freezefire's lair).
-        if (unit.side == rules::Side::opposition && opengold::is_ally(unit.id))
-        {
-            continue;
-        }
-        // A member charmed onto the monsters' side is still the party's.
-        const bool charmed_member =
-            unit.side == rules::Side::opposition && expected_party.contains(unit.id);
-        if (unit.side == rules::Side::opposition && !charmed_member)
-        {
-            if (unit.id < 1000 || unit.id >= 1000 + staged_records_.size() ||
-                !enemies.insert(unit.id).second)
-            {
-                return false;
-            }
-            // A monster that surrendered is beaten, and pays as the dead do
-            // (postcbt.pas, DetermineLootExp); under the original rules one
-            // down may be below 0 Hit Points, or unconscious with Hit Points
-            // healed into it, which leave it out of the fight (fxengine.pas,
-            // RestoreHitPoints). The rules' death state remains authoritative
-            // when a lasting effect leaves positive Hit Points on a dead foe.
-            if (unit.dead || unit.hit_points <= 0 || unit.surrendered ||
-                unit.status == "unconscious")
-            {
-                ++defeated;
-            }
-            // One that fled pays nothing (postcbt.pas, DetermineLootExp), and
-            // nor does one still standing when the fight ended for want of
-            // attacks: it leaves the field.
-            else if (unit.fled || result.round_limit_reached)
-            {
-                unpaid_records.push_back(staged_records_.at(unit.id - 1000));
-            }
-        }
-        else if (unit.side == rules::Side::party && opengold::is_ally(unit.id))
-        {
-            continue;
-        }
-        // A monster still charmed onto the party's side as the fight ends
-        // leaves as one that ran (the original's CombatDoneCleanup), worth
-        // neither experience nor treasure.
-        else if (unit.side == rules::Side::party && unit.id >= 1000 &&
-                 unit.id < 1000 + staged_records_.size() && !expected_party.contains(unit.id))
-        {
-            if (!enemies.insert(unit.id).second)
-            {
-                return false;
-            }
-            unpaid_records.push_back(staged_records_.at(unit.id - 1000));
-        }
-        else if ((unit.side != rules::Side::party && !charmed_member) ||
-                 !expected_party.contains(unit.id) || !party_ids.insert(unit.id).second ||
-                 campaign_->member(unit.id).vitals != unit.persistent)
-        {
-            return false;
-        }
-    }
-    // Members who were already dead never joined the fight.
-    for (auto id : expected_party)
-    {
-        if (!party_ids.contains(id) && !campaign_->member(id).vitals.dead)
-        {
-            return false;
-        }
-    }
-    if (enemies.empty() || (result.outcome == rules::Outcome::victory &&
-                            defeated + unpaid_records.size() != enemies.size()))
-    {
-        return false;
-    }
-    for (std::size_t n = 0; n < staged_records_.size(); ++n)
-    {
-        if (!enemies.contains(static_cast<rules::EntityId>(1000 + n)))
-        {
-            unpaid_records.push_back(staged_records_[n]);
-        }
-    }
-    // A lost duel is not the party's defeat: the champion is left with 1 Hit
-    // Point and the script hears 128 (coab ovr006).
-    const bool duel_lost = champion && result.outcome == rules::Outcome::defeat;
-    // A fight won as the last member died leaves no one to go on: the party
-    // is lost, as the original's game ends with its party dead.
-    const bool none_left = std::ranges::none_of(campaign_->state().slots,
-                                                [this](opengold::MemberId id)
-                                                {
-                                                    return id && !campaign_->member(id).vitals.dead;
-                                                });
-    const bool native_recovery = game() == GoldBoxGame::dark_queen_of_krynn &&
-                                 machine_.variable(EclAddress{0x1D}) != 0 && !none_left;
-    if ((result.outcome == rules::Outcome::defeat && !duel_lost && !native_recovery) ||
-        (!champion && none_left))
-    {
-        snapshot_.phase = TourPhase::defeated;
-        ++snapshot_.revision;
-        return true;
-    }
-    const bool mirror = std::exchange(mirror_duel_, false);
-    const bool first =
-        current_area_ == 20 && encounter_records_ == std::vector<unsigned>{13, 4, 4, 4};
-    const auto reward = first ? std::string("por:ECL2:20:search1:orcs:v1")
-                              : "por:ECL" + std::to_string(area_resources().bank) + ":" +
-                                    std::to_string(current_script_) +
-                                    ":roaming:" + std::to_string(++next_ticket_);
-    const bool fled = result.outcome == rules::Outcome::fled;
-    const bool native_lost = native_recovery && result.outcome == rules::Outcome::defeat;
-    const bool pays_experience =
-        game() != GoldBoxGame::dark_queen_of_krynn || machine_.variable(EclAddress{0x1F}) == 0;
-    // Members are lost and rewards claimed before the original script hears the
-    // result; any failure from here rolls the whole event back rather than
-    // leaving those half applied (Effective C++ Item 29).
-    try
-    {
-        // Those who fought for the monsters leave the party first, so they
-        // share in nothing it wins.
-        const auto turncoat_loot = part_with_turncoats(result);
-        defeated += turncoat_loot.defeated;
-        if (fled)
-        {
-            // The party fled (the original's rule): members left on the field are
-            // lost for good, and only the monsters it killed are worth experience.
-            // The treasure stays with the monsters.
-            snapshot_.dialogue = "Your party flees the battle.";
-            // Original members left on the field are lost regardless of a
-            // charm changing their side (Native postcmbt.c, hero_drop). Lent
-            // allies and charmed encounter monsters are not original members.
-            for (const auto id : expected_party)
-            {
-                const auto unit =
-                    std::ranges::find(result.combatants, id, &rules::CombatantView::id);
-                if (unit == result.combatants.end() || !unit->fled)
-                {
-                    const auto name = campaign_->member(id).character.sheet().name;
-                    campaign_->lose(id);
-                    snapshot_.dialogue += "\n" + name + " is left behind and lost.";
-                }
-            }
-            // The script's chosen member is one still in the party.
-            if (!campaign_->state().slots.at(selected_character_.index))
-            {
-                selected_character_ = campaign_->state().selected_slot;
-            }
-            unsigned experience = 0;
-            for (const auto &unit : result.combatants)
-            {
-                if (unit.side == rules::Side::opposition && enemies.contains(unit.id) &&
-                    unit.hit_points <= 0 && staged_records_.at(unit.id - 1000) != mirror_record)
-                {
-                    experience += record_experience(staged_records_.at(unit.id - 1000));
-                }
-            }
-            if (experience && pays_experience)
-            {
-                campaign_->award_experience(experience_share(experience), reward);
-            }
-        }
-        else if (duel_lost || native_lost)
-        {
-            // No experience, and the opponent keeps its gear.
-            if (duel_lost)
-            {
-                campaign_->recover_duelist(champion);
-            }
-            snapshot_.dialogue = "You have lost the fight.";
-        }
-        else if (mirror)
-        {
-            // Beating its own copy earns the duelist 100 experience a level
-            // and nothing else (postcbt.pas DetermineLootExp).
-            if (pays_experience)
-            {
-                campaign_->award_experience(
-                    100 *
-                        static_cast<unsigned>(campaign_->member(champion).character.sheet().level),
-                    reward, champion);
-            }
-        }
-        else
-        {
-            // Experience and loot stay the original encounter's, however many fought,
-            // less a record for each monster that got away or was left out.
-            auto paying = encounter_records_;
-            for (const auto record : unpaid_records)
-            {
-                if (const auto it = std::find(paying.begin(), paying.end(), record);
-                    it != paying.end())
-                {
-                    paying.erase(it);
-                }
-            }
-            // What the monsters still on the field used of their gear is gone
-            // from the loot (DIFF-1).
-            std::vector<SpentGear> spent;
-            for (const auto &unit : result.combatants)
-            {
-                if (unit.side == rules::Side::opposition && !unit.fled &&
-                    !unit.item_uses_left.empty())
-                {
-                    SpentGear gear{staged_records_.at(unit.id - 1000), {}};
-                    for (const auto &[item, left] : unit.item_uses_left)
-                    {
-                        gear.uses_left.emplace_back(item - 1, left);
-                    }
-                    spent.push_back(std::move(gear));
-                }
-            }
-            // Pool divides and applies prime-score bonuses once to the whole
-            // post-combat award, including treasure supplied by the script.
-            const bool combine_script_experience =
-                game() == GoldBoxGame::pool_of_radiance && plays_original_records();
-            const bool has_monster_loot = !paying.empty();
-            unsigned experience = combine_script_experience && treasure_service_.staged()
-                                      ? treasure_experience(*treasure_service_.staged())
-                                      : 0;
-            // Monsters that all got away leave no monster loot to pay.
-            if (!paying.empty())
-            {
-                for (auto record : paying)
-                {
-                    experience += record_experience(record);
-                }
-                // Krynn's overland retains a dungeon map while its creatures
-                // come from the root archive. Keep that source with unclaimed
-                // loot as well, including after an ordinary save and reload.
-                const auto loot_area = in_curse_wilderness() ? 0 : current_area_;
-                auto loot = encounter_loot(loot_area, std::move(paying), reward + ":loot",
-                                           machine_.variable(game_cell(EclAddress{0x6DE3})) != 1,
-                                           std::move(spent));
-                experience += treasure_experience(loot);
-                treasure_service_.add_loot(std::move(loot));
-                treasure_service_.pile_loot(*this);
-            }
-            if (pays_experience && (has_monster_loot || experience))
-            {
-                campaign_->award_experience(champion ? experience : experience_share(experience),
-                                            reward, champion);
-            }
-            // Treasure the script added to the fight is won with it.
-            if (treasure_service_.staged())
-            {
-                award_staged_treasure(!combine_script_experience);
-            }
-            // A beaten turncoat's gear is the party's, and its record's
-            // experience too.
-            if (pays_experience && turncoat_loot.experience)
-            {
-                campaign_->award_experience(turncoat_loot.experience, reward + ":turncoats");
-            }
-            for (const auto &item : turncoat_loot.items)
-            {
-                treasure_service_.add_to_pile(item);
-            }
-        }
-        if (native_recovery && !fled)
-        {
-            for (const auto id : campaign_->state().slots)
-            {
-                if (id)
-                {
-                    campaign_->recover_duelist(id);
-                }
-            }
-        }
-        // The original's combat results (coab ovr006): 0 won, 128 (0x80) a
-        // duel lost, 129 (0x81) the party fled; scripts test "above 128" for a
-        // flight.
-        std::vector<EclMemoryWrite> results;
-        for (auto write : std::array<EclMemoryWrite, 8>{
-                 {{game_cell(ecl_combat_result), static_cast<std::uint16_t>(fled        ? 129
-                                                                            : duel_lost ? 128
-                                                                                        : 0)},
-                  {game_cell(ecl_monsters_defeated), static_cast<std::uint16_t>(defeated)},
-                  {game_cell(ecl_encounter_surprise), 0},
-                  {game_cell(EclAddress{0x6DE3}), 0},
-                  {game_cell(EclAddress{0x6E70}), 0},
-                  {game_cell(EclAddress{0x6E71}), 0},
-                  {game_cell(EclAddress{0x6E72}), 0},
-                  // Whether a member attacked its own side (Attack Ally),
-                  // which the nomads hold against the party (ECL7:17 0x9ABA).
-                  {game_cell(ecl_allies_attacked),
-                   static_cast<std::uint16_t>(result.allies_attacked)}}})
-        {
-            results.push_back(write);
-        }
-        const auto conditions = vga_combat_conditions(game(), !fled && !duel_lost && !native_lost);
-        if (game() == GoldBoxGame::dark_queen_of_krynn)
-        {
-            // Native PostCombat clears its transient battle modifiers and
-            // award/recovery flags, retaining anti-magic and underwater state.
-            for (const int cell : {0x01, 0x2F, 0x1C, 0x1D, 0x1F})
-            {
-                results.push_back({EclAddress{static_cast<std::uint16_t>(cell)}, 0});
-            }
-        }
-        // The party leaves a maze fight facing the side it ran off, which
-        // the script reads to find the next part of the maze (postcbt.pas).
-        if (result.escape_side)
-        {
-            results.push_back(
-                {game_cell(ecl_party_facing), static_cast<std::uint16_t>(*result.escape_side)});
-        }
-        // Pools of Darkness's fight's end clears its to-hit cells
-        // (add_script_to_hit) and its party's movement modifier.
-        if (game() == GoldBoxGame::pools_of_darkness)
-        {
-            results.push_back({darkness_monster_hit_mod, 0});
-            results.push_back({darkness_party_hit_mod, 0});
-            results.push_back({darkness_party_move_mod, 0});
-            const auto &request = machine_.pending_request();
-            if (result.outcome == rules::Outcome::victory && current_script_ == 75 && request &&
-                request->id == combat_request_ && request->instruction &&
-                request->instruction->address == 0x94CB && town_)
-            {
-                const auto program = town_->programs.find(75);
-                if (program != town_->programs.end() &&
-                    darkness_recovery_uses_monster_count(*program->second))
-                {
-                    results.push_back({EclAddress{0xC4}, 0});
-                }
-            }
-        }
-        // A Treasures crystal battle's crystal joins those the party holds
-        // (cell 3Ch: 1 red, 2 green, 4 blue), and cell 3Eh tells the script
-        // which it was (effhndlr.pas, EffRedCrystal).
-        if (result.crystal)
-        {
-            constexpr EclAddress crystals_held{0x3C}, last_crystal{0x3E};
-            results.push_back(
-                {crystals_held, static_cast<std::uint16_t>(machine_.variable(crystals_held) |
-                                                           1U << *result.crystal)});
-            results.push_back({last_crystal, static_cast<std::uint16_t>(*result.crystal)});
-        }
-        // Treasures' romance: the loves as the fight moved them (cells 106h
-        // and 107h; effhndlr.pas, EffInLove).
-        if (result.romance)
-        {
-            results.push_back(
-                {EclAddress{0x106}, static_cast<std::uint16_t>(result.romance->member_love)});
-            results.push_back(
-                {EclAddress{0x107}, static_cast<std::uint16_t>(result.romance->npc_love)});
-        }
-        // The items the monsters leave wait for the party to take them; the
-        // script hears the result once the party leaves the treasure.
-        if (!treasure_service_.treasure_pile().empty())
-        {
-            treasure_service_.open_treasure(*this, combat_request_, std::move(results), conditions);
-        }
-        else
-        {
-            auto reply = character_reply(selected_character_);
-            reply.writes.insert(reply.writes.end(), results.begin(), results.end());
-            reply.conditions = conditions;
-            if (!machine_.resume_host(combat_request_, reply))
-            {
-                throw EclError("Combat result rejected by original script");
-            }
-        }
-    }
-    catch (const std::exception &error)
-    {
-        fail(error.what());
-        return true;
-    }
-    combat_request_ = 0;
-    encounter_.reset();
-    monster_picture_id_.reset();
-    staged_enemies_.clear();
-    staged_art_.clear();
-    staged_records_.clear();
-    staged_undead_loads_ = 0;
-    staged_allies_.clear();
-    staged_ally_art_.clear();
-    // A later script fault must never restore pre-combat HP or erase a victory.
-    event_checkpoint_.reset();
-    if (!treasure_service_.pending_loot().empty())
-    {
-        snapshot_.dialogue += "\nLoot is retained until your party has room in its purses.";
-    }
-    if (snapshot_.phase == TourPhase::treasure)
-    {
-        return true;
-    }
-    snapshot_.phase = TourPhase::running;
-    ++snapshot_.revision;
-    advance(0);
-    return true;
 }
 
 // Curse's root area is its wilderness. Krynn's wilderness and outposts
@@ -2242,7 +1517,7 @@ void RolfTourSession::finish_event()
     }
     if (event_stage_ == EventStage::step && snapshot_.solar_map && pending_movement_)
     {
-        solar_map_step();
+        buck_rogers_.solar_map_step(*this);
         search_destination();
         return;
     }
@@ -2250,7 +1525,7 @@ void RolfTourSession::finish_event()
     {
         if (pending_movement_)
         {
-            vga_area_step();
+            vga_.vga_area_step(*this);
         }
         search_destination();
         return;
@@ -2271,9 +1546,9 @@ void RolfTourSession::finish_event()
         // where the party stands.
         if (pending_movement_ && !move_party(*pending_movement_))
         {
-            if (locked_door_ahead())
+            if (doors_.locked_door_ahead(*this))
             {
-                show_locked_door();
+                doors_.show_locked_door(*this);
                 return;
             }
             snapshot_.dialogue = "The way is blocked.";
@@ -2326,7 +1601,7 @@ void RolfTourSession::finish_event()
         }
         // Treasures' camp tells its romance first (camp.pas, CampMainMenu),
         // a camp from its open menu having told it as the menu opened.
-        if (!camp_from_menu_ && !std::exchange(romance_told_, false) && tell_romance())
+        if (!camp_from_menu_ && !std::exchange(romance_told_, false) && vga_.tell_romance(*this))
         {
             return;
         }
@@ -2358,11 +1633,11 @@ void RolfTourSession::finish_event()
         else if (std::exchange(camp_fixing_, false))
         {
             // Treasures' camp Fix: an interruption ends it as it ends a rest.
-            auto outcome = fix_party(
-                [this](unsigned count)
-                {
-                    return machine_.engine_random(count);
-                });
+            auto outcome = vga_.fix_party(*this,
+                                          [this](unsigned count)
+                                          {
+                                              return machine_.engine_random(count);
+                                          });
             synchronize_clock();
             for (const auto &word : outcome.words)
             {
@@ -2469,20 +1744,7 @@ void RolfTourSession::finish_event()
             synchronize_clock();
         }
     }
-    // A party the script moved away from a meeting (Flee, or Run after a
-    // parley) got away, unless it was robbed and sent off.
-    if (meeting_pose_ && encounter_outcome_.empty() && !robbed_ &&
-        (meeting_pose_->x != snapshot_.pose.x || meeting_pose_->y != snapshot_.pose.y))
-    {
-        encounter_outcome_ = "You get away.";
-    }
-    if (!encounter_outcome_.empty())
-    {
-        snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") + encounter_outcome_;
-    }
-    encounter_outcome_.clear();
-    meeting_pose_.reset();
-    robbed_ = false;
+    encounters_.end_meeting(snapshot_);
     if (event_stage_ == EventStage::camp_interrupted && rest_warded_)
     {
         rest_warded_ = false;
@@ -2550,7 +1812,7 @@ void RolfTourSession::finish_event()
     ++snapshot_.revision;
     if (event_stage_ == EventStage::search && !overland())
     {
-        search_for_secret_door();
+        doors_.search_for_secret_door(*this);
         shop_service_.open_own_shop(*this);
     }
 }
@@ -2630,15 +1892,16 @@ void RolfTourSession::search_destination()
     }
 }
 
-bool RolfTourSession::locked_door_ahead() const
+bool DoorHost::locked_door_ahead(const TourHost &tour) const
 {
-    if (!campaign_ || !pending_movement_ || machine_.variable(game_cell(EclAddress{0x6DC9})) == 255)
+    if (!tour.campaign() || !tour.pending_movement() ||
+        tour.script_machine().variable(tour.game_cell(EclAddress{0x6DC9})) == 255)
     {
         return false;
     }
-    const auto edge = edge_ahead(map_, snapshot_.pose);
-    const auto &from = map_.at(edge.x, edge.y);
-    const auto &to = map_.at(edge.next_x, edge.next_y);
+    const auto edge = edge_ahead(tour.loaded_map(), tour.screen().pose);
+    const auto &from = tour.loaded_map().at(edge.x, edge.y);
+    const auto &to = tour.loaded_map().at(edge.next_x, edge.next_y);
     const auto passable_or_locked = [](unsigned wall, std::uint8_t door)
     {
         return !wall || door == 1 || lock(door);
@@ -2648,69 +1911,70 @@ bool RolfTourSession::locked_door_ahead() const
            passable_or_locked(to.walls[index(edge.other)], to.doors[index(edge.other)]);
 }
 
-bool RolfTourSession::wizard_locked_ahead() const
+bool DoorHost::wizard_locked_ahead(const TourHost &tour) const
 {
-    const auto edge = edge_ahead(map_, snapshot_.pose);
-    return map_.at(edge.x, edge.y).doors[index(edge.side)] == wizard_locked_door ||
-           map_.at(edge.next_x, edge.next_y).doors[index(edge.other)] == wizard_locked_door;
+    const auto edge = edge_ahead(tour.loaded_map(), tour.screen().pose);
+    return tour.loaded_map().at(edge.x, edge.y).doors[index(edge.side)] == wizard_locked_door ||
+           tour.loaded_map().at(edge.next_x, edge.next_y).doors[index(edge.other)] ==
+               wizard_locked_door;
 }
 
-void RolfTourSession::show_locked_door()
+void DoorHost::show_locked_door(TourHost &tour)
 {
     door_menu_ = true;
     door_choices_.clear();
-    snapshot_.choices.clear();
+    tour.screen().choices.clear();
     // A hidden entrance's lock is picked or opened by Knock (SECRET-1).
-    if (!entrance_ahead())
+    if (!entrance_ahead(tour))
     {
         door_choices_.push_back(DoorMethod::bash);
-        snapshot_.choices.push_back("Bash");
+        tour.screen().choices.push_back("Bash");
     }
-    if (!pick_tried_ && campaign_->can_try_door(DoorMethod::pick))
+    if (!pick_tried_ && tour.campaign()->can_try_door(DoorMethod::pick))
     {
         door_choices_.push_back(DoorMethod::pick);
-        snapshot_.choices.push_back("Pick");
+        tour.screen().choices.push_back("Pick");
     }
-    if (campaign_->can_try_door(DoorMethod::knock))
+    if (tour.campaign()->can_try_door(DoorMethod::knock))
     {
         door_choices_.push_back(DoorMethod::knock);
-        snapshot_.choices.push_back("Knock");
+        tour.screen().choices.push_back("Knock");
     }
-    snapshot_.choices.push_back("Exit");
-    snapshot_.dialogue = wizard_locked_ahead() ? "Wizard locked." : "Locked.";
-    snapshot_.phase = TourPhase::awaiting_continue;
-    snapshot_.continue_ticket = ++next_ticket_;
-    ++snapshot_.revision;
+    tour.screen().choices.push_back("Exit");
+    tour.screen().dialogue = wizard_locked_ahead(tour) ? "Wizard locked." : "Locked.";
+    tour.screen().phase = TourPhase::awaiting_continue;
+    tour.screen().continue_ticket = tour.new_ticket();
+    ++tour.screen().revision;
 }
 
-void RolfTourSession::try_locked_door(DoorMethod method)
+void DoorHost::try_locked_door(TourHost &tour, DoorMethod method)
 {
     if (method == DoorMethod::pick)
     {
         pick_tried_ = true;
     }
     const int difficulty =
-        wizard_locked_ahead() ? wizard_locked_difficulty : locked_door_difficulty;
-    const auto attempts = campaign_->try_door(method, difficulty);
+        wizard_locked_ahead(tour) ? wizard_locked_difficulty : locked_door_difficulty;
+    const auto attempts = tour.campaign()->try_door(method, difficulty);
     for (const auto &attempt : attempts)
     {
-        snapshot_.door_checks.push_back({campaign_->member(attempt.member).character.sheet().name,
-                                         method, attempt.roll.die, attempt.roll.total,
-                                         attempt.difficulty, attempt.thieves_tools,
-                                         attempt.magic_lock_picks});
+        tour.screen().door_checks.push_back(
+            {tour.campaign()->member(attempt.member).character.sheet().name, method,
+             attempt.roll.die, attempt.roll.total, attempt.difficulty, attempt.thieves_tools,
+             attempt.magic_lock_picks});
     }
     if (attempts.empty() || attempts.back().roll.total < attempts.back().difficulty)
     {
         return;
     }
-    snapshot_.door_opened = true;
+    tour.screen().door_opened = true;
     // A hidden entrance stays open for good (SECRET-1).
-    if (const auto *shop = entrance_ahead())
+    if (const auto *shop = entrance_ahead(tour))
     {
         entrances_[shop->id] = EntranceState::open;
     }
     // The original unlocks both faces in its loaded map; reloading the district relocks them.
-    const auto edge = edge_ahead(map_, snapshot_.pose);
+    const auto edge = edge_ahead(tour.loaded_map(), tour.screen().pose);
     const auto unlock = [](std::uint8_t &door)
     {
         if (lock(door))
@@ -2718,180 +1982,15 @@ void RolfTourSession::try_locked_door(DoorMethod method)
             door = 1;
         }
     };
-    unlock(map_.cells[edge.y * map_.width + edge.x].doors[index(edge.side)]);
-    unlock(map_.cells[edge.next_y * map_.width + edge.next_x].doors[index(edge.other)]);
-    if (!move_party(*pending_movement_))
+    unlock(
+        tour.loaded_map().cells[edge.y * tour.loaded_map().width + edge.x].doors[index(edge.side)]);
+    unlock(tour.loaded_map()
+               .cells[edge.next_y * tour.loaded_map().width + edge.next_x]
+               .doors[index(edge.other)]);
+    if (!tour.move_party(*tour.pending_movement()))
     {
         throw EclError("The opened door is still blocked");
     }
-}
-
-EncounterTurn encounter_turn(std::size_t choice, unsigned response, unsigned distance,
-                             bool party_escapes, bool monsters_outrun)
-{
-    constexpr std::size_t fight = 0, wait = 1, flee = 2, advance = 3, parley = 4;
-    // Adjacent monsters answer with `adjacent`; others come a step closer.
-    const auto close_in = [&](std::optional<unsigned> adjacent)
-    {
-        return distance == 0 ? EncounterTurn{adjacent, false} : EncounterTurn{std::nullopt, true};
-    };
-    const auto fight_or_flight = [&]
-    {
-        return EncounterTurn{choice == flee ? 2U : 1U, false};
-    };
-    switch (response)
-    {
-    case 0:
-        // Only this answer tests the party's speed.
-        return {choice == flee && party_escapes ? 2U : 1U, false};
-    case 1:
-        if (choice == wait)
-        {
-            return {};
-        }
-        if (choice == advance || choice == parley)
-        {
-            return close_in(choice == parley ? std::optional<unsigned>{3U} : std::nullopt);
-        }
-        return fight_or_flight();
-    case 2:
-        // The monsters leave, unless the party attacks monsters it can outrun.
-        return {choice == fight && !monsters_outrun ? 1U : 0U, false};
-    case 3:
-        if (choice == wait || choice == advance)
-        {
-            return close_in(std::nullopt);
-        }
-        if (choice == parley)
-        {
-            return close_in(3U);
-        }
-        return fight_or_flight();
-    case 4:
-        if (choice == fight || choice == flee)
-        {
-            return fight_or_flight();
-        }
-        return close_in(3U);
-    default:
-        throw EclError("Invalid encounter response");
-    }
-}
-
-void RolfTourSession::show_encounter_menu()
-{
-    // The first operand names the distance sprite, the third the close-up
-    // picture (coab CMD_EncounterMenu); Sokal Keep's Ferran Martinez has a
-    // picture of his own (19) and the Spectre's sprite (17).
-    // A sprite with fewer distance frames (the western wilderness's centaur
-    // has two) shows its farthest one beyond them.
-    const auto &args = encounter_menu_->arguments;
-    for (unsigned frame = 0; frame < 3; ++frame)
-    {
-        auto image = decode_ega_sprite(area_resources().sprite_archive,
-                                       static_cast<std::uint8_t>(args[0].number()),
-                                       static_cast<std::uint8_t>(frame));
-        if (!image && frame > 0)
-        {
-            sprites_[frame] = sprites_[frame - 1];
-            continue;
-        }
-        if (!image)
-        {
-            throw EclError("Unsupported roaming encounter sprite");
-        }
-        sprites_[frame] = std::move(image.image);
-    }
-    snapshot_.sprite_id = args[0].number();
-    snapshot_.sprite_frame = encounter_distance_;
-    monster_picture_id_ = args[2].number();
-    snapshot_.dialogue = join_script_text({}, args[9 + encounter_distance_].text());
-    if (snapshot_.dialogue.empty())
-    {
-        snapshot_.dialogue = join_script_text({}, args[9].text());
-    }
-    announce_camp_attack();
-    if (!meeting_pose_)
-    {
-        meeting_pose_ = snapshot_.pose;
-    }
-    // As in the original, Parley replaces Advance once the monsters are
-    // adjacent, and on the wilderness map, where no one advances.
-    snapshot_.choices = {"Fight", "Wait", "Flee",
-                         encounter_distance_ && !overland() && !gateway_overland() ? "Advance"
-                                                                                   : "Parley"};
-    snapshot_.phase = TourPhase::awaiting_continue;
-    snapshot_.continue_ticket = ++next_ticket_;
-    ++snapshot_.revision;
-}
-
-std::vector<unsigned> RolfTourSession::living_member_levels() const
-{
-    std::vector<unsigned> levels;
-    for (const auto id : campaign_->state().slots)
-    {
-        if (id && !campaign_->member(id).vitals.dead)
-        {
-            levels.push_back(campaign_->member(id).character.sheet().level);
-        }
-    }
-    return levels;
-}
-
-// Shrinks the staged original encounter to the party's SRD XP budget at the
-// encounter challenge and to one creature per living character, the size the
-// party can face without being swarmed. Each LOAD MONSTER group keeps its first.
-// Under the original rules the whole encounter fights, as in the original.
-void RolfTourSession::fit_staged_encounter()
-{
-    staged_band_.clear();
-    std::vector<unsigned> counts(staged_records_.size(),
-                                 static_cast<unsigned>(staged_records_.size()));
-    if (!plays_original_records())
-    {
-        const auto groups = staged_groups(staged_records_, area_resources().conversions);
-        counts = fit_encounter_to_difficulty(groups, living_member_levels(), encounter_challenge_,
-                                             difficulty_);
-    }
-    for (std::size_t n = 0; n < staged_records_.size() && !plays_original_records(); ++n)
-    {
-        const auto record = staged_records_[n];
-        const auto &creature = area_resources().encounter_creatures.at(record);
-        const auto *exported = exported_creature(area_resources(), record);
-        auto member = staged_enemies_[n];
-        member.name = exported ? exported->name : creature.stored.name;
-        member.inventory = fighting_gear(creature, exported);
-        staged_band_.push_back(
-            {std::move(member), record, area_resources().conversions.at(record).fit_xp});
-    }
-    std::vector<rules::Participant> enemies;
-    std::vector<opengold::CombatArt> art;
-    std::vector<unsigned> records;
-    for (std::size_t n = 0, group = 0, kept = 0; n < staged_records_.size(); ++n)
-    {
-        if (n && staged_records_[n] != staged_records_[n - 1])
-        {
-            ++group;
-            kept = 0;
-        }
-        if (kept++ >= counts[group])
-        {
-            continue;
-        }
-        const auto id = static_cast<rules::EntityId>(1000 + enemies.size());
-        const auto &creature = area_resources().encounter_creatures.at(staged_records_[n]);
-        enemies.push_back(std::move(staged_enemies_[n]));
-        enemies.back().id = id;
-        const auto *exported = exported_creature(area_resources(), staged_records_[n]);
-        enemies.back().name = (exported ? exported->name : creature.stored.name) + " " +
-                              std::to_string(enemies.size());
-        art.push_back(std::move(staged_art_[n]));
-        art.back().entity = id;
-        records.push_back(staged_records_[n]);
-    }
-    staged_enemies_ = std::move(enemies);
-    staged_art_ = std::move(art);
-    staged_records_ = std::move(records);
 }
 
 // Names who parleys: the spokesman whose reaction score the event started with.
@@ -2906,66 +2005,6 @@ void RolfTourSession::announce_spokesman()
         snapshot_.dialogue +=
             "\n" + campaign_->member(speaker).character.sheet().name + " speaks for the party.";
     }
-}
-
-bool RolfTourSession::choose_encounter(std::size_t choice)
-{
-    if (!encounter_menu_ || choice > 3)
-    {
-        return false;
-    }
-    // The fourth choice is Advance at a distance and Parley when adjacent or
-    // on the wilderness map.
-    if (choice == 3 && (encounter_distance_ == 0 || overland() || gateway_overland()))
-    {
-        choice = 4;
-    }
-    const auto &request = *encounter_menu_;
-    const auto &args = request.arguments;
-    const auto response = args[4 + choice].number();
-    int slowest = 1000, fastest = 0;
-    for (auto id : campaign_->state().slots)
-    {
-        // The party carries its dead with it, as in the original, so they never slow it.
-        if (id && !campaign_->member(id).vitals.dead)
-        {
-            // Conversion boundary: original movement 12 corresponds to a modern
-            // ordinary 30-foot creature. Unconscious members cannot escape on foot.
-            const int movement = campaign_->member(id).vitals.hit_points <= 0
-                                     ? 0
-                                     : campaign_->profile(id).movement_feet * 2 / 5;
-            slowest = std::min(slowest, movement);
-            fastest = std::max(fastest, movement);
-        }
-    }
-    // On Easy a flight always succeeds (DIFF-2).
-    const auto turn = encounter_turn(choice, response, encounter_distance_,
-                                     slowest >= static_cast<int>(args[12].number()) ||
-                                         spares_the_party(difficulty_),
-                                     static_cast<int>(args[13].number()) > fastest);
-    if (!turn.result)
-    {
-        // The meeting goes on: the monsters came a step closer, or both sides
-        // waited.
-        encounter_distance_ -= turn.closer ? 1 : 0;
-        show_encounter_menu();
-        return true;
-    }
-    const auto result = turn.result;
-    EclHostReply reply;
-    reply.writes = {{args[3].address(), static_cast<std::uint16_t>(*result)}};
-    if (!machine_.resume_host(request.id, reply))
-    {
-        return false;
-    }
-    // The script ends the meeting quietly (0); the event's end says so.
-    encounter_outcome_ = *result == 0 ? "The monsters go on their way." : "";
-    encounter_menu_.reset();
-    snapshot_.choices.clear();
-    snapshot_.continue_ticket = 0;
-    snapshot_.phase = TourPhase::running;
-    ++snapshot_.revision;
-    return true;
 }
 
 void RolfTourSession::notice(std::string message)
@@ -2999,9 +2038,9 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
     {
         return buck_rogers_menus_.choose_in_buck_rogers_menu(*this, choice);
     }
-    if (romance_scene_)
+    if (vga_.in_romance())
     {
-        return choose_in_romance(choice);
+        return vga_.choose_in_romance(*this, choice);
     }
     if (hall_service_.visiting())
     {
@@ -3035,9 +2074,9 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         snapshot_.host_dialogue.clear();
         snapshot_.phase = TourPhase::running;
     }
-    else if (encounter_menu_)
+    else if (encounters_.menu_open())
     {
-        return choose_encounter(choice);
+        return encounters_.choose_encounter(*this, choice);
     }
     else if (who_request_)
     {
@@ -3055,15 +2094,11 @@ bool RolfTourSession::choose(std::uint64_t ticket, std::size_t choice)
         snapshot_.choosing_member = false;
         snapshot_.phase = TourPhase::running;
     }
-    else if (door_menu_)
+    else if (doors_.menu_open())
     {
-        door_menu_ = false;
         try
         {
-            if (choice < door_choices_.size())
-            {
-                try_locked_door(door_choices_[choice]);
-            }
+            doors_.choose(*this, choice);
             search_destination();
         }
         catch (const std::exception &e)
@@ -3230,7 +2265,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         throw EclError("This event needs the campaign party");
     }
-    if (is_buck_rogers(game()) && handle_buck_rogers_host(request))
+    if (is_buck_rogers(game()) && buck_rogers_.handle_buck_rogers_host(*this, encounters_, request))
     {
         return true;
     }
@@ -3251,7 +2286,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         // A staged monster's record (slot 8 and up), which the tavern
         // free-for-all loads to send monsters berserk. None goes berserk here
         // (PODOL-1), so reading or storing one changes nothing.
-        if ((arg(0) & 127) >= 8 && (arg(0) & 127) < 8 + staged_enemies_.size())
+        if ((arg(0) & 127) >= 8 && (arg(0) & 127) < 8 + encounters_.staged_enemies().size())
         {
             break;
         }
@@ -3364,120 +2399,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         reply = character_reply(selected_character_);
         break;
     case 12:
-    {
-        // Encounter distance images use the already verified SPRIT3 format.
-        std::array<Image, 3> decoded;
-        const bool native = game() == GoldBoxGame::dark_queen_of_krynn;
-        // Matrix's Venus ambush requests three squares even though its
-        // distance sprites and the ground encounter use at most two. Keep
-        // the existing corridor limit below, as for the other Buck setups.
-        const bool buck_distance_three = is_buck_rogers(game()) && arg(1) == 3;
-        if (arg(1) > 2 && !native && !buck_distance_three)
-        {
-            throw EclError("Unsupported encounter distance");
-        }
-        // Native limit 10h explicitly forces the farthest distance even
-        // when the current corridor ends sooner (CMD_SetupMonster).
-        encounter_distance_ =
-            native && arg(1) == 0x10 ? 2U : std::min<unsigned>(arg(1), room_ahead());
-        // Pools of Darkness's and Treasures' SETUP MONSTER names the sides
-        // the monsters come from too (eclvm.pas, EclSetupMonster).
-        if (request.arguments.size() > 3)
-        {
-            monster_sides_ = arg(3) & 0xFFU;
-        }
-        // Champions' DisplayMonster loads distance sprites only in the 3D
-        // view. Wilderness scripts deliberately name sprites absent from SPRIT.
-        if (krynn_game(game()) && vga_area_map())
-        {
-            sprites_ = {};
-            snapshot_.sprite_frame = -1;
-            snapshot_.sprite_id = arg(0);
-            monster_picture_id_.reset();
-            break;
-        }
-        // Gateway's monsters have no distance sprites (255; it has no SPRIT
-        // files): only the close-up shows, face to face (its DisplayMonster).
-        constexpr unsigned no_sprite = 255;
-        if (arg(0) == no_sprite)
-        {
-            sprites_ = {};
-            snapshot_.sprite_frame = -1;
-            snapshot_.sprite_id = arg(0);
-            picture_animation_id_.reset();
-            picture_.reset();
-            if (arg(2) == no_sprite)
-            {
-                monster_picture_id_.reset();
-            }
-            else
-            {
-                monster_picture_id_ = arg(2);
-            }
-            ++snapshot_.picture_revision;
-            break;
-        }
-        // The 256-color engine's sprites are 256-color animations.
-        const auto sprite = [this](unsigned id, unsigned distance)
-        {
-            if (const auto shared = town_->shared_sprites.find(id);
-                shared != town_->shared_sprites.end() && distance < shared->second.size())
-            {
-                return ImageDecodeResult{FormatResult::ok, shared->second[distance]};
-            }
-            return vga_art(game()) ? vga_sprite(id, distance)
-                                   : decode_ega_sprite(area_resources().sprite_archive,
-                                                       static_cast<std::uint8_t>(id),
-                                                       static_cast<std::uint8_t>(distance));
-        };
-        // The Pitt's buccaneer names sprite 19, which SPRIT1 lacks: met face
-        // to face, the original shows the head (0x6DE1) and body portrait.
-        const auto head_id = machine_.variable(game_cell(EclAddress{0x6DE1}));
-        if (!sprite(arg(0), 0) && encounter_distance_ == 0 && head_id != 255)
-        {
-            snapshot_.sprite_frame = -1;
-            snapshot_.sprite_id = arg(0);
-            monster_picture_id_.reset();
-            picture_animation_id_.reset();
-            picture_ = close_up_portrait(area_resources(), head_id, arg(2));
-            ++snapshot_.picture_revision;
-            break;
-        }
-        // A Buck Rogers sprite its disk's SPRIT file lacks loads nothing, and
-        // nothing shows (portrait.pas LoadAnimation of an empty record).
-        if (is_buck_rogers(game()) && !sprite(arg(0), 0))
-        {
-            sprites_ = {};
-            snapshot_.sprite_frame = -1;
-            snapshot_.sprite_id = arg(0);
-            monster_picture_id_ = arg(2);
-            picture_.reset();
-            ++snapshot_.picture_revision;
-            break;
-        }
-        for (unsigned n = 0; n < 3; ++n)
-        {
-            auto image = sprite(arg(0), n);
-            // Beyond a sprite's last distance frame its farthest one shows.
-            if (!image && n > 0)
-            {
-                decoded[n] = decoded[n - 1];
-                continue;
-            }
-            if (!image)
-            {
-                throw EclError("Unsupported encounter sprite " + std::to_string(arg(0)));
-            }
-            decoded[n] = std::move(image.image);
-        }
-        sprites_ = std::move(decoded);
-        snapshot_.sprite_frame = static_cast<int>(encounter_distance_);
-        snapshot_.sprite_id = arg(0);
-        monster_picture_id_ = arg(2);
-        picture_.reset();
-        ++snapshot_.picture_revision;
+        encounters_.setup_monster(*this, request);
         break;
-    }
     case 14:
     {
         snapshot_.sprite_frame = -1;
@@ -3530,92 +2453,12 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 11:
-    {
-        constexpr auto monster_limit = fight_monster_limit;
-        // A roaming group's size follows the party's strength, so a party with
-        // most of its members down can be met by no one at all: the script
-        // loads nothing, and its COMBAT then has nothing to fight.
-        if (!arg(1))
-        {
-            break;
-        }
-        // An override (data/encounters/overrides.json) changes what this
-        // instruction loads; the count is still sized to the party.
-        const auto *change = encounter_override(*request.instruction);
-        const unsigned record = change && change->record ? *change->record : arg(0);
-        const unsigned loaded = change && change->count ? *change->count : arg(1);
-        const unsigned icon = change && change->icon ? *change->icon : arg(2);
-        const auto count = static_cast<unsigned>(std::min<std::size_t>(
-            loaded, monster_limit - std::min(monster_limit, staged_enemies_.size())));
-        if (!plays_original_records() && !area_resources().conversions.contains(record))
-        {
-            throw EclError("Encounter needs an explicit supported creature conversion: record " +
-                           std::to_string(record) + ", count " + std::to_string(count) + ", icon " +
-                           std::to_string(icon));
-        }
-        const auto &area = area_resources();
-        const bool ally = fights_for_party(area, record);
-        std::optional<std::array<VgaColor, 256>> native_palette;
-        if (area.dark_queen)
-        {
-            native_palette = ua::combat_palette(area.dark_queen->files, dark_queen_combat_set_,
-                                                machine_.variable(EclAddress{0x22}) != 0);
-        }
-        // Treasures' LOAD MONSTER holds its creatures back while cell 44h is
-        // set: they join the fight as that round ends, the ninth at the
-        // latest (its EclLoadMonster and JoinDelayedCombatants).
-        constexpr EclAddress treasures_arrival_round{0x44};
-        constexpr unsigned latest_arrival = 9;
-        const unsigned arrival =
-            game() == GoldBoxGame::treasures_of_the_savage_frontier
-                ? std::min(static_cast<unsigned>(machine_.variable(treasures_arrival_round)),
-                           latest_arrival)
-                : 0;
-        const auto *exported = exported_creature(area, record);
-        const auto name = creature_name(area, record, exported);
-        // Pools of Darkness gives each member a try at turning undead for
-        // each LOAD MONSTER that brings undead (its EclLoadMonster,
-        // turnUndeadLimit).
-        if (const auto creature = area.encounter_creatures.find(record);
-            count > 0 && creature != area.encounter_creatures.end() &&
-            creature->second.stored.undead_level != 0)
-        {
-            ++staged_undead_loads_;
-        }
-        for (unsigned i = 0; ally && i < count; ++i)
-        {
-            const auto id =
-                static_cast<rules::EntityId>(opengold::first_ally_id + staged_allies_.size());
-            auto staged =
-                stage_area_creature(area, record, icon, exported, id, name, rules::Side::party,
-                                    difficulty_, plays_original_records(), game(), native_palette);
-            staged.fighter.arrival_round = arrival;
-            staged_allies_.push_back(std::move(staged.fighter));
-            staged_ally_art_.push_back(std::move(staged.art));
-        }
-        for (unsigned i = 0; !ally && i < count; ++i)
-        {
-            const auto id = static_cast<rules::EntityId>(1000 + staged_enemies_.size());
-            auto staged = stage_area_creature(
-                area, record, icon, exported, id,
-                name + " " + std::to_string(staged_enemies_.size() + 1), rules::Side::opposition,
-                difficulty_, plays_original_records(), game(), native_palette);
-            staged.fighter.arrival_round = arrival;
-            staged_enemies_.push_back(std::move(staged.fighter));
-            staged_art_.push_back(std::move(staged.art));
-            staged_records_.push_back(record);
-        }
+        encounters_.load_monster(*this, request);
         break;
-    }
     case 28:
         shop_service_.shop_stock().clear();
         treasure_service_.forget_staged();
-        staged_enemies_.clear();
-        staged_art_.clear();
-        staged_records_.clear();
-        staged_undead_loads_ = 0;
-        staged_allies_.clear();
-        staged_ally_art_.clear();
+        encounters_.forget_staged();
         break;
     case 34:
     {
@@ -3647,13 +2490,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case 41:
-        if (!current_area_ || arg(1) > 2)
-        {
-            throw EclError("Unsupported encounter menu context");
-        }
-        encounter_menu_ = request;
-        encounter_distance_ = std::min<unsigned>(arg(1), room_ahead());
-        show_encounter_menu();
+        encounters_.open_menu(*this, request);
         return true;
     case 29:
         // Podol Plaza's group roll asks the party's strength (ECL1:18 0xA00D).
@@ -3691,7 +2528,8 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
                                   arg(1), game());
         // A trap the Wand of Secrets pointed out is seen as Find Traps sees it.
         constexpr unsigned find_traps_effect = 19;
-        if (address_arg(0) == EclAddress{0} && arg(1) == find_traps_effect && on_wand_trap())
+        if (address_arg(0) == EclAddress{0} && arg(1) == find_traps_effect &&
+            doors_.on_wand_trap(*this))
         {
             values[3] = 1;
         }
@@ -3784,7 +2622,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (vga_engine(game()))
         {
             read_character();
-            reply = vga_spell(arg(0), address_arg(1), address_arg(2));
+            reply = vga_.vga_spell(*this, arg(0), address_arg(1), address_arg(2));
             break;
         }
         if (arg(0) != knock && !dispel)
@@ -3945,7 +2783,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         if (later_ecl_commands(game()))
         {
-            stage_vga_treasure(request);
+            vga_.stage_vga_treasure(*this, request);
             break;
         }
         bool money = false;
@@ -3982,264 +2820,18 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     case 36:
         // A Magic Circle drawn in camp keeps its creature type away: no fight,
         // and the rest goes on.
-        if (current_area_ && !staged_enemies_.empty() &&
+        if (current_area_ && !encounters_.staged_enemies().empty() &&
             event_stage_ == EventStage::camp_interrupted && camp_warded())
         {
             rest_warded_ = true;
-            staged_enemies_.clear();
-            staged_art_.clear();
-            staged_records_.clear();
-            staged_undead_loads_ = 0;
+            encounters_.ward_off();
             reply = character_reply(selected_character_);
             reply.writes.push_back({game_cell(ecl_combat_result), 0});
             reply.writes.push_back({game_cell(ecl_monsters_defeated), 0});
             break;
         }
-        if (mirror_duel_ && campaign_)
+        if (encounters_.fight(*this, request))
         {
-            stage_mirror();
-        }
-        // New Phlan's own fights too: the city watch's, Tempus's priests'.
-        if (!staged_enemies_.empty())
-        {
-            read_character();
-            encounter_records_ = staged_records_;
-            // The arena's copy is the duelist's match, whatever the party.
-            if (!mirror_duel_)
-            {
-                fit_staged_encounter();
-            }
-            const auto p = snapshot_.pose;
-            // On the wilderness map the field grows from the terrain under the
-            // party, drawn with the wilderness set, north up.
-            const auto roll = [&](int count, int sides)
-            {
-                int total = 0;
-                for (int die = 0; die < count; ++die)
-                {
-                    total += static_cast<int>(
-                                 machine_.host_random(request.id, static_cast<unsigned>(sides))) +
-                             1;
-                }
-                return total;
-            };
-            // The original faces a wilderness fight the way the party stepped;
-            // a diagonal step faces the direction to its left (PLACE-2).
-            const auto wilderness_facing = static_cast<MapDirection>(
-                machine_.variable(game_cell(ecl_overland_direction)) % 8 / 2);
-            // Curse fights out of doors (its 3D-area cell clear) on open ground
-            // grown from its current place's terrain (cell 0x4E42), as the
-            // original's SetupWildernessFloor does.
-            const bool curse_outdoors =
-                town_->curse_wilderness && machine_.variable(game_cell(ecl_in_3d_area)) == 0;
-            const auto curse_place_flags = [&]() -> unsigned
-            {
-                constexpr EclAddress curse_current_place{0x4E42};
-                const auto &flags = town_->curse_wilderness->place_flags;
-                const auto place = machine_.variable(curse_current_place);
-                return place < flags.size() ? flags[place] : 0U;
-            };
-            // Gateway fights on its overland on grass grown from the ground's
-            // class (cell 4CA1h, which nothing sets), as its
-            // BuildWildernessArena does.
-            const bool gateway_outdoors =
-                town_->gateway_wilderness &&
-                (gateway_overland() || (krynn_game(game()) && vga_area_map()));
-            const auto gateway_ground_class = [&]() -> unsigned
-            {
-                constexpr EclAddress gateway_ground{0x4CA1};
-                const auto &classes = town_->gateway_wilderness->terrain_classes;
-                // Champions' BuildWildernessArena explicitly selects terrain 15.
-                if (krynn_game(game()))
-                {
-                    return classes.at(15);
-                }
-                const std::size_t ground = machine_.variable(gateway_ground) & 0xFFu;
-                return ground < classes.size() ? classes[ground] : 0U;
-            };
-            std::vector<Image> native_terrain;
-            auto field = [&]
-            {
-                if (town_->dark_queen)
-                {
-                    const bool dungeon = machine_.variable(EclAddress{0x22}) != 0;
-                    auto native = dungeon
-                                      ? dark_queen_dungeon_field(*town_->dark_queen, map_, p,
-                                                                 dark_queen_combat_set_)
-                                      : ua::wilderness_field(
-                                            town_->dark_queen->files, dark_queen_combat_set_,
-                                            [&](unsigned sides)
-                                            {
-                                                return machine_.host_random(request.id, sides) + 1;
-                                            },
-                                            dark_queen_wilderness_style(
-                                                machine_.variable(EclAddress{0x1A2}),
-                                                machine_.variable(EclAddress{0x33}) != 0));
-                    native_terrain = std::move(native.terrain_art);
-                    return std::move(native.field);
-                }
-                return overland() ? wilderness_battlefield(
-                                        *town_->overland,
-                                        town_->overland->at(
-                                            town_->overland->window_start[travel_mode_ - 2] +
-                                                machine_.variable(game_cell(ecl_overland_x)),
-                                            machine_.variable(game_cell(ecl_overland_y))),
-                                        roll)
-                       : curse_outdoors
-                           ? wilderness_battlefield(town_->curse_wilderness->combat_tiles,
-                                                    curse_place_flags(), roll)
-                       : gateway_outdoors
-                           ? gateway_wilderness_battlefield(town_->gateway_wilderness->combat_tiles,
-                                                            gateway_ground_class(), roll)
-                           : dungeon_battlefield(map_, p.x, p.y);
-            }();
-            encounter_ = opengold::CampaignEncounter{
-                std::move(field),
-                std::move(staged_enemies_),
-                std::move(staged_art_),
-                overland() || curse_outdoors || gateway_outdoors ? town_->wilderness_art
-                                                                 : area_resources().terrain_art,
-                overland() ? wilderness_facing : p.facing,
-                script_surprise(machine_.variable(game_cell(ecl_encounter_surprise)))};
-            if (town_->dark_queen)
-            {
-                encounter_->terrain_art = std::move(native_terrain);
-            }
-            encounter_->band = std::move(staged_band_);
-            staged_band_.clear();
-            encounter_->allies = std::move(staged_allies_);
-            staged_allies_.clear();
-            for (auto &art : staged_ally_art_)
-            {
-                encounter_->art.push_back(std::move(art));
-            }
-            staged_ally_art_.clear();
-            encounter_->party_resting = event_stage_ == EventStage::camp_interrupted;
-            const auto hour = clock_minute_of_day(campaign_->state().time_minutes) / 60;
-            encounter_->daylight = hour >= 6 && hour < 18;
-            encounter_->outdoors = overland() || curse_outdoors || gateway_outdoors;
-            if (town_->dark_queen)
-            {
-                encounter_->outdoors = machine_.variable(EclAddress{0x22}) == 0;
-            }
-            // Gateway's combat mode 1 (cell 4D01h), which its maze through
-            // Ascore sets (ECL6:27 0x843A).
-            constexpr EclAddress gateway_combat_mode{0x4D01};
-            encounter_->escape_ends_fight = game() == GoldBoxGame::gateway_to_the_savage_frontier &&
-                                            machine_.variable(gateway_combat_mode) == 1;
-            // Treasures' crystal battles, which their scripts mark by cell
-            // 3Dh (gameState's crystalsActive).
-            constexpr EclAddress treasures_crystals_active{0x3D};
-            encounter_->crystals = game() == GoldBoxGame::treasures_of_the_savage_frontier &&
-                                   machine_.variable(treasures_crystals_active) != 0;
-            // PARTY_MOVE_MODIFIER, which the fight's end clears (postcbt.pas).
-            encounter_->party_move_modifier =
-                static_cast<int>(machine_.variable(game_cell(EclAddress{0x6E72})) & 0xFF);
-            // Treasures' cell 53h, which its scripts set where its yetis
-            // surprise the party (effhndlr.pas, EffFrightenAura).
-            encounter_->frightening_surprise =
-                game() == GoldBoxGame::treasures_of_the_savage_frontier &&
-                machine_.variable(EclAddress{0x53}) != 0;
-            // Treasures' romance, once a script has paired a member and an
-            // NPC (romance.pas, TagRelationshipPair, as each fight starts).
-            encounter_->romance = treasures_romance();
-            // Pools of Darkness's turning: a try for each LOAD MONSTER of
-            // undead, and the penalty its scripts set in cell Fh
-            // (turnUndeadPenalty), as CombatTurnUndead reads them.
-            if (game() == GoldBoxGame::pools_of_darkness)
-            {
-                constexpr EclAddress darkness_turning_penalty{0x0F};
-                encounter_->turning_tries = static_cast<int>(staged_undead_loads_);
-                encounter_->turning_penalty =
-                    static_cast<int>(machine_.variable(darkness_turning_penalty) & 0xFF);
-                // Its cell 2 (antiMagic), which the finale's script sets for
-                // Gothmenes' last stand: no one casts a spell or uses a magic
-                // item (combatai.pas, SelectSpellToCast; combat.pas, the
-                // Cast menu; viewchar.pas, the Use menu).
-                encounter_->no_magic = magic_barred();
-                // Its own cell for the party's movement modifier, which
-                // Moander's heart sets (ECL1:53 0x9C8C).
-                encounter_->party_move_modifier =
-                    static_cast<int>(machine_.variable(darkness_party_move_mod) & 0xFF);
-            }
-            if (game() == GoldBoxGame::dark_queen_of_krynn)
-            {
-                // Native LOAD MONSTER counts undead loads, not copies, for
-                // each member's turning attempts. Cell Fh reduces its column.
-                encounter_->turning_tries = static_cast<int>(staged_undead_loads_);
-                encounter_->turning_penalty =
-                    static_cast<int>(machine_.variable(EclAddress{0x0F}) & 0xFF);
-                encounter_->underwater = machine_.variable(EclAddress{0x003C}) != 0;
-                encounter_->no_magic = magic_barred();
-                encounter_->party_move_modifier =
-                    static_cast<int>(machine_.variable(EclAddress{0x001C}) & 0xFF);
-            }
-            if (std::exchange(duel_, false))
-            {
-                encounter_->mirror = mirror_duel_;
-                encounter_->champion = campaign_->state().slots.at(selected_character_.index);
-                if (!encounter_->champion)
-                {
-                    throw EclError("A duel needs a chosen member");
-                }
-            }
-            else
-            {
-                std::size_t living = 0;
-                for (const auto id : campaign_->state().slots)
-                {
-                    if (id && !campaign_->member(id).vitals.dead)
-                    {
-                        ++living;
-                        if (turncoat(id))
-                        {
-                            encounter_->turncoats.push_back(id);
-                        }
-                    }
-                }
-                // With every member gone over to the monsters, no one is left
-                // to fight them: the party is lost.
-                if (living && encounter_->turncoats.size() == living)
-                {
-                    snapshot_.phase = TourPhase::defeated;
-                    ++snapshot_.revision;
-                    return true;
-                }
-            }
-            if (!overland())
-            {
-                encounter_distance_ = std::min(encounter_distance_, room_ahead());
-            }
-            // On the wilderness map the original stands the monsters 2 squares
-            // away, whatever SETUP MONSTER asked (PLACE-2); so does Gateway's
-            // overland (its MaxMonsterDist).
-            encounter_->distance = overland() || gateway_overland() ? 2u : encounter_distance_;
-            // The monsters are dealt to the sides SETUP MONSTER named, in turn
-            // (combatst.pas, PlaceAllCreatures).
-            encounter_->enemy_quarters =
-                por::dealt_quarters(monster_sides_, encounter_->enemies.size());
-            // The script sets the encounter's morale before COMBAT.
-            const auto morale_cell = game() == GoldBoxGame::pools_of_darkness
-                                         ? darkness_break_point
-                                         : game_cell(ecl_encounter_morale);
-            encounter_->morale = std::min<unsigned>(machine_.variable(morale_cell), 100);
-            if (plays_original_records())
-            {
-                apply_original_difficulty(*encounter_, difficulty_, game());
-            }
-            else
-            {
-                apply_difficulty(*encounter_, difficulty_,
-                                 average_party_level(living_member_levels()));
-            }
-            add_script_to_hit();
-            announce_camp_attack();
-            combat_request_ = request.id;
-            // The original shows the approached monster's close-up until a key press.
-            showing_monster_picture_ =
-                monster_picture_id_ && area_resources().animations.contains(*monster_picture_id_);
-            snapshot_.phase = TourPhase::combat;
-            ++snapshot_.revision;
             return true;
         }
         if (game() == GoldBoxGame::dark_queen_of_krynn && machine_.variable(EclAddress{0x31}) == 1)
@@ -4372,7 +2964,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case vga_play_sound_command:
-        vga_play_sound(arg(0));
+        vga_.vga_play_sound(*this, arg(0));
         break;
     case 33:
     {
@@ -4400,7 +2992,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         }
         if (vga_engine(game()))
         {
-            reply = vga_load_files(arg(0), arg(1));
+            reply = vga_.vga_load_files(*this, arg(0), arg(1));
             break;
         }
         // The Buck Rogers games' map 127 is none: the outposts and the solar
@@ -4535,7 +3127,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         break;
     }
     case treasures_load_wall_sets_command:
-        reply = treasures_load_wall_sets(arg(0), {arg(1), arg(2), arg(3)});
+        reply = vga_.treasures_load_wall_sets(*this, arg(0), {arg(1), arg(2), arg(3)});
         break;
     case treasures_find_named_item_command:
     case treasures_take_named_item_command:
@@ -4608,7 +3200,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         if (later_ecl_commands(game()))
         {
-            open_vga_store(request);
+            vga_.open_vga_store(*this, request);
             return true;
         }
         // PROTECTION: a line of rune glyphs at the operand's address, which the
@@ -4622,7 +3214,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
     {
         if (vga_engine(game()))
         {
-            reply = vga_find_npc(request.arguments.at(0).text(), address_arg(1));
+            reply = vga_.vga_find_npc(*this, request.arguments.at(0).text(), address_arg(1));
             break;
         }
         // The wilderness's sites reset the wall banks (127) before NEW ECL.
@@ -4686,7 +3278,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
         if (vga_engine(game()))
         {
             read_character();
-            vga_damage(request);
+            vga_.vga_damage(*this, request);
             await_continue(request.id);
             return true;
         }
@@ -4841,7 +3433,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             }
             campaign_->set_wealth(wealth);
         }
-        robbed_ = true;
+        encounters_.party_robbed();
         reply = character_reply(selected_character_);
         break;
     }
@@ -4922,7 +3514,7 @@ bool RolfTourSession::handle_town_host(const EclRequest &request)
             (arg(0) >= 3 && arg(0) <= 5) && campaign_)
         {
             read_character();
-            treasures_program(request, arg(0));
+            vga_.treasures_program(*this, request, arg(0));
             return true;
         }
         if (arg(0) != 9 || !campaign_)
@@ -5071,32 +3663,33 @@ bool RolfTourSession::standing_at(const std::string &archive, unsigned record,
                      std::pair{snapshot_.pose.x, snapshot_.pose.y}) != markers.end();
 }
 
-void RolfTourSession::apply_entrances()
+void DoorHost::apply_entrances(TourHost &tour)
 {
-    if (!town_)
+    if (!tour.resources())
     {
         return;
     }
     // Sets one side of a square and the facing side of its neighbour.
     const auto set_edge =
-        [this](unsigned x, unsigned y, MapDirection side, std::uint8_t wall, std::uint8_t door)
+        [&tour](unsigned x, unsigned y, MapDirection side, std::uint8_t wall, std::uint8_t door)
     {
-        auto &cell = map_.cells[y * map_.width + x];
+        auto &cell = tour.loaded_map().cells[y * tour.loaded_map().width + x];
         cell.walls[index(side)] = wall;
         cell.doors[index(side)] = door;
         const int nx = static_cast<int>(x) + step_x(side), ny = static_cast<int>(y) + step_y(side);
-        if (nx >= 0 && ny >= 0 && nx < static_cast<int>(map_.width) &&
-            ny < static_cast<int>(map_.height))
+        if (nx >= 0 && ny >= 0 && nx < static_cast<int>(tour.loaded_map().width) &&
+            ny < static_cast<int>(tour.loaded_map().height))
         {
             auto &other =
-                map_.cells[static_cast<unsigned>(ny) * map_.width + static_cast<unsigned>(nx)];
+                tour.loaded_map().cells[static_cast<unsigned>(ny) * tour.loaded_map().width +
+                                        static_cast<unsigned>(nx)];
             other.walls[index(reversed(side))] = wall;
             other.doors[index(reversed(side))] = door;
         }
     };
-    for (const auto &shop : shop_service_.shops())
+    for (const auto &shop : tour.shop_service().shops())
     {
-        if (!shop.entrance || !on_map(shop.archive, shop.record))
+        if (!shop.entrance || !tour.on_map(shop.archive, shop.record))
         {
             continue;
         }
@@ -5104,7 +3697,7 @@ void RolfTourSession::apply_entrances()
         const auto state = entrances_[shop.id];
         for (const auto &[x, y] : shop.markers)
         {
-            map_.cells[y * map_.width + x].event_raw = 0;
+            tour.loaded_map().cells[y * tour.loaded_map().width + x].event_raw = 0;
             for (const auto &[side, wall] : entrance.walls)
             {
                 set_edge(x, y, side, wall, 0);
@@ -5118,12 +3711,12 @@ void RolfTourSession::apply_entrances()
     }
 }
 
-const opengold::ShopSite *RolfTourSession::entrance_ahead() const
+const opengold::ShopSite *DoorHost::entrance_ahead(TourHost &tour) const
 {
-    const auto edge = edge_ahead(map_, snapshot_.pose);
-    for (const auto &shop : shop_service_.shops())
+    const auto edge = edge_ahead(tour.loaded_map(), tour.screen().pose);
+    for (const auto &shop : tour.shop_service().shops())
     {
-        if (!shop.entrance || !on_map(shop.archive, shop.record))
+        if (!shop.entrance || !tour.on_map(shop.archive, shop.record))
         {
             continue;
         }
@@ -5142,25 +3735,27 @@ const opengold::ShopSite *RolfTourSession::entrance_ahead() const
     return nullptr;
 }
 
-bool RolfTourSession::on_wand_trap() const
+bool DoorHost::on_wand_trap(const TourHost &tour) const
 {
-    return wand_traps_.contains(current_area_ * 256 + snapshot_.pose.y * 16 + snapshot_.pose.x);
+    return wand_traps_.contains(tour.current_area() * 256 + tour.screen().pose.y * 16 +
+                                tour.screen().pose.x);
 }
 
-std::optional<WandSign> RolfTourSession::point_wand_of_secrets(MemberId member, std::uint64_t item)
+std::optional<WandSign> DoorHost::point_wand_of_secrets(TourHost &tour, MemberId member,
+                                                        std::uint64_t item)
 {
-    if (!campaign_ || !can_leave())
+    if (!tour.campaign() || !tour.can_leave())
     {
         throw std::runtime_error("The wand can be used only while exploring.");
     }
-    campaign_->use_wand_of_secrets(member, item);
+    tour.campaign()->use_wand_of_secrets(member, item);
     // Squares count as the SRD counts them, diagonals too; of two squares as
     // near, the one fewer steps away is nearer.
     constexpr int reach = 6;
-    const auto squares = [this](unsigned x, unsigned y)
+    const auto squares = [&tour](unsigned x, unsigned y)
     {
-        const int dx = std::abs(static_cast<int>(x) - static_cast<int>(snapshot_.pose.x)),
-                  dy = std::abs(static_cast<int>(y) - static_cast<int>(snapshot_.pose.y));
+        const int dx = std::abs(static_cast<int>(x) - static_cast<int>(tour.screen().pose.x)),
+                  dy = std::abs(static_cast<int>(y) - static_cast<int>(tour.screen().pose.y));
         return std::pair{std::max(dx, dy), dx + dy};
     };
     // A door is as near as the nearer of its two squares, from which the
@@ -5193,9 +3788,9 @@ std::optional<WandSign> RolfTourSession::point_wand_of_secrets(MemberId member, 
     };
     for (const auto &door : script_secret_doors)
     {
-        const auto found = machine_.variable(game_cell(EclAddress{door.flag}));
-        if (!overland() && door.map == current_area_ && (found & door.found) != door.found &&
-            consider(door_sign(door.x, door.y, door.side)))
+        const auto found = tour.script_machine().variable(tour.game_cell(EclAddress{door.flag}));
+        if (!tour.overland() && door.map == tour.current_area() &&
+            (found & door.found) != door.found && consider(door_sign(door.x, door.y, door.side)))
         {
             script_door = &door;
         }
@@ -5203,9 +3798,10 @@ std::optional<WandSign> RolfTourSession::point_wand_of_secrets(MemberId member, 
     for (const auto &candidate : script_traps)
     {
         const auto state =
-            machine_.variable(game_cell(EclAddress{candidate.flag})) & candidate.mask;
+            tour.script_machine().variable(tour.game_cell(EclAddress{candidate.flag})) &
+            candidate.mask;
         const auto key = candidate.map * 256 + candidate.y * 16 + candidate.x;
-        if (!overland() && candidate.map == current_area_ && state != candidate.sprung &&
+        if (!tour.overland() && candidate.map == tour.current_area() && state != candidate.sprung &&
             !wand_traps_.contains(key) &&
             consider({squares(candidate.x, candidate.y),
                       WandSign{candidate.x, candidate.y, MapDirection::north, true}}))
@@ -5213,9 +3809,9 @@ std::optional<WandSign> RolfTourSession::point_wand_of_secrets(MemberId member, 
             trap = &candidate;
         }
     }
-    for (const auto &site : shop_service_.shops())
+    for (const auto &site : tour.shop_service().shops())
     {
-        if (!site.entrance || !on_map(site.archive, site.record) ||
+        if (!site.entrance || !tour.on_map(site.archive, site.record) ||
             entrances_[site.id] != EntranceState::hidden)
         {
             continue;
@@ -5231,8 +3827,9 @@ std::optional<WandSign> RolfTourSession::point_wand_of_secrets(MemberId member, 
     if (script_door)
     {
         const EclAddress flag{script_door->flag};
-        machine_.bind_variable(game_cell(flag),
-                               machine_.variable(game_cell(flag)) | script_door->found);
+        tour.script_machine().bind_variable(tour.game_cell(flag),
+                                            tour.script_machine().variable(tour.game_cell(flag)) |
+                                                script_door->found);
     }
     else if (trap)
     {
@@ -5242,22 +3839,48 @@ std::optional<WandSign> RolfTourSession::point_wand_of_secrets(MemberId member, 
     {
         // The door now shows in the wall.
         entrances_[shop->id] = EntranceState::found;
-        apply_entrances();
-        ++snapshot_.picture_revision;
-        ++snapshot_.revision;
+        apply_entrances(tour);
+        ++tour.screen().picture_revision;
+        ++tour.screen().revision;
     }
     return sign;
 }
 
-void RolfTourSession::search_for_secret_door()
+void DoorHost::choose(TourHost &tour, std::size_t choice)
 {
-    if (!campaign_)
+    door_menu_ = false;
+    if (choice < door_choices_.size())
+    {
+        try_locked_door(tour, door_choices_[choice]);
+    }
+}
+
+void DoorHost::roll_back(std::map<std::string, EntranceState> entrances,
+                         std::set<unsigned> wand_traps)
+{
+    door_menu_ = false;
+    door_choices_.clear();
+    entrances_ = std::move(entrances);
+    wand_traps_ = std::move(wand_traps);
+}
+
+void DoorHost::reset()
+{
+    door_menu_ = pick_tried_ = false;
+    door_choices_.clear();
+    entrances_.clear();
+    wand_traps_.clear();
+}
+
+void DoorHost::search_for_secret_door(TourHost &tour)
+{
+    if (!tour.campaign())
     {
         return;
     }
-    for (const auto &shop : shop_service_.shops())
+    for (const auto &shop : tour.shop_service().shops())
     {
-        if (!shop.entrance || !on_map(shop.archive, shop.record) ||
+        if (!shop.entrance || !tour.on_map(shop.archive, shop.record) ||
             entrances_[shop.id] != EntranceState::hidden)
         {
             continue;
@@ -5267,31 +3890,32 @@ void RolfTourSession::search_for_secret_door()
         {
             const int outside_x = static_cast<int>(x) + step_x(side),
                       outside_y = static_cast<int>(y) + step_y(side);
-            if (outside_x != static_cast<int>(snapshot_.pose.x) ||
-                outside_y != static_cast<int>(snapshot_.pose.y))
+            if (outside_x != static_cast<int>(tour.screen().pose.x) ||
+                outside_y != static_cast<int>(tour.screen().pose.y))
             {
                 continue;
             }
-            const auto rolls = campaign_->search_for_secret_door(event_searched_);
+            const auto rolls = tour.campaign()->search_for_secret_door(tour.event_searched());
             for (const auto &roll : rolls)
             {
-                snapshot_.secret_door_searches.push_back(
-                    {campaign_->member(roll.member).character.sheet().name, roll.die, roll.needed});
+                tour.screen().secret_door_searches.push_back(
+                    {tour.campaign()->member(roll.member).character.sheet().name, roll.die,
+                     roll.needed});
             }
             if (rolls.empty() || rolls.back().die > rolls.back().needed)
             {
                 return;
             }
-            snapshot_.secret_door_found = true;
+            tour.screen().secret_door_found = true;
             entrances_[shop.id] = EntranceState::found;
-            apply_entrances();
+            apply_entrances(tour);
             static constexpr std::array<std::string_view, 4> found{
                 "You find a secret door in the north wall.",
                 "You find a secret door in the east wall.",
                 "You find a secret door in the south wall.",
                 "You find a secret door in the west wall."};
-            snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") +
-                                  std::string(found[index(reversed(side))]);
+            tour.screen().dialogue += (tour.screen().dialogue.empty() ? "" : "\n") +
+                                      std::string(found[index(reversed(side))]);
             return;
         }
     }

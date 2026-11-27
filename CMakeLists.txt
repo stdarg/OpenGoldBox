@@ -254,6 +254,7 @@ add_library(opengold_core STATIC
     src/OpenGold.Core/src/host_shops.cpp
     src/OpenGold.Core/src/host_treasure.cpp
     src/OpenGold.Core/src/host_camp.cpp
+    src/OpenGold.Core/src/encounter_host.cpp
     src/OpenGold.Core/src/vga_host.cpp
     src/OpenGold.Core/src/buck_rogers_host.cpp
     src/OpenGold.Core/src/buck_rogers_solar_map.cpp

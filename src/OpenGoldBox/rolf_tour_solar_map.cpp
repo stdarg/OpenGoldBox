@@ -333,7 +333,7 @@ void RolfTourView::show_solar_map(const TourSnapshot &s)
              {"y", state.rocket.y},
              {"heading", i18n::text(heading_names.at(static_cast<std::size_t>(state.heading)))}}));
     const auto ship = session.team_ship();
-    using Ship = opengold::por::RolfTourSession;
+    namespace Ship = opengold::por;
     const auto fuel = ship.system(Ship::ShipSystemKind::fuel);
     required_node<Control>(*this, "%FuelGauge")
         .call("set_fuel", static_cast<int>(fuel.now), static_cast<int>(fuel.whole));

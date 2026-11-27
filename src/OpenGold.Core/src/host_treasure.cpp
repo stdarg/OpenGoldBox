@@ -257,7 +257,7 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
         {
             continue;
         }
-        auto gear = carried_gear(creature, exported_creature(*resources, id));
+        auto gear = carried_gear(creature, EncounterHost::exported_creature(*this, *resources, id));
         // One monster of this record used its gear in the fight (DIFF-1).
         if (const auto used = std::find_if(spent.begin(), spent.end(),
                                            [&](const auto &s)
@@ -284,7 +284,8 @@ PendingLoot RolfTourSession::encounter_loot(unsigned area, std::vector<unsigned>
                 loot.items.push_back(std::move(*item));
             }
         }
-        for (auto &item : added_gear(exported_creature(*resources, id), *town_))
+        for (auto &item :
+             added_gear(EncounterHost::exported_creature(*this, *resources, id), *town_))
         {
             item.index = loot.items.size();
             loot.items.push_back(std::move(item));
@@ -399,10 +400,10 @@ void RolfTourSession::award_staged_treasure(bool with_experience)
     // claim beside this particular script-authorized treasure award.
     if (with_experience && game() == GoldBoxGame::pool_of_radiance && plays_original_records())
     {
-        const auto experience = treasure_experience(loot);
+        const auto experience = encounters_.treasure_experience(*this, loot);
         if (experience)
         {
-            campaign_->award_experience(experience_share(experience),
+            campaign_->award_experience(encounters_.experience_share(*this, experience),
                                         loot.reward_id + ":experience");
         }
     }

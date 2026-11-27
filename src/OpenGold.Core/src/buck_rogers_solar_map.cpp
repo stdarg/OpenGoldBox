@@ -46,22 +46,23 @@ constexpr unsigned cell_pixels = 8;
 }
 } // namespace
 
-original::SolarMapState RolfTourSession::solar_map_state() const
+original::SolarMapState BuckRogersHost::solar_map_state(const TourHost &tour) const
 {
-    const auto tile = machine_.variable(rocket_tile_cell);
+    const auto tile = tour.script_machine().variable(rocket_tile_cell);
     const auto first = original::rocket_tile(original::RocketHeading::north);
     const auto heading = tile >= first && tile < first + 8
                              ? static_cast<original::RocketHeading>(tile - first)
                              : original::RocketHeading::north;
-    return {machine_.variable(phase_cell),
-            machine_.variable(days_cell),
+    return {tour.script_machine().variable(phase_cell),
+            tour.script_machine().variable(days_cell),
             heading,
-            {machine_.variable(rocket_x_cell), machine_.variable(rocket_y_cell)}};
+            {tour.script_machine().variable(rocket_x_cell),
+             tour.script_machine().variable(rocket_y_cell)}};
 }
 
-std::optional<std::size_t> RolfTourSession::orbited_body() const
+std::optional<std::size_t> BuckRogersHost::orbited_body(const TourHost &tour) const
 {
-    const auto planet = machine_.variable(planet_cell);
+    const auto planet = tour.script_machine().variable(planet_cell);
     if (planet == 0 || planet > original::solar_bodies)
     {
         return std::nullopt;
@@ -69,11 +70,12 @@ std::optional<std::size_t> RolfTourSession::orbited_body() const
     return planet - 1U;
 }
 
-RolfTourSession::TeamShip RolfTourSession::team_ship() const
+TeamShip BuckRogersHost::team_ship(const TourHost &tour) const
 {
-    const auto at = [this](std::uint16_t offset)
+    const auto at = [&tour](std::uint16_t offset)
     {
-        return machine_.variable(EclAddress{static_cast<std::uint16_t>(ship_cell + offset)});
+        return tour.script_machine().variable(
+            EclAddress{static_cast<std::uint16_t>(ship_cell + offset)});
     };
     TeamShip ship;
     const auto length = std::min<unsigned>(at(0) & 0xFF, ship_name_length);
@@ -89,54 +91,57 @@ RolfTourSession::TeamShip RolfTourSession::team_ship() const
     return ship;
 }
 
-void RolfTourSession::keep_solar_map(const original::SolarMapState &state)
+void BuckRogersHost::keep_solar_map(TourHost &tour, const original::SolarMapState &state)
 {
-    machine_.bind_variable(phase_cell, static_cast<std::uint16_t>(state.phase));
-    machine_.bind_variable(days_cell, static_cast<std::uint16_t>(state.days));
-    machine_.bind_variable(rocket_tile_cell,
-                           static_cast<std::uint16_t>(original::rocket_tile(state.heading)));
-    machine_.bind_variable(rocket_x_cell, static_cast<std::uint16_t>(state.rocket.x));
-    machine_.bind_variable(rocket_y_cell, static_cast<std::uint16_t>(state.rocket.y));
+    tour.script_machine().bind_variable(phase_cell, static_cast<std::uint16_t>(state.phase));
+    tour.script_machine().bind_variable(days_cell, static_cast<std::uint16_t>(state.days));
+    tour.script_machine().bind_variable(
+        rocket_tile_cell, static_cast<std::uint16_t>(original::rocket_tile(state.heading)));
+    tour.script_machine().bind_variable(rocket_x_cell, static_cast<std::uint16_t>(state.rocket.x));
+    tour.script_machine().bind_variable(rocket_y_cell, static_cast<std::uint16_t>(state.rocket.y));
     const auto bodies = original::place_bodies(state.phase);
     for (std::size_t body = 0; body < bodies.size(); ++body)
     {
         const auto at = static_cast<std::uint16_t>(first_body_cell + 2 * body);
-        machine_.bind_variable(EclAddress{at}, static_cast<std::uint16_t>(bodies[body].cell.x));
-        machine_.bind_variable(EclAddress{static_cast<std::uint16_t>(at + 1)},
-                               static_cast<std::uint16_t>(bodies[body].cell.y));
+        tour.script_machine().bind_variable(EclAddress{at},
+                                            static_cast<std::uint16_t>(bodies[body].cell.x));
+        tour.script_machine().bind_variable(EclAddress{static_cast<std::uint16_t>(at + 1)},
+                                            static_cast<std::uint16_t>(bodies[body].cell.y));
     }
 }
 
-void RolfTourSession::solar_map_step()
+void BuckRogersHost::solar_map_step(TourHost &tour)
 {
-    read_character();
-    if (machine_.variable(move_blocked_cell) == move_blocked)
+    tour.read_character();
+    if (tour.script_machine().variable(move_blocked_cell) == move_blocked)
     {
-        machine_.bind_variable(move_blocked_cell, 0);
-        ++snapshot_.revision;
+        tour.script_machine().bind_variable(move_blocked_cell, 0);
+        ++tour.screen().revision;
         return;
     }
-    keep_solar_map(original::step_rocket(solar_map_state(), heading_of(*pending_movement_)));
-    if (campaign_)
+    keep_solar_map(
+        tour, original::step_rocket(solar_map_state(tour), heading_of(*tour.pending_movement())));
+    if (tour.campaign())
     {
-        BuckRogersMenuService::rest_buck_rogers_team(*campaign_, original::rocket_step_days);
-        for (const auto &w : character_reply(selected_character_).writes)
+        BuckRogersMenuService::rest_buck_rogers_team(*tour.campaign(), original::rocket_step_days);
+        for (const auto &w : tour.character_reply(tour.selected_character()).writes)
         {
-            machine_.bind_variable(w.address, w.value);
+            tour.script_machine().bind_variable(w.address, w.value);
         }
     }
-    synchronize_clock();
-    ++snapshot_.revision;
+    tour.synchronize_clock();
+    ++tour.screen().revision;
 }
 
-Image RolfTourSession::render_solar_map() const
+Image BuckRogersHost::render_solar_map(const TourHost &tour) const
 {
-    if (!town_ || town_->solar_map_tiles.empty() || !consistent(town_->solar_map_backdrop))
+    if (!tour.resources() || tour.town_resources().solar_map_tiles.empty() ||
+        !consistent(tour.town_resources().solar_map_backdrop))
     {
         return {};
     }
-    auto map = town_->solar_map_backdrop;
-    const auto &tiles = town_->solar_map_tiles;
+    auto map = tour.town_resources().solar_map_backdrop;
+    const auto &tiles = tour.town_resources().solar_map_tiles;
     const auto draw = [&](unsigned tile, original::OrbitCell cell)
     {
         if (tile < tiles.size())
@@ -145,7 +150,7 @@ Image RolfTourSession::render_solar_map() const
         }
     };
     draw(original::sun_tile, original::sun_cell);
-    const auto state = solar_map_state();
+    const auto state = solar_map_state(tour);
     for (const auto &body : original::place_bodies(state.phase))
     {
         draw(body.tile, body.cell);

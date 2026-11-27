@@ -54,6 +54,13 @@ struct ShipCombatCall
     bool operator==(const ShipCombatCall &) const = default;
 };
 
+// The game clock as the scripts read it: the year, the month of twelve
+// and the day of thirty, from 1, and the hour and minute of the day.
+struct GameClock
+{
+    unsigned year{}, month{1}, day{1}, hour{}, minute{};
+};
+
 // A script took coins the payer lacked and the purse made change.
 struct CoinPayment
 {

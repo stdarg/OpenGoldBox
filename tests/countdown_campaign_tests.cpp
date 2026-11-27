@@ -596,7 +596,7 @@ void the_solar_map_flies(const std::filesystem::path &folder)
     record.creature.hit_points = static_cast<std::uint16_t>(record.creature.hit_points - 5);
     party.keep_game_record(member, og::encode_ground_record(record));
     const auto wounded = record.creature.hit_points;
-    using Ship = opengold::por::RolfTourSession;
+    namespace Ship = opengold::por;
     const auto ship = session.team_ship();
     const auto fuel = ship.system(Ship::ShipSystemKind::fuel);
     check(ship.name == "Maelstrom Rider" && fuel.whole == 450 && fuel.now > 0 && fuel.now <= 450 &&

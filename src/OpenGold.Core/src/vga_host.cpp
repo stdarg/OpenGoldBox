@@ -49,19 +49,21 @@ constexpr std::uint16_t okay = 0, dead = 6;
 
 } // namespace
 
-std::optional<Equipment> RolfTourSession::vga_item(unsigned number, std::uint64_t request)
+std::optional<Equipment> VgaHost::vga_item(TourHost &tour, unsigned number, std::uint64_t request)
 {
     constexpr unsigned random_scroll = 0xFF;
     if (number != random_scroll)
     {
-        const auto found = town_->item_definitions.find(number);
-        if (game() == GoldBoxGame::dark_queen_of_krynn && found != town_->item_definitions.end() &&
+        const auto found = tour.town_resources().item_definitions.find(number);
+        if (tour.game() == GoldBoxGame::dark_queen_of_krynn &&
+            found != tour.town_resources().item_definitions.end() &&
             (found->second.stored.type == 30 || found->second.stored.type == 12 ||
              found->second.stored.type == 74))
         {
             return std::nullopt;
         }
-        return found == town_->item_definitions.end() ? std::nullopt : std::optional{found->second};
+        return found == tour.town_resources().item_definitions.end() ? std::nullopt
+                                                                     : std::optional{found->second};
     }
     // A scroll of three magic-user spells drawn at random from its 126 (its
     // EclBuildRandomScroll): a scroll's type and words, worth 3,000.
@@ -73,8 +75,9 @@ std::optional<Equipment> RolfTourSession::vga_item(unsigned number, std::uint64_
     scroll.magic_bonus = 1;
     scroll.weight = 1;
     scroll.value = 3000;
-    const unsigned native_robe =
-        game() == GoldBoxGame::dark_queen_of_krynn ? machine_.host_random(request, 2) + 1 : 0;
+    const unsigned native_robe = tour.game() == GoldBoxGame::dark_queen_of_krynn
+                                     ? tour.script_machine().host_random(request, 2) + 1
+                                     : 0;
     if (native_robe)
     {
         scroll.name_components = {102, 39, static_cast<std::uint8_t>(138 - native_robe)};
@@ -84,7 +87,8 @@ std::optional<Equipment> RolfTourSession::vga_item(unsigned number, std::uint64_
     {
         while (true)
         {
-            const auto roll = static_cast<int>(machine_.host_random(request, spell_count)) + 1;
+            const auto roll =
+                static_cast<int>(tour.script_machine().host_random(request, spell_count)) + 1;
             if (native_robe)
             {
                 if (original::dark_queen_scroll_spell(roll, native_robe))
@@ -96,7 +100,7 @@ std::optional<Equipment> RolfTourSession::vga_item(unsigned number, std::uint64_
             }
             // Its spells past Secret's, 118 to 126, are all magic-user spells.
             const auto *known =
-                opengold::original::spell(opengold::original::canonical_spell(roll, game()));
+                opengold::original::spell(opengold::original::canonical_spell(roll, tour.game()));
             if ((known && known->caster_class == opengold::original::SpellClass::magic_user) ||
                 roll >= first_new_magic_user_spell)
             {
@@ -116,22 +120,22 @@ std::optional<Equipment> RolfTourSession::vga_item(unsigned number, std::uint64_
         scroll.raw[58] = static_cast<std::uint8_t>(scroll.value & 255);
         scroll.raw[59] = static_cast<std::uint8_t>(scroll.value >> 8);
         std::ranges::copy(scroll.effect_codes, scroll.raw.begin() + 60);
-        item.decoded_name = item_name(scroll, town_->dark_queen->item_words);
-        item.unidentified_name =
-            item_name(scroll, town_->dark_queen->item_words, scroll.hidden_name_words);
+        item.decoded_name = item_name(scroll, tour.town_resources().dark_queen->item_words);
+        item.unidentified_name = item_name(scroll, tour.town_resources().dark_queen->item_words,
+                                           scroll.hidden_name_words);
     }
-    if (scroll.type < town_->item_templates.size())
+    if (scroll.type < tour.town_resources().item_templates.size())
     {
-        item.base = town_->item_templates[scroll.type];
+        item.base = tour.town_resources().item_templates[scroll.type];
     }
     item.bonuses = equipment_bonuses(scroll, item.base);
     item.stored = std::move(scroll);
     return item;
 }
 
-void RolfTourSession::stage_vga_treasure(const EclRequest &request)
+void VgaHost::stage_vga_treasure(TourHost &tour, const EclRequest &request)
 {
-    if (!campaign_)
+    if (!tour.campaign())
     {
         throw EclError("Treasure awards require a campaign party");
     }
@@ -146,32 +150,32 @@ void RolfTourSession::stage_vga_treasure(const EclRequest &request)
     {
         loot.wealth[platinum + n] = number(n);
     }
-    loot.reward_id = treasure_identity(request.instruction->address);
+    loot.reward_id = tour.treasure_identity(request.instruction->address);
     loot.include_items = false;
     for (std::size_t n = 0; n < number(3); ++n)
     {
-        if (auto item = vga_item(number(4 + n), request.id))
+        if (auto item = vga_item(tour, number(4 + n), request.id))
         {
             item->index = loot.items.size();
             loot.items.push_back(std::move(*item));
         }
     }
-    treasure_service_.stage(std::move(loot));
+    tour.treasure_service().stage(std::move(loot));
 }
 
-void RolfTourSession::open_vga_store(const EclRequest &request)
+void VgaHost::open_vga_store(TourHost &tour, const EclRequest &request)
 {
     // Stores 1 to 11; any other number opens the first (its EclShop).
     auto store = request.arguments.at(0).number();
-    if (store < 1 || store > town_->stores.size())
+    if (store < 1 || store > tour.town_resources().stores.size())
     {
         store = 1;
     }
-    auto &goods = shop_service_.shop_stock();
+    auto &goods = tour.shop_service().shop_stock();
     goods.clear();
-    for (const auto number : town_->stores.at(store - 1))
+    for (const auto number : tour.town_resources().stores.at(store - 1))
     {
-        if (auto item = vga_item(number, request.id))
+        if (auto item = vga_item(tour, number, request.id))
         {
             // A store's goods are known for what they are.
             item->identify();
@@ -179,77 +183,80 @@ void RolfTourSession::open_vga_store(const EclRequest &request)
             goods.push_back(std::move(*item));
         }
     }
-    choose_shopper();
-    read_character();
-    shop_service_.enter_shop(*this, request.id);
+    tour.choose_shopper();
+    tour.read_character();
+    tour.shop_service().enter_shop(tour, request.id);
 }
 
-bool RolfTourSession::vga_area_map() const
+bool VgaHost::vga_area_map(const TourHost &tour) const
 {
     // The Buck Rogers games' wildernesses of Venus and Mars (area kinds A2h
     // and A8h) are such a map, shown as a big picture (mapview.pas).
-    if (is_buck_rogers(game()))
+    if (is_buck_rogers(tour.game()))
     {
-        const auto kind = machine_.variable(EclAddress{0x4BE6}) & 0xFF;
+        const auto kind = tour.script_machine().variable(EclAddress{0x4BE6}) & 0xFF;
         return kind == 0xA2 || kind == 0xA8;
     }
-    if (game() == GoldBoxGame::dark_queen_of_krynn)
+    if (tour.game() == GoldBoxGame::dark_queen_of_krynn)
     {
-        return machine_.variable(EclAddress{0x24}) == 1;
+        return tour.script_machine().variable(EclAddress{0x24}) == 1;
     }
-    return (vga_engine(game()) || krynn_game(game())) &&
-           machine_.variable(game_cell(ecl_in_3d_area)) == 0;
+    return (vga_engine(tour.game()) || krynn_game(tour.game())) &&
+           tour.script_machine().variable(tour.game_cell(ecl_in_3d_area)) == 0;
 }
 
-void RolfTourSession::vga_area_step()
+void VgaHost::vga_area_step(TourHost &tour)
 {
     // Native wilderness scripts move between their two views themselves,
     // or refuse impassable terrain, and suppress the ordinary viewport step.
-    if (game() == GoldBoxGame::dark_queen_of_krynn &&
-        machine_.variable(game_cell(EclAddress{0x6DC9})) == 255)
+    if (tour.game() == GoldBoxGame::dark_queen_of_krynn &&
+        tour.script_machine().variable(tour.game_cell(EclAddress{0x6DC9})) == 255)
     {
         return;
     }
     // The party's square on the area map, 38 columns by 15 rows (its
     // MovePartyWilderness), and the square it left.
     // Champions' and the Buck Rogers games' keep it in their zone 0 (4BC3h).
-    const bool champions = krynn_game(game()) || is_buck_rogers(game());
-    const auto column = champions ? game_cell(ecl_overland_x) : EclAddress{0x0025};
-    const auto row = champions ? game_cell(ecl_overland_y) : EclAddress{0x0026};
-    const auto previous_column = champions ? game_cell(EclAddress{0x49F0}) : EclAddress{0x0017};
-    const auto previous_row = champions ? game_cell(EclAddress{0x49F1}) : EclAddress{0x0018};
+    const bool champions = krynn_game(tour.game()) || is_buck_rogers(tour.game());
+    const auto column = champions ? tour.game_cell(ecl_overland_x) : EclAddress{0x0025};
+    const auto row = champions ? tour.game_cell(ecl_overland_y) : EclAddress{0x0026};
+    const auto previous_column =
+        champions ? tour.game_cell(EclAddress{0x49F0}) : EclAddress{0x0017};
+    const auto previous_row = champions ? tour.game_cell(EclAddress{0x49F1}) : EclAddress{0x0018};
     constexpr int columns = 38, rows = 15;
-    const auto direction = static_cast<std::size_t>(*pending_movement_) -
+    const auto direction = static_cast<std::size_t>(*tour.pending_movement()) -
                            static_cast<std::size_t>(ExplorationCommand::north);
-    const auto from_column = machine_.variable(column), from_row = machine_.variable(row);
-    machine_.bind_variable(previous_column, from_column);
-    machine_.bind_variable(previous_row, from_row);
-    machine_.bind_variable(
+    const auto from_column = tour.script_machine().variable(column),
+               from_row = tour.script_machine().variable(row);
+    tour.script_machine().bind_variable(previous_column, from_column);
+    tour.script_machine().bind_variable(previous_row, from_row);
+    tour.script_machine().bind_variable(
         column, static_cast<std::uint16_t>(
                     std::clamp(from_column + directions::step_x.at(direction), 0, columns - 1)));
-    machine_.bind_variable(row, static_cast<std::uint16_t>(std::clamp(
-                                    from_row + directions::step_y.at(direction), 0, rows - 1)));
+    tour.script_machine().bind_variable(
+        row, static_cast<std::uint16_t>(
+                 std::clamp(from_row + directions::step_y.at(direction), 0, rows - 1)));
     // A step on the area map takes half a day.
-    if (campaign_)
+    if (tour.campaign())
     {
-        pass_time(std::chrono::hours{12});
+        tour.pass_time(std::chrono::hours{12});
     }
-    synchronize_clock();
-    ++snapshot_.revision;
+    tour.synchronize_clock();
+    ++tour.screen().revision;
 }
 
-EclHostReply RolfTourSession::vga_spell(unsigned spell, EclAddress place, EclAddress member)
+EclHostReply VgaHost::vga_spell(TourHost &tour, unsigned spell, EclAddress place, EclAddress member)
 {
     constexpr std::uint16_t nobody = 0xFF;
-    auto reply = character_reply(selected_character_);
+    auto reply = tour.character_reply(tour.selected_character());
     std::uint16_t found = nobody, caster_slot = 0;
     const auto id = opengold::original::spell_id(
-        opengold::original::canonical_spell(static_cast<int>(spell), game()));
+        opengold::original::canonical_spell(static_cast<int>(spell), tour.game()));
     if (!id.empty())
     {
-        if (const auto caster = campaign_->cast_exploration_spell(id))
+        if (const auto caster = tour.campaign()->cast_exploration_spell(id))
         {
-            const auto &slots = campaign_->state().slots;
+            const auto &slots = tour.campaign()->state().slots;
             found = 0;
             caster_slot =
                 static_cast<std::uint16_t>(std::ranges::find(slots, *caster) - slots.begin());
@@ -260,7 +267,7 @@ EclHostReply RolfTourSession::vga_spell(unsigned spell, EclAddress place, EclAdd
     return reply;
 }
 
-void RolfTourSession::vga_damage(const EclRequest &request)
+void VgaHost::vga_damage(TourHost &tour, const EclRequest &request)
 {
     // DAMAGE: attack, dice, sides, bonus, value (its EclDamage). With attack's
     // 80h its low four bits are the save's modifier and value's low three bits
@@ -280,13 +287,13 @@ void RolfTourSession::vga_damage(const EclRequest &request)
     const auto attack = number(0), value = number(4);
     rules::HazardAttack harm{0, number(1), number(2), static_cast<int>(number(3)), {}};
     harm.automatic = true;
-    const bool native = game() == GoldBoxGame::dark_queen_of_krynn;
+    const bool native = tour.game() == GoldBoxGame::dark_queen_of_krynn;
     harm.original_roll_damage_first = native;
     if (!(attack & special))
     {
         harm.automatic = false;
         harm.original_attack = static_cast<int>(value);
-        snapshot_.dialogue += shoot_arrows(attack, "blow", harm);
+        tour.screen().dialogue += tour.shoot_arrows(attack, "blow", harm);
         return;
     }
     const auto save_against = [&](int save)
@@ -299,14 +306,15 @@ void RolfTourSession::vga_damage(const EclRequest &request)
     };
     const auto hurt_member = [&](MemberId id)
     {
-        const auto result = campaign_->hazard_attack(id, harm);
+        const auto result = tour.campaign()->hazard_attack(id, harm);
         if (native && (attack & whole_party) && result)
         {
             harm.dice = 0;
             harm.damage_bonus = result->damage_rolled;
         }
-        snapshot_.dialogue += hurt(result ? std::optional<HazardHit>{{id, *result}} : std::nullopt,
-                                   harm.save_dc, harm.sides);
+        tour.screen().dialogue +=
+            tour.hurt(result ? std::optional<HazardHit>{{id, *result}} : std::nullopt, harm.save_dc,
+                      harm.sides);
     };
     if (attack & whole_party)
     {
@@ -314,7 +322,7 @@ void RolfTourSession::vga_damage(const EclRequest &request)
         {
             save_against(static_cast<int>(value & 7));
         }
-        for (const auto id : campaign_->state().slots)
+        for (const auto id : tour.campaign()->state().slots)
         {
             if (id)
             {
@@ -329,7 +337,7 @@ void RolfTourSession::vga_damage(const EclRequest &request)
         {
             save_against(static_cast<int>(value & 7) - 1);
         }
-        const auto id = campaign_->state().slots.at(selected_character_.index);
+        const auto id = tour.campaign()->state().slots.at(tour.selected_character().index);
         if (!id)
         {
             throw EclError("DAMAGE needs a chosen member");
@@ -338,16 +346,17 @@ void RolfTourSession::vga_damage(const EclRequest &request)
         return;
     }
     save_against(static_cast<int>(value & 7));
-    snapshot_.dialogue += hurt(campaign_->hazard_attack(harm), harm.save_dc, harm.sides);
+    tour.screen().dialogue +=
+        tour.hurt(tour.campaign()->hazard_attack(harm), harm.save_dc, harm.sides);
 }
 
-ImageDecodeResult RolfTourSession::vga_sprite(unsigned id, unsigned distance) const
+ImageDecodeResult VgaHost::vga_sprite(const TourHost &tour, unsigned id, unsigned distance)
 {
     // Its frames are the monster near, at middle distance and far; the
     // original swaps colors 0 and 13 and draws through 13, so 0 shows through.
     constexpr std::uint8_t see_through = 0;
     const auto record =
-        decode_dax_record(area_resources().sprite_archive, static_cast<std::uint8_t>(id));
+        decode_dax_record(tour.area_resources().sprite_archive, static_cast<std::uint8_t>(id));
     const auto animation = record ? decode_vga_animation(*record) : std::nullopt;
     if (!animation || distance >= animation->frames.size())
     {
@@ -357,20 +366,21 @@ ImageDecodeResult RolfTourSession::vga_sprite(unsigned id, unsigned distance) co
                                        vga_color_table(animation->palette), see_through)};
 }
 
-EclHostReply RolfTourSession::vga_find_npc(const std::string &name, EclAddress place) const
+EclHostReply VgaHost::vga_find_npc(const TourHost &tour, const std::string &name,
+                                   EclAddress place) const
 {
     // The member's place in the party, 80h more when it is out of play, or
     // FFh when no companion has that name (its EclFindNpc).
     constexpr std::uint16_t nobody = 0xFF, out_of_play = 0x80;
     std::uint16_t found = nobody;
-    const auto &slots = campaign_->state().slots;
+    const auto &slots = tour.campaign()->state().slots;
     for (std::size_t n = 0; n < slots.size() && found == nobody; ++n)
     {
-        if (!slots[n] || campaign_->member(slots[n]).npc_source.empty())
+        if (!slots[n] || tour.campaign()->member(slots[n]).npc_source.empty())
         {
             continue;
         }
-        const auto &member = campaign_->member(slots[n]);
+        const auto &member = tour.campaign()->member(slots[n]);
         auto member_name = member.character.sheet().name;
         std::ranges::transform(member_name, member_name.begin(),
                                [](unsigned char c)
@@ -387,13 +397,13 @@ EclHostReply RolfTourSession::vga_find_npc(const std::string &name, EclAddress p
     return reply;
 }
 
-void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
+void VgaHost::add_vga_record(const TourHost &tour, PartySlot slot, EclHostReply &reply) const
 {
     std::array<std::uint16_t, record_size> record{};
-    const auto id = slot.index < 8 ? campaign_->state().slots[slot.index] : MemberId{};
+    const auto id = slot.index < 8 ? tour.campaign()->state().slots[slot.index] : MemberId{};
     if (id)
     {
-        const auto &member = campaign_->member(id);
+        const auto &member = tour.campaign()->member(id);
         const auto &sheet = member.character.sheet();
         for (std::size_t n = 0; n < sheet.name.size() && n < 15; ++n)
         {
@@ -415,10 +425,11 @@ void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
         {
             record[field::exceptional_strength] = record[field::exceptional_strength + 1] =
                 static_cast<std::uint16_t>(numbers->exceptional_strength);
-            record[field::race] = game() == GoldBoxGame::dark_queen_of_krynn
-                                      ? static_cast<std::uint16_t>(original::record_race(
-                                            static_cast<original::Race>(numbers->race), game()))
-                                      : race_numbers.at(static_cast<std::size_t>(numbers->race));
+            record[field::race] =
+                tour.game() == GoldBoxGame::dark_queen_of_krynn
+                    ? static_cast<std::uint16_t>(original::record_race(
+                          static_cast<original::Race>(numbers->race), tour.game()))
+                    : race_numbers.at(static_cast<std::size_t>(numbers->race));
             // Its classes are numbered as the original rules' professions.
             record[field::character_class] = static_cast<std::uint16_t>(numbers->profession);
             record[field::age] = static_cast<std::uint16_t>(numbers->age);
@@ -431,7 +442,7 @@ void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
             }
             record[field::thief_skills + 7] = static_cast<std::uint16_t>(numbers->thief_skills[7]);
             record[field::alignment] = static_cast<std::uint16_t>(numbers->alignment);
-            if (game() == GoldBoxGame::dark_queen_of_krynn)
+            if (tour.game() == GoldBoxGame::dark_queen_of_krynn)
             {
                 record[field::character_class] =
                     numbers->profession == static_cast<int>(original::Profession::knight)
@@ -443,14 +454,14 @@ void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
                 record[0xC9] = static_cast<std::uint16_t>(numbers->deity);
                 record[0xCA] = static_cast<std::uint16_t>(numbers->robe_order);
                 record[0x137] =
-                    static_cast<std::uint16_t>(campaign_->profile(id).movement_feet / 5);
-                const auto prepared = campaign_->memorized_spells(id);
+                    static_cast<std::uint16_t>(tour.campaign()->profile(id).movement_feet / 5);
+                const auto prepared = tour.campaign()->memorized_spells(id);
                 for (std::size_t at = 0; at < prepared.size() && at < 137; ++at)
                 {
-                    if (const auto number = original::spell_number(prepared[at], game()))
+                    if (const auto number = original::spell_number(prepared[at], tour.game()))
                     {
-                        record[0x1E + at] =
-                            static_cast<std::uint16_t>(original::native_spell(*number, game()));
+                        record[0x1E + at] = static_cast<std::uint16_t>(
+                            original::native_spell(*number, tour.game()));
                     }
                 }
             }
@@ -459,7 +470,8 @@ void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
         record[field::npc] = member.npc_source.empty() ? 0 : 0x80;
         // Every member shows the party's platinum, gems and jewelry: the party
         // owns them all.
-        const auto coins = script_coins(campaign_->state().wealth, campaign_->coin_rates());
+        const auto coins =
+            script_coins(tour.campaign()->state().wealth, tour.campaign()->coin_rates());
         constexpr std::size_t platinum = 4;
         for (std::size_t n = 0; n < 3; ++n)
         {
@@ -467,7 +479,7 @@ void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
         }
         record[field::status] = member.vitals.dead ? dead : okay;
         record[field::in_play] = member.vitals.dead ? 0 : 1;
-        record[field::side] = turncoat(id) ? 1 : 0;
+        record[field::side] = tour.turncoat(id) ? 1 : 0;
         record[field::hit_points] = static_cast<std::uint16_t>(member.vitals.hit_points);
     }
     // The record's cells the other games' fields were given are given again
@@ -485,57 +497,58 @@ void RolfTourSession::add_vga_record(PartySlot slot, EclHostReply &reply) const
     }
 }
 
-EclHostReply RolfTourSession::vga_load_map(unsigned map)
+EclHostReply VgaHost::vga_load_map(TourHost &tour, unsigned map)
 {
     EclHostReply reply;
     // Indoors only: the area map keeps its own picture (its EclLoadFiles).
-    if (map >= first_non_map || machine_.variable(game_cell(ecl_in_3d_area)) == 0)
+    if (map >= first_non_map || tour.script_machine().variable(tour.game_cell(ecl_in_3d_area)) == 0)
     {
         return reply;
     }
-    if (!town_->districts.contains(map))
+    if (!tour.town_resources().districts.contains(map))
     {
         throw EclError("Resources outside the supported areas (map " + std::to_string(map) + ")");
     }
-    change_area(map);
+    tour.change_area(map);
     // A square off the map has no wall and no event (its GetWallType and
     // GetMapEvent): Treasures' overland may load the next map before it moves
     // the party onto it.
-    const auto x = machine_.variable(game_cell(ecl_party_x)),
-               y = machine_.variable(game_cell(ecl_party_y));
-    const auto facing = machine_.variable(game_cell(ecl_party_facing)) % 4;
-    const bool on_map = x < map_.width && y < map_.height;
-    reply.writes = {{game_cell(ecl_wall_ahead),
-                     static_cast<std::uint16_t>(on_map ? map_.at(x, y).walls[facing] : 0)},
-                    {game_cell(ecl_cell_event),
-                     static_cast<std::uint16_t>(on_map ? map_.at(x, y).event_raw : 0)},
-                    {game_cell(ecl_current_map), static_cast<std::uint16_t>(map)}};
+    const auto x = tour.script_machine().variable(tour.game_cell(ecl_party_x)),
+               y = tour.script_machine().variable(tour.game_cell(ecl_party_y));
+    const auto facing = tour.script_machine().variable(tour.game_cell(ecl_party_facing)) % 4;
+    const bool on_map = x < tour.loaded_map().width && y < tour.loaded_map().height;
+    reply.writes = {
+        {tour.game_cell(ecl_wall_ahead),
+         static_cast<std::uint16_t>(on_map ? tour.loaded_map().at(x, y).walls[facing] : 0)},
+        {tour.game_cell(ecl_cell_event),
+         static_cast<std::uint16_t>(on_map ? tour.loaded_map().at(x, y).event_raw : 0)},
+        {tour.game_cell(ecl_current_map), static_cast<std::uint16_t>(map)}};
     return reply;
 }
 
-void RolfTourSession::vga_load_wall_slots(const std::array<unsigned, 3> &slots)
+void VgaHost::vga_load_wall_slots(TourHost &tour, const std::array<unsigned, 3> &slots)
 {
-    const auto set = town_->wall_sets.find({town_->bank, slots});
-    if (set == town_->wall_sets.end())
+    const auto set = tour.town_resources().wall_sets.find({tour.town_resources().bank, slots});
+    if (set == tour.town_resources().wall_sets.end())
     {
         throw EclError("Unknown wall sets " + std::to_string(slots[0]) + ", " +
                        std::to_string(slots[1]) + ", " + std::to_string(slots[2]));
     }
     wall_slots_ = slots;
-    wall_art_ = set->second;
-    ++snapshot_.revision;
+    tour.loaded_wall_art() = set->second;
+    ++tour.screen().revision;
 }
 
-EclHostReply RolfTourSession::vga_load_files(unsigned map, unsigned walls)
+EclHostReply VgaHost::vga_load_files(TourHost &tour, unsigned map, unsigned walls)
 {
-    auto reply = vga_load_map(map);
+    auto reply = vga_load_map(tour, map);
     if (walls == keep_walls)
     {
         return reply;
     }
     // On Treasures' overland the set is the map's picture (OVER), drawn from
     // above (its LoadWallSet).
-    if (treasures_overland())
+    if (treasures_overland(tour))
     {
         treasures_overland_picture_ = walls;
         return reply;
@@ -544,17 +557,17 @@ EclHostReply RolfTourSession::vga_load_files(unsigned map, unsigned walls)
     // already.
     if (walls != wall_slots_[0])
     {
-        vga_load_wall_slots({walls, detail::no_wall_bank, detail::no_wall_bank});
+        vga_load_wall_slots(tour, {walls, detail::no_wall_bank, detail::no_wall_bank});
     }
     return reply;
 }
 
-EclHostReply RolfTourSession::treasures_load_wall_sets(unsigned map,
-                                                       const std::array<unsigned, 3> &sets)
+EclHostReply VgaHost::treasures_load_wall_sets(TourHost &tour, unsigned map,
+                                               const std::array<unsigned, 3> &sets)
 {
-    auto reply = vga_load_map(map);
+    auto reply = vga_load_map(tour, map);
     // On the overland each slot's set loads the map's picture in turn.
-    if (treasures_overland())
+    if (treasures_overland(tour))
     {
         for (const auto set : sets)
         {
@@ -565,25 +578,25 @@ EclHostReply RolfTourSession::treasures_load_wall_sets(unsigned map,
         }
         return reply;
     }
-    vga_load_wall_slots(sets);
+    vga_load_wall_slots(tour, sets);
     return reply;
 }
 
-bool RolfTourSession::treasures_overland() const
+bool VgaHost::treasures_overland(const TourHost &tour) const
 {
     constexpr EclAddress overland_shown{0x40};
-    return game() == GoldBoxGame::treasures_of_the_savage_frontier &&
-           machine_.variable(overland_shown) != 0;
+    return tour.game() == GoldBoxGame::treasures_of_the_savage_frontier &&
+           tour.script_machine().variable(overland_shown) != 0;
 }
 
-bool RolfTourSession::turn_colors(double seconds)
+bool VgaHost::turn_colors(TourHost &tour, double seconds)
 {
-    if (!treasures_overland())
+    if (!treasures_overland(tour))
     {
         return false;
     }
-    const auto picture = town_->overland_pictures.find(treasures_overland_picture_);
-    if (picture == town_->overland_pictures.end() || !picture->second.cycle ||
+    const auto picture = tour.town_resources().overland_pictures.find(treasures_overland_picture_);
+    if (picture == tour.town_resources().overland_pictures.end() || !picture->second.cycle ||
         picture->second.cycle->delay == 0)
     {
         return false;
@@ -596,21 +609,22 @@ bool RolfTourSession::turn_colors(double seconds)
     }
     overland_color_seconds_ = std::fmod(overland_color_seconds_, step_seconds);
     ++overland_color_steps_;
-    ++snapshot_.picture_revision;
+    ++tour.screen().picture_revision;
     return true;
 }
 
-Image RolfTourSession::treasures_overland_view() const
+Image VgaHost::treasures_overland_view(const TourHost &tour) const
 {
     // The window of 11 by 11 squares of the map's picture around the party,
     // kept on the 16 by 16 map, with the party's arrow (its DrawOverMap), in
     // the colors of the OVER record after the cell 42h's number.
     constexpr EclAddress overland_palette{0x42};
     constexpr unsigned cells = 11, cell_pixels = 8, highest_corner = 16 - cells;
-    const auto palette = machine_.variable(overland_palette) + 1U;
-    const auto picture = town_->overland_pictures.find(treasures_overland_picture_);
-    const auto colors = town_->overland_colors.find(palette);
-    if (picture == town_->overland_pictures.end() || colors == town_->overland_colors.end())
+    const auto palette = tour.script_machine().variable(overland_palette) + 1U;
+    const auto picture = tour.town_resources().overland_pictures.find(treasures_overland_picture_);
+    const auto colors = tour.town_resources().overland_colors.find(palette);
+    if (picture == tour.town_resources().overland_pictures.end() ||
+        colors == tour.town_resources().overland_colors.end())
     {
         throw EclError("Unknown overland picture " + std::to_string(treasures_overland_picture_));
     }
@@ -618,7 +632,7 @@ Image RolfTourSession::treasures_overland_view() const
     const auto map =
         vga_rgba(picture->second.pixels,
                  cycle ? cycled(colors->second, *cycle, overland_color_steps_) : colors->second);
-    const auto pose = snapshot_.pose;
+    const auto pose = tour.screen().pose;
     const auto left = std::min(pose.x > 5 ? pose.x - 5 : 0U, highest_corner);
     const auto top = std::min(pose.y > 5 ? pose.y - 5 : 0U, highest_corner);
     Image view;
@@ -631,7 +645,7 @@ Image RolfTourSession::treasures_overland_view() const
                     view.rgba.begin() +
                         static_cast<std::ptrdiff_t>(std::size_t{y} * view.width * 4));
     }
-    const auto &arrow = town_->overland_arrows.at(index(pose.facing));
+    const auto &arrow = tour.town_resources().overland_arrows.at(index(pose.facing));
     const auto arrow_left = (pose.x - left) * cell_pixels, arrow_top = (pose.y - top) * cell_pixels;
     for (unsigned y = 0; y < arrow.height; ++y)
     {
@@ -703,37 +717,37 @@ void RolfTourSession::cast_outside_combat(MemberId caster, MemberId patient,
     advance(0);
 }
 
-void RolfTourSession::treasures_program(const EclRequest &request, unsigned number)
+void VgaHost::treasures_program(TourHost &tour, const EclRequest &request, unsigned number)
 {
     constexpr unsigned luck_reading = 3, fix = 4;
     if (number == fix)
     {
         // The Fix waits only to tell what it did.
-        auto outcome = fix_party(
-            [this, &request](unsigned count)
-            {
-                return machine_.host_random(request.id, count);
-            });
+        auto outcome = fix_party(tour,
+                                 [&tour, &request](unsigned count)
+                                 {
+                                     return tour.script_machine().host_random(request.id, count);
+                                 });
         if (outcome.interrupted_after)
         {
             outcome.words.push_back({"Your repose is suddenly interrupted!", {}});
         }
-        auto reply = character_reply(selected_character_);
-        for (const auto &write : clock_reply().writes)
+        auto reply = tour.character_reply(tour.selected_character());
+        for (const auto &write : tour.clock_reply().writes)
         {
             reply.writes.push_back(write);
         }
         if (outcome.words.empty())
         {
-            if (!machine_.resume_host(request.id, reply))
+            if (!tour.script_machine().resume_host(request.id, reply))
             {
                 throw EclError("Fix reply rejected");
             }
             return;
         }
-        damage_writes_ = reply.writes;
-        snapshot_.host_dialogue = outcome.words;
-        snapshot_.dialogue.clear();
+        tour.damage_writes() = reply.writes;
+        tour.screen().host_dialogue = outcome.words;
+        tour.screen().dialogue.clear();
         for (const auto &word : outcome.words)
         {
             auto line = word.source;
@@ -741,21 +755,21 @@ void RolfTourSession::treasures_program(const EclRequest &request, unsigned numb
             {
                 line.replace(at, 6, word.arguments.front().value);
             }
-            snapshot_.dialogue += (snapshot_.dialogue.empty() ? "" : "\n") + line;
+            tour.screen().dialogue += (tour.screen().dialogue.empty() ? "" : "\n") + line;
         }
     }
     else if (number == luck_reading)
     {
-        snapshot_.dialogue = next_luck_reading();
+        tour.screen().dialogue = next_luck_reading(tour);
     }
     else
     {
-        repair_party();
+        repair_party(tour);
     }
-    await_continue(request.id);
+    tour.await_continue(request.id);
 }
 
-std::string RolfTourSession::next_luck_reading()
+std::string VgaHost::next_luck_reading(TourHost &tour)
 {
     // The crown's last reading comes once its work is done (the luck state at
     // 1, which Freezefire's fall sets), and then the state is 2; with the
@@ -765,25 +779,26 @@ std::string RolfTourSession::next_luck_reading()
     constexpr EclAddress luck_state{0x25C}, luck_fallback{0x1F8};
     constexpr std::uint16_t first_mission_cell = 0x127, missions = 10;
     unsigned record = 0;
-    if (machine_.variable(luck_state) == 1)
+    if (tour.script_machine().variable(luck_state) == 1)
     {
-        damage_writes_.push_back({luck_state, 2});
+        tour.damage_writes().push_back({luck_state, 2});
     }
-    else if (machine_.variable(luck_fallback) == 0xFF)
+    else if (tour.script_machine().variable(luck_fallback) == 0xFF)
     {
         record = 12;
     }
     else
     {
         record = 1;
-        while (record <= missions && machine_.variable(EclAddress{static_cast<std::uint16_t>(
-                                         first_mission_cell + record - 1)}) == 1)
+        while (record <= missions &&
+               tour.script_machine().variable(
+                   EclAddress{static_cast<std::uint16_t>(first_mission_cell + record - 1)}) == 1)
         {
             ++record;
         }
     }
-    const auto found = town_->luck_texts.find(record);
-    if (found == town_->luck_texts.end())
+    const auto found = tour.town_resources().luck_texts.find(record);
+    if (found == tour.town_resources().luck_texts.end())
     {
         throw EclError("No luck reading " + std::to_string(record));
     }
@@ -804,13 +819,13 @@ std::string RolfTourSession::next_luck_reading()
     return reading;
 }
 
-void RolfTourSession::repair_party()
+void VgaHost::repair_party(TourHost &tour)
 {
     // Every member's feeblemind, blindness, disease and poison cured, the
     // dead but elves resurrected, the stoned made flesh, every drained level
     // restored, and every Hit Point back.
     using rules::TempleService;
-    for (const auto id : campaign_->state().slots)
+    for (const auto id : tour.campaign()->state().slots)
     {
         if (!id)
         {
@@ -820,29 +835,29 @@ void RolfTourSession::repair_party()
                                    TempleService::cure_disease, TempleService::neutralize_poison,
                                    TempleService::resurrection, TempleService::stone_to_flesh})
         {
-            if (campaign_->temple_service_helps(id, service))
+            if (tour.campaign()->temple_service_helps(id, service))
             {
-                campaign_->temple_service(id, service, 0);
+                tour.campaign()->temple_service(id, service, 0);
             }
         }
-        while (campaign_->temple_service_helps(id, TempleService::restoration))
+        while (tour.campaign()->temple_service_helps(id, TempleService::restoration))
         {
-            campaign_->temple_service(id, TempleService::restoration, 0);
+            tour.campaign()->temple_service(id, TempleService::restoration, 0);
         }
     }
-    (void)campaign_->heal_living_members();
+    (void)tour.campaign()->heal_living_members();
 }
 
-bool RolfTourSession::camp_offers_fix() const
+bool VgaHost::camp_offers_fix(const TourHost &tour) const
 {
     // The original's menu hides Rest and Fix only where every rest step is
     // interrupted; OpenGoldBox's camp refuses a rest where none is allowed.
     constexpr std::uint16_t every_step = 1, always = 100;
-    const bool fixes = game() == GoldBoxGame::treasures_of_the_savage_frontier ||
-                       game() == GoldBoxGame::secret_of_the_silver_blades;
-    return fixes && campaign_ && can_leave() &&
-           (machine_.variable(game_cell(ecl_rest_interruption_chance)) < always ||
-            machine_.variable(game_cell(ecl_rest_check_interval)) != every_step);
+    const bool fixes = tour.game() == GoldBoxGame::treasures_of_the_savage_frontier ||
+                       tour.game() == GoldBoxGame::secret_of_the_silver_blades;
+    return fixes && tour.campaign() && tour.can_leave() &&
+           (tour.script_machine().variable(tour.game_cell(ecl_rest_interruption_chance)) < always ||
+            tour.script_machine().variable(tour.game_cell(ecl_rest_check_interval)) != every_step);
 }
 
 bool RolfTourSession::camp_fix()
@@ -860,17 +875,19 @@ bool RolfTourSession::camp_fix()
     return true;
 }
 
-void RolfTourSession::add_script_to_hit()
+void EncounterHost::add_script_to_hit(TourHost &tour)
 {
-    if ((game() != GoldBoxGame::pools_of_darkness && game() != GoldBoxGame::dark_queen_of_krynn) ||
+    if ((tour.game() != GoldBoxGame::pools_of_darkness &&
+         tour.game() != GoldBoxGame::dark_queen_of_krynn) ||
         !encounter_)
     {
         return;
     }
     // Each cell holds a signed byte: 250 is 6 worse.
-    const auto signed_cell = [this](EclAddress cell)
+    const auto signed_cell = [&tour](EclAddress cell)
     {
-        return static_cast<int>(static_cast<std::int8_t>(machine_.variable(cell) & 0xFF));
+        return static_cast<int>(
+            static_cast<std::int8_t>(tour.script_machine().variable(cell) & 0xFF));
     };
     encounter_->party_to_hit += signed_cell(darkness_party_hit_mod);
     const int monsters_to_hit = signed_cell(darkness_monster_hit_mod);
@@ -880,70 +897,72 @@ void RolfTourSession::add_script_to_hit()
     }
 }
 
-bool RolfTourSession::magic_barred() const
+bool VgaHost::magic_barred(const TourHost &tour) const
 {
     constexpr EclAddress darkness_anti_magic{0x02};
-    return (game() == GoldBoxGame::pools_of_darkness ||
-            game() == GoldBoxGame::dark_queen_of_krynn) &&
-           machine_.variable(darkness_anti_magic) != 0;
+    return (tour.game() == GoldBoxGame::pools_of_darkness ||
+            tour.game() == GoldBoxGame::dark_queen_of_krynn) &&
+           tour.script_machine().variable(darkness_anti_magic) != 0;
 }
 
-bool RolfTourSession::camp_offers_crown() const
+bool VgaHost::camp_offers_crown(const TourHost &tour) const
 {
     constexpr EclAddress crown{0x3F}, luck_state{0x25C};
     constexpr std::uint16_t last_reading_given = 2;
-    return game() == GoldBoxGame::treasures_of_the_savage_frontier && campaign_ && can_leave() &&
-           machine_.variable(crown) != 0 && machine_.variable(luck_state) != last_reading_given;
+    return tour.game() == GoldBoxGame::treasures_of_the_savage_frontier && tour.campaign() &&
+           tour.can_leave() && tour.script_machine().variable(crown) != 0 &&
+           tour.script_machine().variable(luck_state) != last_reading_given;
 }
 
-unsigned RolfTourSession::camp_crystals() const
+unsigned VgaHost::camp_crystals(const TourHost &tour) const
 {
     constexpr EclAddress crystals_held{0x3C};
     constexpr unsigned every_crystal = 7;
-    return game() == GoldBoxGame::treasures_of_the_savage_frontier
-               ? machine_.variable(crystals_held) & every_crystal
+    return tour.game() == GoldBoxGame::treasures_of_the_savage_frontier
+               ? tour.script_machine().variable(crystals_held) & every_crystal
                : 0;
 }
 
-bool RolfTourSession::camp_crown()
+bool VgaHost::camp_crown(TourHost &tour)
 {
-    if (!camp_offers_crown())
+    if (!camp_offers_crown(tour))
     {
         return false;
     }
-    log_player("asks the crown for the luck");
-    snapshot_.host_dialogue.clear();
-    snapshot_.dialogue = next_luck_reading();
-    for (const auto &write : std::exchange(damage_writes_, {}))
+    tour.log_player("asks the crown for the luck");
+    tour.screen().host_dialogue.clear();
+    tour.screen().dialogue = next_luck_reading(tour);
+    for (const auto &write : std::exchange(tour.damage_writes(), {}))
     {
-        machine_.bind_variable(write.address, write.value);
+        tour.script_machine().bind_variable(write.address, write.value);
     }
-    ++snapshot_.revision;
+    ++tour.screen().revision;
     return true;
 }
 
-std::optional<unsigned> RolfTourSession::fix_rest(unsigned minutes, const Dice &dice)
+std::optional<unsigned> VgaHost::fix_rest(TourHost &tour, unsigned minutes, const Dice &dice)
 {
     if (minutes == 0)
     {
         return std::nullopt;
     }
-    const auto interval = machine_.variable(game_cell(ecl_rest_check_interval)),
-               chance = machine_.variable(game_cell(ecl_rest_interruption_chance));
-    const auto interrupted = camp_service_.rest_interruption(interval, chance, minutes, dice);
-    campaign_->advance_time(std::chrono::minutes{interrupted.value_or(minutes)});
+    const auto interval = tour.script_machine().variable(tour.game_cell(ecl_rest_check_interval)),
+               chance =
+                   tour.script_machine().variable(tour.game_cell(ecl_rest_interruption_chance));
+    const auto interrupted = tour.camp_service().rest_interruption(interval, chance, minutes, dice);
+    tour.campaign()->advance_time(std::chrono::minutes{interrupted.value_or(minutes)});
     return interrupted;
 }
 
-RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
+VgaHost::FixOutcome VgaHost::fix_party(TourHost &tour, const Dice &dice)
 {
-    if (game() == GoldBoxGame::secret_of_the_silver_blades)
+    if (tour.game() == GoldBoxGame::secret_of_the_silver_blades)
     {
-        return secret_fix_party(dice);
+        return secret_fix_party(tour, dice);
     }
     using rules::TempleService;
     FixOutcome outcome;
-    const auto members = campaign_->state().slots;
+    const auto members = tour.campaign()->state().slots;
     const auto missing_hit_points = [&]
     {
         int missing = 0;
@@ -951,8 +970,8 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
         {
             if (id)
             {
-                missing += campaign_->hit_point_maximum(id) -
-                           std::max(campaign_->member(id).vitals.hit_points, 0);
+                missing += tour.campaign()->hit_point_maximum(id) -
+                           std::max(tour.campaign()->member(id).vitals.hit_points, 0);
             }
         }
         return missing;
@@ -965,20 +984,20 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
     }
     const auto knows = [&](MemberId id, std::string_view spell_id)
     {
-        const auto number = opengold::original::spell_number(spell_id, game());
-        const auto &known = campaign_->member(id).character.sheet().original->known_spells;
+        const auto number = opengold::original::spell_number(spell_id, tour.game());
+        const auto &known = tour.campaign()->member(id).character.sheet().original->known_spells;
         return number && std::ranges::find(known, *number) != known.end();
     };
     // A member casts while it stands: alive, awake and not stone.
     const auto standing = [&](MemberId id)
     {
-        if (!id || !campaign_->member(id).character.sheet().original)
+        if (!id || !tour.campaign()->member(id).character.sheet().original)
         {
             return false;
         }
-        const auto &vitals = campaign_->member(id).vitals;
+        const auto &vitals = tour.campaign()->member(id).vitals;
         return !vitals.dead && vitals.hit_points > 0 &&
-               !campaign_->temple_service_helps(id, TempleService::stone_to_flesh);
+               !tour.campaign()->temple_service_helps(id, TempleService::stone_to_flesh);
     };
     const auto slots = [](int count)
     {
@@ -995,7 +1014,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
     // The levels a member has lost and Restoration would give back.
     const auto levels_drained = [&](MemberId id)
     {
-        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        const auto &numbers = *tour.campaign()->member(id).character.sheet().original;
         unsigned drained = 0;
         for (std::size_t at = 0; at < numbers.class_levels.size(); ++at)
         {
@@ -1014,7 +1033,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
         {
             continue;
         }
-        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        const auto &numbers = *tour.campaign()->member(id).character.sheet().original;
         const auto &cleric = numbers.cleric_slots;
         const auto &mage = numbers.magic_user_slots;
         healing += (knows(id, "cleric:cure_light_wounds") ? cleric[0] * 9 : 0) +
@@ -1029,7 +1048,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
         cures.cure_blindness += knows(id, "cleric:cure_blindness") ? slots(cleric[2]) : 0;
         cures.resurrection += knows(id, "cleric:resurrection") ? slots(cleric[5]) : 0;
         cures.heal += knows(id, "cleric:heal") ? slots(cleric[5]) : 0;
-        if (campaign_->member(id).character.sheet().scores[rules::Ability::wisdom] <= 3)
+        if (tour.campaign()->member(id).character.sheet().scores[rules::Ability::wisdom] <= 3)
         {
             continue;
         }
@@ -1051,7 +1070,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
     }
     const auto name_of = [&](MemberId id)
     {
-        return campaign_->member(id).character.sheet().name;
+        return tour.campaign()->member(id).character.sheet().name;
     };
     const auto say = [&](std::string source, MemberId id)
     {
@@ -1069,11 +1088,11 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
             }
             const auto cure = [&](unsigned &count, TempleService service, std::string words)
             {
-                if (count == 0 || !campaign_->temple_service_helps(id, service))
+                if (count == 0 || !tour.campaign()->temple_service_helps(id, service))
                 {
                     return;
                 }
-                campaign_->temple_service(id, service, 0);
+                tour.campaign()->temple_service(id, service, 0);
                 --count;
                 say(std::move(words), id);
             };
@@ -1081,12 +1100,12 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
             // feeblemind, and blindness with it, leaving Cure Blindness's
             // slot for another.
             while (cures.restoration > 0 &&
-                   campaign_->temple_service_helps(id, TempleService::restoration))
+                   tour.campaign()->temple_service_helps(id, TempleService::restoration))
             {
-                campaign_->temple_service(id, TempleService::restoration, 0);
+                tour.campaign()->temple_service(id, TempleService::restoration, 0);
                 --cures.restoration;
             }
-            const bool feebleminded = cures.heal > 0 && campaign_->temple_service_helps(
+            const bool feebleminded = cures.heal > 0 && tour.campaign()->temple_service_helps(
                                                             id, TempleService::cure_feeblemind);
             cure(cures.heal, TempleService::cure_feeblemind, "{name} is healed");
             cure(cures.stone_to_flesh, TempleService::stone_to_flesh,
@@ -1109,7 +1128,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
             }
         }
     };
-    outcome.interrupted_after = fix_rest(longest, dice);
+    outcome.interrupted_after = fix_rest(tour, longest, dice);
     if (outcome.interrupted_after)
     {
         return outcome;
@@ -1144,7 +1163,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
     {
         if (id)
         {
-            healing -= campaign_->restore_hit_points(id, healing);
+            healing -= tour.campaign()->restore_hit_points(id, healing);
         }
     }
     // A second rest for the cures the first left undone, as many of each as
@@ -1158,12 +1177,15 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
             continue;
         }
         drained += levels_drained(id);
-        feebleminded += campaign_->temple_service_helps(id, TempleService::cure_feeblemind) ? 1 : 0;
-        dead_members += campaign_->temple_service_helps(id, TempleService::raise_dead) ? 1 : 0;
-        stoned += campaign_->temple_service_helps(id, TempleService::stone_to_flesh) ? 1 : 0;
-        poisoned += campaign_->temple_service_helps(id, TempleService::neutralize_poison) ? 1 : 0;
-        blind += campaign_->temple_service_helps(id, TempleService::cure_blindness) ? 1 : 0;
-        cursed += campaign_->temple_service_helps(id, TempleService::remove_curse) ? 1 : 0;
+        feebleminded +=
+            tour.campaign()->temple_service_helps(id, TempleService::cure_feeblemind) ? 1 : 0;
+        dead_members +=
+            tour.campaign()->temple_service_helps(id, TempleService::raise_dead) ? 1 : 0;
+        stoned += tour.campaign()->temple_service_helps(id, TempleService::stone_to_flesh) ? 1 : 0;
+        poisoned +=
+            tour.campaign()->temple_service_helps(id, TempleService::neutralize_poison) ? 1 : 0;
+        blind += tour.campaign()->temple_service_helps(id, TempleService::cure_blindness) ? 1 : 0;
+        cursed += tour.campaign()->temple_service_helps(id, TempleService::remove_curse) ? 1 : 0;
     }
     for (const auto id : members)
     {
@@ -1171,7 +1193,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
         {
             continue;
         }
-        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        const auto &numbers = *tour.campaign()->member(id).character.sheet().original;
         cures.restoration += slots(numbers.cleric_slots[6]);
         cures.resurrection += slots(numbers.cleric_slots[6]);
         cures.heal += slots(numbers.cleric_slots[5]);
@@ -1189,7 +1211,7 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
         std::min(cures.heal, feebleminded) * 90 + std::min(cures.stone_to_flesh, stoned) * 90 +
         std::min(cures.neutralize_poison, poisoned) * 60 +
         std::min(cures.cure_blindness, blind) * 45 + std::min(cures.remove_curse, cursed) * 45;
-    outcome.interrupted_after = fix_rest(curing, dice);
+    outcome.interrupted_after = fix_rest(tour, curing, dice);
     if (!outcome.interrupted_after)
     {
         cure_party();
@@ -1197,18 +1219,18 @@ RolfTourSession::FixOutcome RolfTourSession::fix_party(const Dice &dice)
     return outcome;
 }
 
-RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
+VgaHost::FixOutcome VgaHost::secret_fix_party(TourHost &tour, const Dice &dice)
 {
     using rules::TempleService;
     FixOutcome outcome;
-    const auto members = campaign_->state().slots;
+    const auto members = tour.campaign()->state().slots;
     int missing = 0;
     for (const auto id : members)
     {
         if (id)
         {
-            missing += campaign_->hit_point_maximum(id) -
-                       std::max(campaign_->member(id).vitals.hit_points, 0);
+            missing += tour.campaign()->hit_point_maximum(id) -
+                       std::max(tour.campaign()->member(id).vitals.hit_points, 0);
         }
     }
     // The original's Fix does nothing for a party missing no Hit Points.
@@ -1219,13 +1241,13 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
     // A member casts while its status is okay: alive, awake and not stone.
     const auto standing = [&](MemberId id)
     {
-        if (!id || !campaign_->member(id).character.sheet().original)
+        if (!id || !tour.campaign()->member(id).character.sheet().original)
         {
             return false;
         }
-        const auto &vitals = campaign_->member(id).vitals;
+        const auto &vitals = tour.campaign()->member(id).vitals;
         return !vitals.dead && vitals.hit_points > 0 &&
-               !campaign_->temple_service_helps(id, TempleService::stone_to_flesh);
+               !tour.campaign()->temple_service_helps(id, TempleService::stone_to_flesh);
     };
     const auto slots = [](int count)
     {
@@ -1258,7 +1280,7 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
         {
             continue;
         }
-        for (const auto &spell : campaign_->memorized_spells(id))
+        for (const auto &spell : tour.campaign()->memorized_spells(id))
         {
             if (spell == "cleric:cure_light_wounds" || spell == "druid:cure_light_wounds")
             {
@@ -1298,11 +1320,11 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
     for (const auto id : members)
     {
         if (!standing(id) ||
-            campaign_->member(id).character.sheet().scores[rules::Ability::wisdom] <= 3)
+            tour.campaign()->member(id).character.sheet().scores[rules::Ability::wisdom] <= 3)
         {
             continue;
         }
-        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        const auto &numbers = *tour.campaign()->member(id).character.sheet().original;
         const auto &cleric = numbers.cleric_slots;
         const unsigned first = slots(cleric[0]), druid = slots(numbers.druid_slots[1]),
                        fourth = slots(cleric[3]), fifth = slots(cleric[4]),
@@ -1342,7 +1364,7 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
 
     const auto name_of = [&](MemberId id)
     {
-        return campaign_->member(id).character.sheet().name;
+        return tour.campaign()->member(id).character.sheet().name;
     };
     const auto say = [&](std::string source, MemberId id)
     {
@@ -1363,20 +1385,20 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
             }
             const auto cure = [&](unsigned &count, TempleService service, std::string words)
             {
-                if (count == 0 || !campaign_->temple_service_helps(id, service))
+                if (count == 0 || !tour.campaign()->temple_service_helps(id, service))
                 {
                     return false;
                 }
-                campaign_->temple_service(id, service, 0);
+                tour.campaign()->temple_service(id, service, 0);
                 --count;
                 say(std::move(words), id);
                 return true;
             };
             const bool healed =
                 cure(cures.heal, TempleService::cure_feeblemind, "{name} is healed");
-            if (healed && campaign_->temple_service_helps(id, TempleService::cure_disease))
+            if (healed && tour.campaign()->temple_service_helps(id, TempleService::cure_disease))
             {
-                campaign_->temple_service(id, TempleService::cure_disease, 0);
+                tour.campaign()->temple_service(id, TempleService::cure_disease, 0);
             }
             cure(cures.stone_to_flesh, TempleService::stone_to_flesh,
                  "{name} is changed back to flesh");
@@ -1391,7 +1413,7 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
             }
         }
     };
-    outcome.interrupted_after = fix_rest(longest, dice);
+    outcome.interrupted_after = fix_rest(tour, longest, dice);
     if (outcome.interrupted_after)
     {
         return outcome;
@@ -1418,9 +1440,9 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
     // unconscious (HealParty).
     for (const auto id : members)
     {
-        if (id && !campaign_->temple_service_helps(id, TempleService::stone_to_flesh))
+        if (id && !tour.campaign()->temple_service_helps(id, TempleService::stone_to_flesh))
         {
-            healing -= campaign_->restore_hit_points(id, healing);
+            healing -= tour.campaign()->restore_hit_points(id, healing);
         }
     }
     // A second rest for the cures left to do, the standing members' slots
@@ -1436,18 +1458,22 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
         {
             continue;
         }
-        dead_members += campaign_->temple_service_helps(id, TempleService::raise_dead) ? 1 : 0;
-        stoned += campaign_->temple_service_helps(id, TempleService::stone_to_flesh) ? 1 : 0;
-        cursed += campaign_->temple_service_helps(id, TempleService::remove_curse) ? 1 : 0;
-        poisoned += campaign_->temple_service_helps(id, TempleService::neutralize_poison) ? 1 : 0;
-        if (campaign_->temple_service_helps(id, TempleService::cure_feeblemind))
+        dead_members +=
+            tour.campaign()->temple_service_helps(id, TempleService::raise_dead) ? 1 : 0;
+        stoned += tour.campaign()->temple_service_helps(id, TempleService::stone_to_flesh) ? 1 : 0;
+        cursed += tour.campaign()->temple_service_helps(id, TempleService::remove_curse) ? 1 : 0;
+        poisoned +=
+            tour.campaign()->temple_service_helps(id, TempleService::neutralize_poison) ? 1 : 0;
+        if (tour.campaign()->temple_service_helps(id, TempleService::cure_feeblemind))
         {
             ++feebleminded;
         }
         else
         {
-            blind += campaign_->temple_service_helps(id, TempleService::cure_blindness) ? 1 : 0;
-            diseased += campaign_->temple_service_helps(id, TempleService::cure_disease) ? 1 : 0;
+            blind +=
+                tour.campaign()->temple_service_helps(id, TempleService::cure_blindness) ? 1 : 0;
+            diseased +=
+                tour.campaign()->temple_service_helps(id, TempleService::cure_disease) ? 1 : 0;
         }
     }
     for (const auto id : members)
@@ -1456,7 +1482,7 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
         {
             continue;
         }
-        const auto &numbers = *campaign_->member(id).character.sheet().original;
+        const auto &numbers = *tour.campaign()->member(id).character.sheet().original;
         cures.heal += slots(numbers.cleric_slots[5]);
         cures.stone_to_flesh += slots(numbers.magic_user_slots[5]);
         cures.raise_dead += slots(numbers.cleric_slots[4]);
@@ -1471,7 +1497,7 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
         std::min(cures.neutralize_poison, poisoned) * 60 +
         std::min(cures.cure_disease, diseased) * 45 + std::min(cures.cure_blindness, blind) * 45 +
         std::min(cures.remove_curse, cursed) * 45;
-    outcome.interrupted_after = fix_rest(curing, dice);
+    outcome.interrupted_after = fix_rest(tour, curing, dice);
     if (!outcome.interrupted_after)
     {
         cure_party();
@@ -1479,15 +1505,15 @@ RolfTourSession::FixOutcome RolfTourSession::secret_fix_party(const Dice &dice)
     return outcome;
 }
 
-void RolfTourSession::vga_play_sound(unsigned sound)
+void VgaHost::vga_play_sound(TourHost &tour, unsigned sound)
 {
     // From 80h a piece of the game's music starts, played again from its
     // start if it is the one playing (eclvm.pas, EclPlaySound; music.pas,
     // StartMusic).
     if (sound >= first_music_sound)
     {
-        snapshot_.music = sound - first_music_sound;
-        ++snapshot_.music_starts;
+        tour.screen().music = sound - first_music_sound;
+        ++tour.screen().music_starts;
         return;
     }
     if (sound < first_sound_effect || sound > last_sound_effect)
@@ -1499,14 +1525,14 @@ void RolfTourSession::vga_play_sound(unsigned sound)
     // the music.
     if (sound == footstep_sound)
     {
-        ++snapshot_.footsteps;
+        ++tour.screen().footsteps;
     }
     else if (sound <= last_played_sound_effect)
     {
-        snapshot_.script_sound = sound;
-        ++snapshot_.script_sounds;
+        tour.screen().script_sound = sound;
+        ++tour.screen().script_sounds;
     }
-    sound_effect_played();
+    tour.sound_effect_played();
 }
 
 void RolfTourSession::sound_effect_played()
@@ -1555,34 +1581,35 @@ unsigned romance_entry(unsigned member_band, unsigned npc_band)
 }
 } // namespace
 
-std::optional<rules::Romance> RolfTourSession::treasures_romance() const
+std::optional<rules::Romance> VgaHost::treasures_romance(const TourHost &tour) const
 {
-    if (game() != GoldBoxGame::treasures_of_the_savage_frontier || !town_ ||
-        machine_.variable(romance_npc_number) == 0)
+    if (tour.game() != GoldBoxGame::treasures_of_the_savage_frontier || !tour.resources() ||
+        tour.script_machine().variable(romance_npc_number) == 0)
     {
         return std::nullopt;
     }
-    return rules::Romance{machine_.string(member_name_cell), machine_.string(npc_name_cell),
-                          static_cast<int>(machine_.variable(member_love_cell) & 0xFF),
-                          static_cast<int>(machine_.variable(npc_love_cell) & 0xFF)};
+    return rules::Romance{tour.script_machine().string(member_name_cell),
+                          tour.script_machine().string(npc_name_cell),
+                          static_cast<int>(tour.script_machine().variable(member_love_cell) & 0xFF),
+                          static_cast<int>(tour.script_machine().variable(npc_love_cell) & 0xFF)};
 }
 
-bool RolfTourSession::tell_romance()
+bool VgaHost::tell_romance(TourHost &tour)
 {
-    const auto romance = treasures_romance();
-    if (!romance || !campaign_)
+    const auto romance = treasures_romance(tour);
+    if (!romance || !tour.campaign())
     {
         return false;
     }
     // The members of the pair's names, the last of each (TagRelationshipPair).
     MemberId member{}, npc{};
-    for (const auto id : campaign_->state().slots)
+    for (const auto id : tour.campaign()->state().slots)
     {
         if (!id)
         {
             continue;
         }
-        const auto name = capitals(campaign_->member(id).character.sheet().name);
+        const auto name = capitals(tour.campaign()->member(id).character.sheet().name);
         if (name == capitals(romance->npc))
         {
             npc = id;
@@ -1592,9 +1619,9 @@ bool RolfTourSession::tell_romance()
             member = id;
         }
     }
-    const auto standing = [this](MemberId id)
+    const auto standing = [&tour](MemberId id)
     {
-        const auto &vitals = campaign_->member(id).vitals;
+        const auto &vitals = tour.campaign()->member(id).vitals;
         return !vitals.dead && vitals.hit_points > 0;
     };
     if (!member || !npc || !standing(member) || !standing(npc))
@@ -1603,13 +1630,13 @@ bool RolfTourSession::tell_romance()
     }
     const auto member_band = love_band(static_cast<unsigned>(romance->member_love));
     const auto npc_band = love_band(static_cast<unsigned>(romance->npc_love));
-    if (member_band == machine_.variable(member_band_cell) &&
-        npc_band == machine_.variable(npc_band_cell))
+    if (member_band == tour.script_machine().variable(member_band_cell) &&
+        npc_band == tour.script_machine().variable(npc_band_cell))
     {
         return false;
     }
-    machine_.bind_variable(member_band_cell, static_cast<std::uint16_t>(member_band));
-    machine_.bind_variable(npc_band_cell, static_cast<std::uint16_t>(npc_band));
+    tour.script_machine().bind_variable(member_band_cell, static_cast<std::uint16_t>(member_band));
+    tour.script_machine().bind_variable(npc_band_cell, static_cast<std::uint16_t>(npc_band));
     using Kind = RomanceStep::Kind;
     RomanceScene scene{{}, member, npc};
     constexpr unsigned top = 4, confession = 104, proposal = 114;
@@ -1631,11 +1658,11 @@ bool RolfTourSession::tell_romance()
         return false;
     }
     romance_scene_ = std::move(scene);
-    show_romance_step();
+    show_romance_step(tour);
     return true;
 }
 
-void RolfTourSession::show_romance_step()
+void VgaHost::show_romance_step(TourHost &tour)
 {
     using Kind = RomanceStep::Kind;
     auto &scene = *romance_scene_;
@@ -1645,57 +1672,57 @@ void RolfTourSession::show_romance_step()
         if (step.kind == Kind::npc_leaves)
         {
             scene.steps.erase(scene.steps.begin());
-            campaign_->remove(scene.npc);
+            tour.campaign()->remove(scene.npc);
             continue;
         }
         if (step.kind == Kind::refused)
         {
             scene.steps.erase(scene.steps.begin());
-            campaign_->keep_lasting_change(scene.member, original::romance_refused());
+            tour.campaign()->keep_lasting_change(scene.member, original::romance_refused());
             continue;
         }
-        snapshot_.host_dialogue.clear();
-        snapshot_.host_choices.clear();
-        snapshot_.dialogue = romance_text(step.entry);
+        tour.screen().host_dialogue.clear();
+        tour.screen().host_choices.clear();
+        tour.screen().dialogue = romance_text(tour, step.entry);
         if (step.kind == Kind::proposal)
         {
             // The pair stands before the party over its picture.
-            if (const auto *frames = pic_frames(proposal_picture); frames && !frames->empty())
+            if (const auto *frames = tour.pic_frames(proposal_picture); frames && !frames->empty())
             {
-                picture_ = frames->front().image;
-                picture_animation_id_ = proposal_picture;
-                ++snapshot_.picture_revision;
+                tour.shown_picture() = frames->front().image;
+                tour.shown_animation() = proposal_picture;
+                ++tour.screen().picture_revision;
             }
-            snapshot_.choices = {"Accept them", "Refuse them"};
-            snapshot_.host_choices = {{"Accept them", {}}, {"Refuse them", {}}};
+            tour.screen().choices = {"Accept them", "Refuse them"};
+            tour.screen().host_choices = {{"Accept them", {}}, {"Refuse them", {}}};
         }
         else
         {
-            snapshot_.choices = {"Continue"};
+            tour.screen().choices = {"Continue"};
         }
-        snapshot_.phase = TourPhase::awaiting_continue;
-        snapshot_.continue_ticket = ++next_ticket_;
-        ++snapshot_.revision;
+        tour.screen().phase = TourPhase::awaiting_continue;
+        tour.screen().continue_ticket = tour.new_ticket();
+        ++tour.screen().revision;
         return;
     }
     // The scene is over: the camp goes on.
     romance_scene_.reset();
-    if (picture_animation_id_ == proposal_picture)
+    if (tour.shown_animation() == proposal_picture)
     {
-        picture_.reset();
-        picture_animation_id_.reset();
-        ++snapshot_.picture_revision;
+        tour.shown_picture().reset();
+        tour.shown_animation().reset();
+        ++tour.screen().picture_revision;
     }
-    snapshot_.dialogue.clear();
-    snapshot_.choices.clear();
-    snapshot_.host_choices.clear();
-    snapshot_.continue_ticket = 0;
-    snapshot_.phase = TourPhase::running;
-    romance_told_ = camp_resumes_ = true;
-    ++snapshot_.revision;
+    tour.screen().dialogue.clear();
+    tour.screen().choices.clear();
+    tour.screen().host_choices.clear();
+    tour.screen().continue_ticket = 0;
+    tour.screen().phase = TourPhase::running;
+    tour.romance_told();
+    ++tour.screen().revision;
 }
 
-bool RolfTourSession::choose_in_romance(std::size_t choice)
+bool VgaHost::choose_in_romance(TourHost &tour, std::size_t choice)
 {
     using Kind = RomanceStep::Kind;
     auto &steps = romance_scene_->steps;
@@ -1714,30 +1741,31 @@ bool RolfTourSession::choose_in_romance(std::size_t choice)
                                                    {Kind::refused, 0}};
         steps.insert(steps.begin(), follows.begin(), follows.end());
     }
-    show_romance_step();
+    show_romance_step(tour);
     return true;
 }
 
-std::string RolfTourSession::romance_text(unsigned entry)
+std::string VgaHost::romance_text(TourHost &tour, unsigned entry)
 {
-    const auto found = town_->luck_texts.find(entry);
-    if (found == town_->luck_texts.end())
+    const auto found = tour.town_resources().luck_texts.find(entry);
+    if (found == tour.town_resources().luck_texts.end())
     {
         throw EclError("No romance scene " + std::to_string(entry));
     }
-    const auto romance = *treasures_romance();
+    const auto romance = *treasures_romance(tour);
     const auto &scene = *romance_scene_;
     const auto member_name = capitals(romance.member), npc_name = capitals(romance.npc);
     // The one who loves more, and the other (romance.pas, StrongerName).
     const bool member_stronger = romance.member_love > romance.npc_love;
-    const auto &slots = campaign_->state().slots;
+    const auto &slots = tour.campaign()->state().slots;
     const auto in_party = [&slots](MemberId id)
     {
         return id && std::ranges::find(slots, id) != slots.end();
     };
     const auto pronoun = [&](MemberId id)
     {
-        return in_party(id) && campaign_->member(id).character.creation_data().gender == "female"
+        return in_party(id) &&
+                       tour.campaign()->member(id).character.creation_data().gender == "female"
                    ? std::string("HER")
                    : std::string("HIS");
     };
@@ -1748,28 +1776,29 @@ std::string RolfTourSession::romance_text(unsigned entry)
     {
         const auto stands = [&](MemberId id)
         {
-            return in_party(id) && !campaign_->member(id).vitals.dead &&
-                   campaign_->member(id).vitals.hit_points > 0;
+            return in_party(id) && !tour.campaign()->member(id).vitals.dead &&
+                   tour.campaign()->member(id).vitals.hit_points > 0;
         };
         for (const auto id : slots)
         {
             if (stands(id) && id != scene.member && id != scene.npc && id != romance_bystander_)
             {
                 romance_bystander_ = id;
-                return capitals(campaign_->member(id).character.sheet().name);
+                return capitals(tour.campaign()->member(id).character.sheet().name);
             }
         }
         if (stands(romance_bystander_) && romance_bystander_ != scene.member)
         {
-            return capitals(campaign_->member(romance_bystander_).character.sheet().name);
+            return capitals(tour.campaign()->member(romance_bystander_).character.sheet().name);
         }
         const auto leader = std::ranges::find_if(slots,
                                                  [](MemberId id)
                                                  {
                                                      return id != MemberId{};
                                                  });
-        return leader == slots.end() ? std::string()
-                                     : capitals(campaign_->member(*leader).character.sheet().name);
+        return leader == slots.end()
+                   ? std::string()
+                   : capitals(tour.campaign()->member(*leader).character.sheet().name);
     };
     std::string text;
     for (const char code : found->second)

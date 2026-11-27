@@ -73,7 +73,7 @@ void write_u16(std::vector<std::uint8_t> &bytes, std::size_t at, unsigned value)
 
 } // namespace
 
-void RolfTourSession::enable_buck_rogers_party_commands()
+void BuckRogersHost::enable_buck_rogers_party_commands(TourHost &tour)
 {
     // LOAD MONSTER, SET SPEAKER, CHECK PARTY, SHIP COMBAT, the skill checks,
     // DAMAGE, ECL CLOCK, ADD NPC, DUMP, DESTROY ITEMS, AWARD EXPERIENCE,
@@ -82,14 +82,16 @@ void RolfTourSession::enable_buck_rogers_party_commands()
     for (const int op : {0x0B, 0x1D, 0x1E, 0x1F, 0x22, 0x23, 0x2E, 0x34, 0x36, 0x3E, 0x40,
                                   0x41, 0x43, 0x45, 0x48, 0x49, 0x4A, 0x4B, 0x4C})
     {
-        machine_.enable_host(static_cast<std::uint8_t>(op));
+        tour.script_machine().enable_host(static_cast<std::uint8_t>(op));
     }
 }
 
-void RolfTourSession::add_buck_rogers_record(PartySlot slot, EclHostReply &reply) const
+void BuckRogersHost::add_buck_rogers_record(const TourHost &tour, PartySlot slot,
+                                            EclHostReply &reply) const
 {
-    const auto id = campaign_ && slot.index < 8 ? campaign_->state().slots[slot.index] : MemberId{};
-    const auto record = id ? original::buck_rogers_record_of(campaign_->game_record(id))
+    const auto id =
+        tour.campaign() && slot.index < 8 ? tour.campaign()->state().slots[slot.index] : MemberId{};
+    const auto record = id ? original::buck_rogers_record_of(tour.campaign()->game_record(id))
                            : std::optional<original::GroundRecord>{};
     std::vector<std::uint8_t> bytes(buck_rogers::Creature::size);
     if (record)
@@ -164,16 +166,16 @@ void RolfTourSession::add_buck_rogers_record(PartySlot slot, EclHostReply &reply
     reply.writes.insert(reply.writes.end(), writes.begin(), writes.end());
 }
 
-void RolfTourSession::read_buck_rogers_character()
+void BuckRogersHost::read_buck_rogers_character(TourHost &tour)
 {
-    const auto id = campaign_ && selected_character_.index < 8
-                        ? campaign_->state().slots[selected_character_.index]
+    const auto id = tour.campaign() && tour.selected_character().index < 8
+                        ? tour.campaign()->state().slots[tour.selected_character().index]
                         : MemberId{};
     if (!id)
     {
         return;
     }
-    auto record = original::buck_rogers_record_of(campaign_->game_record(id));
+    auto record = original::buck_rogers_record_of(tour.campaign()->game_record(id));
     if (!record)
     {
         return;
@@ -183,14 +185,14 @@ void RolfTourSession::read_buck_rogers_character()
     // bonus, Hit Points and movement.
     auto bytes = buck_rogers::encode_creature(record->creature);
     bool changed = false;
-    const auto written = [this, &changed](std::uint16_t offset) -> std::optional<std::uint16_t>
+    const auto written = [&tour, &changed](std::uint16_t offset) -> std::optional<std::uint16_t>
     {
-        if (!machine_.consume_script_write(cell(offset)))
+        if (!tour.script_machine().consume_script_write(cell(offset)))
         {
             return std::nullopt;
         }
         changed = true;
-        return machine_.variable(cell(offset));
+        return tour.script_machine().variable(cell(offset));
     };
     for (std::uint16_t offset = first_record_byte; offset <= last_record_byte; ++offset)
     {
@@ -254,7 +256,7 @@ void RolfTourSession::read_buck_rogers_character()
         return;
     }
     record->creature = std::move(*creature);
-    campaign_->keep_game_record(id, original::encode_ground_record(*record));
+    tour.campaign()->keep_game_record(id, original::encode_ground_record(*record));
 }
 
 namespace
@@ -329,24 +331,28 @@ struct TeamPlace
 }
 } // namespace
 
-bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
+bool BuckRogersHost::handle_buck_rogers_host(TourHost &tour, EncounterHost &encounters,
+                                             const EclRequest &request)
 {
     const auto &instruction = *request.instruction;
     const auto &operands = instruction.operands;
     const auto op = instruction.opcode;
     const auto value = [&](std::size_t n)
     {
-        return machine_.operand_value(operands.at(n));
+        return tour.script_machine().operand_value(operands.at(n));
     };
     // The script's dice, for the rules' rolls: what a reload of the event
     // rolls again the same.
     const auto dice = [&]
     {
         return RandomState{
-            (static_cast<std::uint64_t>(machine_.host_random(request.id, 65536)) << 16) |
-            machine_.host_random(request.id, 65536)};
+            (static_cast<std::uint64_t>(tour.script_machine().host_random(request.id, 65536))
+             << 16) |
+            tour.script_machine().host_random(request.id, 65536)};
     };
-    const auto archive = "ECL" + std::to_string(town_->script_banks.at(current_script_)) + ".DAX";
+    const auto archive =
+        "ECL" + std::to_string(tour.town_resources().script_banks.at(tour.current_script())) +
+        ".DAX";
     EclHostReply reply;
     const auto write_to = [&reply](const EclOperand &operand, std::int64_t number)
     {
@@ -367,9 +373,9 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     };
     // A member's record as the command changed it, its Hit Points and death
     // with it.
-    const auto keep = [this](const TeamPlace &member)
+    const auto keep = [&tour](const TeamPlace &member)
     {
-        campaign_->keep_game_record(member.id, original::encode_ground_record(member.record));
+        tour.campaign()->keep_game_record(member.id, original::encode_ground_record(member.record));
     };
     switch (op)
     {
@@ -385,14 +391,14 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
             const unsigned command = sound_commands[number];
             if (command == footstep_command)
             {
-                ++snapshot_.footsteps;
+                ++tour.screen().footsteps;
             }
             else if (command != 0)
             {
-                snapshot_.script_sound = command;
-                ++snapshot_.script_sounds;
+                tour.screen().script_sound = command;
+                ++tour.screen().script_sounds;
             }
-            sound_effect_played();
+            tour.sound_effect_played();
         }
         break;
     }
@@ -400,7 +406,7 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         // The sound selector is never set, so its routine plays nothing
         // (eclvm.pas EclCall, GDVars.selectorSound); the others are the
         // other games' (handle_host).
-        if (request.arguments.at(0).address() != EclAddress{ecl_engine_routines(game()).sound})
+        if (request.arguments.at(0).address() != EclAddress{ecl_engine_routines(tour.game()).sound})
         {
             return false;
         }
@@ -411,17 +417,19 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         // area kind is 0 (eclmenu.pas MaxMonsterDist).
         const auto facing = static_cast<unsigned>(value(1) & 3);
         unsigned distance = 0;
-        if (machine_.variable(area_kind) == 0)
+        if (tour.script_machine().variable(area_kind) == 0)
         {
             distance = 2;
-            reply.writes.push_back({game_cell(EclAddress{0x6DC1}), 2});
+            reply.writes.push_back({tour.game_cell(EclAddress{0x6DC1}), 2});
         }
         else
         {
-            auto x = static_cast<int>(machine_.variable(game_cell(ecl_party_x)));
-            auto y = static_cast<int>(machine_.variable(game_cell(ecl_party_y)));
+            auto x = static_cast<int>(tour.script_machine().variable(tour.game_cell(ecl_party_x)));
+            auto y = static_cast<int>(tour.script_machine().variable(tour.game_cell(ecl_party_y)));
             while (distance < 5 && x >= 0 && y >= 0 && x < 16 && y < 16 &&
-                   map_.at(static_cast<unsigned>(x), static_cast<unsigned>(y)).walls[facing] == 0)
+                   tour.loaded_map()
+                           .at(static_cast<unsigned>(x), static_cast<unsigned>(y))
+                           .walls[facing] == 0)
             {
                 ++distance;
                 x += step_x(static_cast<MapDirection>(facing));
@@ -437,14 +445,15 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     case skill_check_with_text:
     case skill_check_with_damage:
     {
-        read_character();
-        auto team = team_of(*campaign_);
-        const auto skill = original::skill_numbered(
-            original::script_check_skill(game(), archive, current_script_, instruction.address,
-                                         static_cast<unsigned>(value(0) & 0xFF)));
+        tour.read_character();
+        auto team = team_of(*tour.campaign());
+        const auto skill = original::skill_numbered(original::script_check_skill(
+            tour.game(), archive, tour.current_script(), instruction.address,
+            static_cast<unsigned>(value(0) & 0xFF)));
         const bool whole_party = value(1) != 0;
         const auto difficulty = static_cast<int>(value(2) & 0xFF);
-        const auto current = std::ranges::find(team, selected_character_.index, &TeamPlace::slot);
+        const auto current =
+            std::ranges::find(team, tour.selected_character().index, &TeamPlace::slot);
         if (op == skill_check_with_damage)
         {
             // Each member who fails takes the damage (EclSkillDamage): every
@@ -452,7 +461,7 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
             auto random = dice();
             for (auto &member : team)
             {
-                if (!whole_party && member.slot != selected_character_.index)
+                if (!whole_party && member.slot != tour.selected_character().index)
                 {
                     continue;
                 }
@@ -471,19 +480,19 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
                 int dying = 0;
                 original::inflict_ground_damage(member.record.creature, harm, dying);
                 keep(member);
-                snapshot_.dialogue =
-                    join_script_text(std::move(snapshot_.dialogue),
+                tour.screen().dialogue =
+                    join_script_text(std::move(tour.screen().dialogue),
                                      upper(member.record.creature.name) + " IS HIT FOR " +
                                          std::to_string(harm) + " POINTS OF DAMAGE.");
             }
-            reply = character_reply(selected_character_);
+            reply = tour.character_reply(tour.selected_character());
             break;
         }
         std::vector<int> values;
         std::vector<const TeamPlace *> rollers;
         for (const auto &member : team)
         {
-            if (whole_party || member.slot == selected_character_.index)
+            if (whole_party || member.slot == tour.selected_character().index)
             {
                 values.push_back(original::skill_value(member.record.creature, skill));
                 rollers.push_back(&member);
@@ -500,8 +509,8 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         if (op == skill_check_with_text)
         {
             const auto &name = original::skill_definition(skill).name;
-            snapshot_.dialogue =
-                join_script_text(std::move(snapshot_.dialogue),
+            tour.screen().dialogue =
+                join_script_text(std::move(tour.screen().dialogue),
                                  succeeded ? upper(roller.record.creature.name) + " SUCCEEDS AT " +
                                                  upper(std::string(name)) + "."
                                            : (whole_party ? std::string("THE TEAM")
@@ -509,7 +518,7 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
                                                  " FAILS AT " + upper(std::string(name)) + ".");
         }
         (void)current;
-        reply = character_reply(selected_character_);
+        reply = tour.character_reply(tour.selected_character());
         write_to(operands.at(1), roller.slot);
         write_to(operands.at(2), static_cast<std::int64_t>(check.grade));
         break;
@@ -517,26 +526,26 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     case award_experience:
     {
         // Each member who can act, or the current character (EclAwardExperience).
-        read_character();
+        tour.read_character();
         const bool whole_party = value(0) != 0;
         const auto amount = static_cast<std::uint32_t>(value(1) & 0xFFFF);
         std::string gainer = "THE TEAM";
-        for (auto &member : team_of(*campaign_))
+        for (auto &member : team_of(*tour.campaign()))
         {
-            if (!whole_party && member.slot == selected_character_.index)
+            if (!whole_party && member.slot == tour.selected_character().index)
             {
                 gainer = upper(member.record.creature.name);
             }
-            if ((whole_party || member.slot == selected_character_.index) &&
+            if ((whole_party || member.slot == tour.selected_character().index) &&
                 member.record.creature.enabled != 0)
             {
                 member.record.creature.experience += amount;
                 keep(member);
             }
         }
-        snapshot_.dialogue =
-            join_script_text(std::move(snapshot_.dialogue), gainer + " GAINS EXPERIENCE.");
-        reply = character_reply(selected_character_);
+        tour.screen().dialogue =
+            join_script_text(std::move(tour.screen().dialogue), gainer + " GAINS EXPERIENCE.");
+        reply = tour.character_reply(tour.selected_character());
         break;
     }
     case find_item:
@@ -544,7 +553,7 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         // Equal when a member carries an item of the type (EclFindItem).
         const auto type = static_cast<std::uint8_t>(value(0) & 0xFF);
         bool found = false;
-        for (const auto &member : team_of(*campaign_))
+        for (const auto &member : team_of(*tour.campaign()))
         {
             found = found || std::ranges::any_of(member.record.items,
                                                  [type](const buck_rogers::Item &item)
@@ -560,15 +569,15 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         // Items of the type leave the current character or each member;
         // with the type's bit 80h only the first found, a bundle losing one
         // (EclDestroyItems).
-        read_character();
+        tour.read_character();
         const bool whole_party = value(0) != 0;
         const auto named = static_cast<std::uint8_t>(value(1) & 0xFF);
         const bool first_only = (named & 0x80) != 0;
         const auto type = static_cast<std::uint8_t>(named & 0x7F);
         bool done = false;
-        for (auto &member : team_of(*campaign_))
+        for (auto &member : team_of(*tour.campaign()))
         {
-            if (done || (!whole_party && member.slot != selected_character_.index))
+            if (done || (!whole_party && member.slot != tour.selected_character().index))
             {
                 continue;
             }
@@ -593,16 +602,16 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
             }
             keep(member);
         }
-        reply = character_reply(selected_character_);
+        reply = tour.character_reply(tour.selected_character());
         break;
     }
     case swap_item_lists:
     {
         // 0 stashes every member's items in its second list, anything else
         // gives them back, ahead of what is there (EclTransferCharacterLists).
-        read_character();
+        tour.read_character();
         const bool stash = value(0) == 0;
-        for (auto &member : team_of(*campaign_))
+        for (auto &member : team_of(*tour.campaign()))
         {
             auto &from = stash ? member.record.items : member.record.alternate_items;
             auto &to = stash ? member.record.alternate_items : member.record.items;
@@ -610,33 +619,33 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
             from.clear();
             keep(member);
         }
-        reply = character_reply(selected_character_);
+        reply = tour.character_reply(tour.selected_character());
         reply.writes.push_back({items_stashed, static_cast<std::uint16_t>(stash ? 1 : 0)});
         break;
     }
     case damage:
-        buck_rogers_damage(request);
+        buck_rogers_damage(tour, request);
         return true;
     case load_monster:
-        stage_buck_rogers_creatures(request);
+        encounters.stage_buck_rogers_creatures(tour, request);
         break;
     case combat_command:
     case solo_combat:
-        buck_rogers_combat(request, op == solo_combat);
+        encounters.buck_rogers_combat(tour, request, op == solo_combat);
         return true;
     case treasure:
     {
         // Credits to the pool and the templates to the booty (EclTreasure),
         // which the next fight's end offers.
-        buck_rogers_menus_.add_credits(static_cast<std::uint32_t>(value(0)));
+        tour.buck_rogers_menus().add_credits(static_cast<std::uint32_t>(value(0)));
         for (std::size_t n = 2; n < operands.size(); ++n)
         {
             const auto number = static_cast<std::size_t>(value(n) & 0xFF);
-            const auto &templates = town_->buck_rogers_templates;
+            const auto &templates = tour.town_resources().buck_rogers_templates;
             if (number >= 1 && number <= templates.size() &&
                 templates[number - 1].type != buck_rogers::Item::no_type)
             {
-                buck_rogers_menus_.add_booty(templates[number - 1]);
+                tour.buck_rogers_menus().add_booty(templates[number - 1]);
             }
         }
         break;
@@ -644,52 +653,53 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     case shop:
     {
         // The list's templates, its last first, then the shop (EclShop).
-        read_character();
-        buck_rogers_menus_.clear_booty();
-        buck_rogers_menus_.open_menu(*this, BuckRogersMenuService::Kind::shop, request.id,
-                                     original::shop_stock(static_cast<unsigned>(value(0) & 0xFF),
-                                                          town_->buck_rogers_templates));
+        tour.read_character();
+        tour.buck_rogers_menus().clear_booty();
+        tour.buck_rogers_menus().open_menu(
+            tour, BuckRogersMenuService::Kind::shop, request.id,
+            original::shop_stock(static_cast<unsigned>(value(0) & 0xFF),
+                                 tour.town_resources().buck_rogers_templates));
         return true;
     }
     case add_npc:
     {
         // The creature joins as an NPC, its morale half the operand
         // (eclvm.pas EclAddNpc).
-        read_character();
+        tour.read_character();
         const auto number = static_cast<unsigned>(value(0) & 0xFF);
-        const auto found = town_->buck_rogers_creatures.find(number);
-        if (found == town_->buck_rogers_creatures.end())
+        const auto found = tour.town_resources().buck_rogers_creatures.find(number);
+        if (found == tour.town_resources().buck_rogers_creatures.end())
         {
             throw EclError("ADD NPC names no creature " + std::to_string(number));
         }
         auto record = original::GroundRecord{found->second.creature, found->second.items,
-                                             town_->buck_rogers_item_types};
+                                             tour.town_resources().buck_rogers_item_types};
         record.creature.npc = static_cast<std::uint8_t>(((value(1) & 0xFF) / 2) | 0x80);
-        const auto id = campaign_->recruit("buck-rogers:" + std::to_string(number),
-                                           Character(*campaign_->character_rules(),
-                                                     original::buck_rogers_draft(record),
-                                                     CharacterAppearance{}),
-                                           static_cast<unsigned>(record.creature.npc & 0x7F));
-        campaign_->keep_game_record(id, original::encode_ground_record(record));
-        for (unsigned slot = 0; slot < campaign_->state().slots.size(); ++slot)
+        const auto id = tour.campaign()->recruit("buck-rogers:" + std::to_string(number),
+                                                 Character(*tour.campaign()->character_rules(),
+                                                           original::buck_rogers_draft(record),
+                                                           CharacterAppearance{}),
+                                                 static_cast<unsigned>(record.creature.npc & 0x7F));
+        tour.campaign()->keep_game_record(id, original::encode_ground_record(record));
+        for (unsigned slot = 0; slot < tour.campaign()->state().slots.size(); ++slot)
         {
-            if (campaign_->state().slots[slot] == id)
+            if (tour.campaign()->state().slots[slot] == id)
             {
-                selected_character_ = PartySlot{slot};
+                tour.select_character(PartySlot{slot});
             }
         }
-        reply = character_reply(selected_character_);
+        reply = tour.character_reply(tour.selected_character());
         break;
     }
     case program:
     {
         // 0 the team menu, with training; 9 the rest menu; Matrix's 2
         // leaves the game after its closing scene (ECL1:114 9E08h).
-        read_character();
+        tour.read_character();
         const auto number = value(0) & 0xFF;
-        if (game() == GoldBoxGame::matrix_cubed && number == 2)
+        if (tour.game() == GoldBoxGame::matrix_cubed && number == 2)
         {
-            if (current_script_ != 114 || instruction.address != 0x9E08)
+            if (tour.current_script() != 114 || instruction.address != 0x9E08)
             {
                 throw EclError("Unsupported Matrix Cubed ending invocation");
             }
@@ -698,10 +708,10 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         }
         if (number == 0 || number == 9)
         {
-            buck_rogers_menus_.open_menu(*this,
-                                         number == 0 ? BuckRogersMenuService::Kind::team
-                                                     : BuckRogersMenuService::Kind::rest,
-                                         request.id);
+            tour.buck_rogers_menus().open_menu(tour,
+                                               number == 0 ? BuckRogersMenuService::Kind::team
+                                                           : BuckRogersMenuService::Kind::rest,
+                                               request.id);
             return true;
         }
         break;
@@ -710,12 +720,12 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
     {
         // The ship fight is the ship-combat screen's: the script waits for
         // its end (ship_fight, finish_ship_combat).
-        read_character();
-        ship_service_.begin(*this, request.id,
-                            ShipCombatCall{static_cast<unsigned>(value(0) & 0xFF),
-                                           static_cast<unsigned>(value(1) & 0xFF),
-                                           static_cast<unsigned>(value(2) & 0xFF),
-                                           static_cast<unsigned>(value(3) & 0xFF)});
+        tour.read_character();
+        tour.ship_service().begin(tour, request.id,
+                                  ShipCombatCall{static_cast<unsigned>(value(0) & 0xFF),
+                                                 static_cast<unsigned>(value(1) & 0xFF),
+                                                 static_cast<unsigned>(value(2) & 0xFF),
+                                                 static_cast<unsigned>(value(3) & 0xFF)});
         return true;
     }
     case picture_mode:
@@ -725,29 +735,30 @@ bool RolfTourSession::handle_buck_rogers_host(const EclRequest &request)
         // EclSetPictureMode).
         const auto mode = static_cast<std::uint16_t>(value(0) & 0xFF);
         const std::array writes{EclMemoryWrite{picture_mode_cell, mode}};
-        if (!machine_.refresh_host_variables(request.id, writes))
+        if (!tour.script_machine().refresh_host_variables(request.id, writes))
         {
             throw EclError("PICTURE MODE's cell is not the script's");
         }
-        update_solar_map(mode);
+        update_solar_map(tour, mode);
         auto shown = request;
         shown.instruction->opcode = picture_command;
         shown.instruction->operands = {operands.at(1)};
         shown.arguments = {request.arguments.at(1)};
-        return handle_town_host(shown);
+        return tour.handle_town_host(shown);
     }
     default:
         return false;
     }
-    if (!machine_.resume_host(request.id, reply))
+    if (!tour.script_machine().resume_host(request.id, reply))
     {
         throw EclError("Buck Rogers host reply rejected");
     }
-    ++snapshot_.revision;
+    ++tour.screen().revision;
     return true;
 }
 
-void RolfTourSession::update_solar_map(std::optional<std::uint16_t> picture_mode_given)
+void BuckRogersHost::update_solar_map(TourHost &tour,
+                                      std::optional<std::uint16_t> picture_mode_given)
 {
     // The screen is the one the last change named, as the original's
     // interface state is (eclmenu.pas WriteGbvm, eclvm.pas
@@ -755,34 +766,36 @@ void RolfTourSession::update_solar_map(std::optional<std::uint16_t> picture_mode
     // other not, then PICTURE MODE, 2 the solar map, 0, 3 and 4 another
     // screen and 1 the same. A new game or a loaded save, whose last change
     // is not known, shows the solar map while both name it.
-    const auto area = static_cast<std::uint16_t>(machine_.variable(area_kind) & 0xFF);
+    const auto area = static_cast<std::uint16_t>(tour.script_machine().variable(area_kind) & 0xFF);
     if (!solar_area_kind_seen_)
     {
-        snapshot_.solar_map =
-            area == orbit_area && machine_.variable(picture_mode_cell) == orbit_picture_mode;
+        tour.screen().solar_map =
+            area == orbit_area &&
+            tour.script_machine().variable(picture_mode_cell) == orbit_picture_mode;
     }
     else if (area != *solar_area_kind_seen_)
     {
-        snapshot_.solar_map = area == orbit_area;
+        tour.screen().solar_map = area == orbit_area;
     }
     solar_area_kind_seen_ = area;
     constexpr std::uint16_t unchanged_mode = 1;
     if (picture_mode_given && *picture_mode_given != unchanged_mode)
     {
-        snapshot_.solar_map = *picture_mode_given == orbit_picture_mode;
+        tour.screen().solar_map = *picture_mode_given == orbit_picture_mode;
     }
 }
 
-bool RolfTourSession::matrix_ending_completed() const
+bool BuckRogersHost::matrix_ending_completed(const TourHost &tour) const
 {
-    if (game() != GoldBoxGame::matrix_cubed || current_script_ != 114 ||
-        machine_.state() != EclState::completed)
+    if (tour.game() != GoldBoxGame::matrix_cubed || tour.current_script() != 114 ||
+        tour.script_machine().state() != EclState::completed)
     {
         return false;
     }
-    const auto bank = town_->script_banks.find(114);
-    const auto script = town_->programs.find(114);
-    if (bank == town_->script_banks.end() || bank->second != 1 || script == town_->programs.end())
+    const auto bank = tour.town_resources().script_banks.find(114);
+    const auto script = tour.town_resources().programs.find(114);
+    if (bank == tour.town_resources().script_banks.end() || bank->second != 1 ||
+        script == tour.town_resources().programs.end())
     {
         return false;
     }
@@ -792,7 +805,7 @@ bool RolfTourSession::matrix_ending_completed() const
     return ending.opcode == 0x38 && ending.operands.size() == 1 &&
            ending.operands.front().tag == 0 && ending.operands.front().value == 2 &&
            script->second->instruction(ending.next).opcode == 0 &&
-           machine_.address() == ending.next;
+           tour.script_machine().address() == ending.next;
 }
 
 namespace
@@ -927,19 +940,19 @@ original::ShipCombat &ShipService::open(TownServiceHost &host, const PhlanResour
     return state->open->combat;
 }
 
-std::vector<CombatArt> RolfTourSession::buck_rogers_team_art() const
+std::vector<CombatArt> BuckRogersHost::buck_rogers_team_art(const TourHost &tour)
 {
     // The team's CHARS icons, the record's and 128 on (saveload.pas
     // AddCharToParty, maptiles.pas LoadIconAnim).
     std::vector<CombatArt> drawn;
-    if (!campaign_ || !town_)
+    if (!tour.campaign() || !tour.resources())
     {
         return drawn;
     }
-    for (const auto &member : team_of(*campaign_))
+    for (const auto &member : team_of(*tour.campaign()))
     {
-        auto art = creature_art(town_->buck_rogers_team_icons, member.record.creature.icon, nullptr,
-                                false, game());
+        auto art = creature_art(tour.town_resources().buck_rogers_team_icons,
+                                member.record.creature.icon, nullptr, false, tour.game());
         drawn.push_back(art ? std::move(*art) : CombatArt{});
         drawn.back().entity = member.id;
     }
@@ -1015,17 +1028,17 @@ bool ShipService::finish_ship_combat(TownServiceHost &host, std::uint64_t ticket
 // current character or a member at random, each saving by the record's
 // saving throws; or a number of attacks on members at random, each rolled
 // against the member's Armor Class.
-void RolfTourSession::buck_rogers_damage(const EclRequest &request)
+void BuckRogersHost::buck_rogers_damage(TourHost &tour, const EclRequest &request)
 {
-    read_character();
+    tour.read_character();
     const auto value = [&](std::size_t n)
     {
-        return static_cast<unsigned>(machine_.operand_value(request.instruction->operands.at(n)) &
-                                     0xFF);
+        return static_cast<unsigned>(
+            tour.script_machine().operand_value(request.instruction->operands.at(n)) & 0xFF);
     };
-    auto random =
-        RandomState{(static_cast<std::uint64_t>(machine_.host_random(request.id, 65536)) << 16) |
-                    machine_.host_random(request.id, 65536)};
+    auto random = RandomState{
+        (static_cast<std::uint64_t>(tour.script_machine().host_random(request.id, 65536)) << 16) |
+        tour.script_machine().host_random(request.id, 65536)};
     const auto attack = value(0), count = value(1), sides = value(2), bonus = value(3),
                target = value(4);
     const auto roll = [&]
@@ -1037,7 +1050,7 @@ void RolfTourSession::buck_rogers_damage(const EclRequest &request)
         }
         return total;
     };
-    auto team = team_of(*campaign_);
+    auto team = team_of(*tour.campaign());
     if (team.empty())
     {
         throw EclError("DAMAGE needs a team");
@@ -1054,9 +1067,9 @@ void RolfTourSession::buck_rogers_damage(const EclRequest &request)
         const bool dies = member.record.creature.hit_points + 10 < harm;
         int dying = 0;
         original::inflict_ground_damage(member.record.creature, harm, dying);
-        campaign_->keep_game_record(member.id, original::encode_ground_record(member.record));
-        snapshot_.dialogue = join_script_text(
-            std::move(snapshot_.dialogue),
+        tour.campaign()->keep_game_record(member.id, original::encode_ground_record(member.record));
+        tour.screen().dialogue = join_script_text(
+            std::move(tour.screen().dialogue),
             upper(member.record.creature.name) +
                 (dies ? " DIES." : " IS HIT FOR " + std::to_string(harm) + " POINTS OF DAMAGE."));
     };
@@ -1086,7 +1099,7 @@ void RolfTourSession::buck_rogers_damage(const EclRequest &request)
         else if ((target & 0x80) != 0)
         {
             const auto current =
-                std::ranges::find(team, selected_character_.index, &TeamPlace::slot);
+                std::ranges::find(team, tour.selected_character().index, &TeamPlace::slot);
             if (current != team.end() &&
                 (category == 0 || !saves(*current, category - 1) || damage_on_save))
             {
@@ -1117,24 +1130,25 @@ void RolfTourSession::buck_rogers_damage(const EclRequest &request)
             amount = roll();
         }
     }
-    const auto after = team_of(*campaign_);
+    const auto after = team_of(*tour.campaign());
     if (std::ranges::none_of(after,
                              [](const TeamPlace &member)
                              {
                                  return member.record.creature.enabled != 0;
                              }))
     {
-        snapshot_.dialogue =
-            join_script_text(std::move(snapshot_.dialogue), "THE WHOLE TEAM IS KILLED!");
-        snapshot_.phase = TourPhase::defeated;
-        ++snapshot_.revision;
+        tour.screen().dialogue =
+            join_script_text(std::move(tour.screen().dialogue), "THE WHOLE TEAM IS KILLED!");
+        tour.screen().phase = TourPhase::defeated;
+        ++tour.screen().revision;
         return;
     }
-    if (!machine_.resume_host(request.id, character_reply(selected_character_)))
+    if (!tour.script_machine().resume_host(request.id,
+                                           tour.character_reply(tour.selected_character())))
     {
         throw EclError("DAMAGE's reply rejected");
     }
-    ++snapshot_.revision;
+    ++tour.screen().revision;
 }
 
 namespace
@@ -1186,38 +1200,38 @@ constexpr std::size_t creature_limit = 63;
 }
 } // namespace
 
-std::uint16_t RolfTourSession::buck_rogers_difficulty_level() const noexcept
+std::uint16_t BuckRogersHost::buck_rogers_difficulty_level(const TourHost &tour) noexcept
 {
     // The settings run Novice to Admiral, as the levels do.
-    return static_cast<std::uint16_t>(difficulty_setting_);
+    return static_cast<std::uint16_t>(tour.difficulty_setting());
 }
 
-void RolfTourSession::configure_buck_rogers()
+void BuckRogersHost::configure_buck_rogers(TourHost &tour)
 {
     // GameInit: Trooper, the area kind 1, message speed 4 (START_MESSAGE_SPEED).
-    machine_.bind_variable(EclAddress{0x4BB6}, buck_rogers_difficulty_level());
-    machine_.bind_variable(area_kind, 1);
-    machine_.bind_variable(EclAddress{0x4BFC}, 4);
+    tour.script_machine().bind_variable(EclAddress{0x4BB6}, buck_rogers_difficulty_level(tour));
+    tour.script_machine().bind_variable(area_kind, 1);
+    tour.script_machine().bind_variable(EclAddress{0x4BFC}, 4);
     // The ship's 108 bytes from 4D00h: its numbers of two bytes (the name's
     // 16 bytes, then words to 2Fh) as words, the rest as bytes (types.pas TShip).
     constexpr std::uint16_t ship = 0x4D00;
     constexpr std::size_t first_word = 16, last_word = 48;
-    const auto &bytes = town_->buck_rogers_party_ship;
+    const auto &bytes = tour.town_resources().buck_rogers_party_ship;
     for (std::size_t at = 0; at < bytes.size(); ++at)
     {
         const auto cell = EclAddress(static_cast<std::uint16_t>(ship + at));
         if (at >= first_word && at <= last_word && at % 2 == 0)
         {
-            machine_.bind_variable(cell,
-                                   static_cast<std::uint16_t>(bytes[at] | bytes[at + 1] << 8));
+            tour.script_machine().bind_variable(
+                cell, static_cast<std::uint16_t>(bytes[at] | bytes[at + 1] << 8));
         }
         else
         {
-            machine_.bind_variable(cell, bytes[at]);
+            tour.script_machine().bind_variable(cell, bytes[at]);
         }
     }
     // The rocket on Earth's cell, the bodies at phase 0 (InitShipAndOrbit).
-    keep_solar_map(original::new_voyage());
+    keep_solar_map(tour, original::new_voyage());
     solar_area_kind_seen_.reset();
 }
 
@@ -1241,12 +1255,12 @@ std::string BuckRogersMenuService::buck_rogers_item_name(const PhlanResources &t
     return name.empty() ? std::string("?") : name;
 }
 
-void RolfTourSession::stage_buck_rogers_creatures(const EclRequest &request)
+void EncounterHost::stage_buck_rogers_creatures(TourHost &tour, const EclRequest &request)
 {
     const auto value = [&](std::size_t n)
     {
-        return static_cast<unsigned>(machine_.operand_value(request.instruction->operands.at(n)) &
-                                     0xFF);
+        return static_cast<unsigned>(
+            tour.script_machine().operand_value(request.instruction->operands.at(n)) & 0xFF);
     };
     const auto number = value(0), count = value(1), icon = value(2);
     // None to load reads neither the creature nor its icon: a team member
@@ -1255,16 +1269,16 @@ void RolfTourSession::stage_buck_rogers_creatures(const EclRequest &request)
     {
         return;
     }
-    const auto found = town_->buck_rogers_creatures.find(number);
-    if (found == town_->buck_rogers_creatures.end())
+    const auto found = tour.town_resources().buck_rogers_creatures.find(number);
+    if (found == tour.town_resources().buck_rogers_creatures.end())
     {
         throw EclError("LOAD MONSTER names no creature " + std::to_string(number));
     }
-    const auto disk = town_->script_banks.at(current_script_);
-    const auto icons = town_->buck_rogers_icons.find(disk);
-    auto art = icons == town_->buck_rogers_icons.end()
+    const auto disk = tour.town_resources().script_banks.at(tour.current_script());
+    const auto icons = tour.town_resources().buck_rogers_icons.find(disk);
+    auto art = icons == tour.town_resources().buck_rogers_icons.end()
                    ? std::nullopt
-                   : creature_art(icons->second, icon, nullptr, false, game());
+                   : creature_art(icons->second, icon, nullptr, false, tour.game());
     if (!art)
     {
         throw EclError("Invalid Buck Rogers combat icon " + std::to_string(icon));
@@ -1273,9 +1287,9 @@ void RolfTourSession::stage_buck_rogers_creatures(const EclRequest &request)
     // C_Side.TEAM: a creature that fights beside the team.
     const bool ally = creature.side == 0;
     const auto profile = original::encode_ground_record(
-        {creature, found->second.items, town_->buck_rogers_item_types});
+        {creature, found->second.items, tour.town_resources().buck_rogers_item_types});
     for (unsigned n = 0; n < count && staged_enemies_.size() + staged_allies_.size() +
-                                              campaign_->state().roster.size() <
+                                              tour.campaign()->state().roster.size() <
                                           creature_limit;
          ++n)
     {
@@ -1308,24 +1322,26 @@ void RolfTourSession::stage_buck_rogers_creatures(const EclRequest &request)
     }
 }
 
-void RolfTourSession::buck_rogers_combat(const EclRequest &request, bool solo)
+void EncounterHost::buck_rogers_combat(TourHost &tour, const EclRequest &request, bool solo)
 {
-    read_character();
+    tour.read_character();
     if (staged_enemies_.empty() && !solo)
     {
         // No one hostile: the fight's end runs at once (EclCombat).
-        finish_buck_rogers_fight(request.id, result_won, 0);
+        finish_buck_rogers_fight(tour, request.id, result_won, 0);
         return;
     }
-    const auto kind = machine_.variable(area_kind) & 0xFF;
+    const auto kind = tour.script_machine().variable(area_kind) & 0xFF;
     const auto set = buck_rogers_tile_set(kind);
-    const auto &tiles = town_->buck_rogers_tile_sets.at(std::string(set.file));
-    const auto pose = snapshot_.pose;
-    const auto seed = (static_cast<std::uint32_t>(machine_.host_random(request.id, 65536)) << 16) |
-                      machine_.host_random(request.id, 65536);
-    auto arena = buck_rogers_battlefield(map_, pose.x, pose.y, kind, current_script_,
-                                         machine_.variable(wilderness_ground) & 0xFF, seed,
-                                         static_cast<unsigned>(tiles.size()));
+    const auto &tiles = tour.town_resources().buck_rogers_tile_sets.at(std::string(set.file));
+    const auto pose = tour.screen().pose;
+    const auto seed =
+        (static_cast<std::uint32_t>(tour.script_machine().host_random(request.id, 65536)) << 16) |
+        tour.script_machine().host_random(request.id, 65536);
+    auto arena =
+        buck_rogers_battlefield(tour.loaded_map(), pose.x, pose.y, kind, tour.current_script(),
+                                tour.script_machine().variable(wilderness_ground) & 0xFF, seed,
+                                static_cast<unsigned>(tiles.size()));
     encounter_records_ = staged_records_;
     encounter_ = opengold::CampaignEncounter{
         std::move(arena.field),
@@ -1333,7 +1349,8 @@ void RolfTourSession::buck_rogers_combat(const EclRequest &request, bool solo)
         std::move(staged_art_),
         tiles,
         pose.facing,
-        static_cast<opengold::Surprise>(machine_.variable(game_cell(ecl_encounter_surprise)) & 3)};
+        static_cast<opengold::Surprise>(
+            tour.script_machine().variable(tour.game_cell(ecl_encounter_surprise)) & 3)};
     staged_enemies_.clear();
     staged_art_.clear();
     encounter_->allies = std::move(staged_allies_);
@@ -1343,7 +1360,7 @@ void RolfTourSession::buck_rogers_combat(const EclRequest &request, bool solo)
         encounter_->art.push_back(std::move(art));
     }
     staged_ally_art_.clear();
-    for (auto &art : buck_rogers_team_art())
+    for (auto &art : BuckRogersHost::buck_rogers_team_art(tour))
     {
         if (art.image.width > 0)
         {
@@ -1356,30 +1373,31 @@ void RolfTourSession::buck_rogers_combat(const EclRequest &request, bool solo)
     if (solo)
     {
         // SOLO COMBAT: the current character alone (EclSoloCombat).
-        encounter_->champion =
-            campaign_->state().slots.at(acting_slot(*campaign_, selected_character_));
+        encounter_->champion = tour.campaign()->state().slots.at(
+            acting_slot(*tour.campaign(), tour.selected_character()));
         if (!encounter_->champion)
         {
             throw EclError("SOLO COMBAT needs a current character");
         }
     }
-    encounter_distance_ = std::min({encounter_distance_, room_ahead(), 2U});
+    encounter_distance_ = std::min({encounter_distance_, tour.room_ahead(), 2U});
     encounter_->distance = encounter_distance_;
     encounter_->enemy_quarters = dealt_quarters(monster_sides_, encounter_->enemies.size());
-    encounter_->morale = std::min<unsigned>(machine_.variable(morale_cell) & 0xFF, 100);
-    apply_original_difficulty(*encounter_, difficulty_setting_, game());
+    encounter_->morale =
+        std::min<unsigned>(tour.script_machine().variable(morale_cell) & 0xFF, 100);
+    apply_original_difficulty(*encounter_, tour.difficulty_setting(), tour.game());
     combat_request_ = request.id;
     showing_monster_picture_ =
-        monster_picture_id_ && area_resources().animations.contains(*monster_picture_id_);
-    snapshot_.phase = TourPhase::combat;
-    ++snapshot_.revision;
+        monster_picture_id_ && tour.area_resources().animations.contains(*monster_picture_id_);
+    tour.screen().phase = TourPhase::combat;
+    ++tour.screen().revision;
 }
 
-bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
+bool EncounterHost::resolve_buck_rogers_combat(TourHost &tour, const rules::Snapshot &result)
 {
-    if (snapshot_.phase != TourPhase::combat || !encounter_ || !combat_request_ || !campaign_ ||
-        campaign_->in_combat() || result.outcome == rules::Outcome::ongoing ||
-        result.identity != campaign_->identity())
+    if (tour.screen().phase != TourPhase::combat || !encounter_ || !combat_request_ ||
+        !tour.campaign() || tour.campaign()->in_combat() ||
+        result.outcome == rules::Outcome::ongoing || result.identity != tour.campaign()->identity())
     {
         return false;
     }
@@ -1389,7 +1407,7 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
     std::uint32_t loot_experience = 0;
     unsigned defeated = 0;
     const bool solo = encounter_->champion != 0;
-    const bool takes_gear = (machine_.variable(skips_combat_items) & 0xFF) != 1;
+    const bool takes_gear = (tour.script_machine().variable(skips_combat_items) & 0xFF) != 1;
     for (const auto &unit : result.combatants)
     {
         if (unit.side != rules::Side::opposition || unit.id < 1000)
@@ -1406,19 +1424,19 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
         loot_experience += record->creature.experience_award;
         if (!solo)
         {
-            buck_rogers_menus_.add_credits(record->creature.credits);
+            tour.buck_rogers_menus().add_credits(record->creature.credits);
             for (auto item : record->items)
             {
                 if (takes_gear && (item.flags & 0x40) == 0)
                 {
                     item.flags =
                         static_cast<std::uint8_t>(item.flags & ~buck_rogers::Item::readied);
-                    buck_rogers_menus_.add_booty(item);
+                    tour.buck_rogers_menus().add_booty(item);
                 }
             }
         }
     }
-    auto team = team_of(*campaign_);
+    auto team = team_of(*tour.campaign());
     const bool won = result.outcome == rules::Outcome::victory;
     const bool fled = result.outcome == rules::Outcome::fled;
     std::uint16_t combat_result = won ? result_won : fled ? result_team_fled : result_team_beaten;
@@ -1440,10 +1458,10 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
     if (!won && !fled && !other_pc_waiting)
     {
         // The team is destroyed (postcbt.pas PostCombat).
-        snapshot_.dialogue = "YOUR TEAM HAS BEEN DESTROYED.";
-        snapshot_.phase = TourPhase::defeated;
+        tour.screen().dialogue = "YOUR TEAM HAS BEEN DESTROYED.";
+        tour.screen().phase = TourPhase::defeated;
         encounter_.reset();
-        ++snapshot_.revision;
+        ++tour.screen().revision;
         return true;
     }
     if (won && loot_experience > 0)
@@ -1465,21 +1483,23 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
                 member.record.creature.experience += share;
             }
         }
-        snapshot_.dialogue = join_script_text(std::move(snapshot_.dialogue),
-                                              "EACH MEMBER RECEIVES " + std::to_string(share) +
-                                                  " EXPERIENCE POINTS.");
+        tour.screen().dialogue = join_script_text(std::move(tour.screen().dialogue),
+                                                  "EACH MEMBER RECEIVES " + std::to_string(share) +
+                                                      " EXPERIENCE POINTS.");
     }
     // The wounded (DetermineCombatResults), then the medics (TreatInjuries).
     auto members = team_members(team);
     if (!fled)
     {
-        original::recover_after_fight(members, (machine_.variable(revives_team) & 0xFF) != 0);
+        original::recover_after_fight(members,
+                                      (tour.script_machine().variable(revives_team) & 0xFF) != 0);
     }
-    if ((machine_.variable(skips_treatment) & 0xFF) == 0)
+    if ((tour.script_machine().variable(skips_treatment) & 0xFF) == 0)
     {
         auto random = RandomState{
-            (static_cast<std::uint64_t>(machine_.host_random(combat_request_, 65536)) << 16) |
-            machine_.host_random(combat_request_, 65536)};
+            (static_cast<std::uint64_t>(tour.script_machine().host_random(combat_request_, 65536))
+             << 16) |
+            tour.script_machine().host_random(combat_request_, 65536)};
         // The antidote is used whenever one is carried, as the player is
         // asked first; the walk's and the game's screens ask in B3's next part.
         const auto report = original::treat_injuries(
@@ -1495,7 +1515,8 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
     {
         team[n].record.creature = members[n].character;
         team[n].record.items = members[n].items;
-        campaign_->keep_game_record(team[n].id, original::encode_ground_record(team[n].record));
+        tour.campaign()->keep_game_record(team[n].id,
+                                          original::encode_ground_record(team[n].record));
     }
     if (fled)
     {
@@ -1504,23 +1525,23 @@ bool RolfTourSession::resolve_buck_rogers_combat(const rules::Snapshot &result)
         for (const auto &unit : result.combatants)
         {
             if (unit.side == rules::Side::party && unit.id < 1000 && !unit.fled &&
-                std::ranges::find(campaign_->state().slots, unit.id) !=
-                    campaign_->state().slots.end())
+                std::ranges::find(tour.campaign()->state().slots, unit.id) !=
+                    tour.campaign()->state().slots.end())
             {
-                campaign_->remove(unit.id);
+                tour.campaign()->remove(unit.id);
             }
         }
-        buck_rogers_menus_.clear_booty();
+        tour.buck_rogers_menus().clear_booty();
     }
-    repair_after_boarding(combat_request_);
+    repair_after_boarding(tour, combat_request_);
     const auto request = std::exchange(combat_request_, 0);
     encounter_.reset();
-    snapshot_.phase = TourPhase::running;
-    finish_buck_rogers_fight(request, combat_result, defeated);
+    tour.screen().phase = TourPhase::running;
+    finish_buck_rogers_fight(tour, request, combat_result, defeated);
     return true;
 }
 
-void RolfTourSession::repair_after_boarding(std::uint64_t request)
+void EncounterHost::repair_after_boarding(TourHost &tour, std::uint64_t request)
 {
     // Script 52 sets post-combat mode 2 after the fight on a boarded ship's
     // decks: the repairs follow it, with the captured ship's experience and
@@ -1528,23 +1549,24 @@ void RolfTourSession::repair_after_boarding(std::uint64_t request)
     // "Ship combat", decision 5).
     constexpr EclAddress post_combat_mode{0x4D7C};
     constexpr std::uint16_t repairs_follow = 2, normal = 0;
-    if ((machine_.variable(post_combat_mode) & 0xFF) != repairs_follow)
+    if ((tour.script_machine().variable(post_combat_mode) & 0xFF) != repairs_follow)
     {
         return;
     }
-    auto team = team_of(*campaign_);
+    auto team = team_of(*tour.campaign());
     const auto crew = team_members(team);
-    auto ship = party_ship_in(machine_, town_->buck_rogers_party_ship.size());
-    auto *fight = ship_service_.state();
+    auto ship =
+        party_ship_in(tour.script_machine(), tour.town_resources().buck_rogers_party_ship.size());
+    auto *fight = tour.ship_service().state();
     auto *boarded = fight && fight->boarded ? &*fight->boarded : nullptr;
     const auto options = boarded ? boarded->options : original::ShipCombatOptions{};
     auto *captured = boarded ? &boarded->ship : nullptr;
     const int boarded_experience = boarded ? boarded->experience : 0;
-    auto random =
-        RandomState{(static_cast<std::uint64_t>(machine_.host_random(request, 65536)) << 16) |
-                    machine_.host_random(request, 65536)};
+    auto random = RandomState{
+        (static_cast<std::uint64_t>(tour.script_machine().host_random(request, 65536)) << 16) |
+        tour.script_machine().host_random(request, 65536)};
     const auto report =
-        original::repair_ship(game(), ship, crew, boarded_experience, captured, true, options,
+        original::repair_ship(tour.game(), ship, crew, boarded_experience, captured, true, options,
                               [&random](int sides)
                               {
                                   return roll_die(random, sides);
@@ -1561,12 +1583,12 @@ void RolfTourSession::repair_after_boarding(std::uint64_t request)
             {
                 member.record.creature.experience +=
                     static_cast<std::uint32_t>(report.experience_share);
-                campaign_->keep_game_record(member.id,
-                                            original::encode_ground_record(member.record));
+                tour.campaign()->keep_game_record(member.id,
+                                                  original::encode_ground_record(member.record));
             }
         }
-        snapshot_.dialogue =
-            join_script_text(std::move(snapshot_.dialogue),
+        tour.screen().dialogue =
+            join_script_text(std::move(tour.screen().dialogue),
                              "EACH MEMBER RECEIVES " + std::to_string(report.experience_share) +
                                  " EXPERIENCE POINTS.");
     }
@@ -1587,14 +1609,14 @@ void RolfTourSession::repair_after_boarding(std::uint64_t request)
         writes.push_back({EclAddress{cell.address}, cell.value});
     }
     writes.push_back({post_combat_mode, normal});
-    if (!machine_.refresh_host_variables(request, writes))
+    if (!tour.script_machine().refresh_host_variables(request, writes))
     {
         throw EclError("The repaired ship's cells are not the script's");
     }
 }
 
-void RolfTourSession::finish_buck_rogers_fight(std::uint64_t request, std::uint16_t combat_result,
-                                               unsigned defeated)
+void EncounterHost::finish_buck_rogers_fight(TourHost &tour, std::uint64_t request,
+                                             std::uint16_t combat_result, unsigned defeated)
 {
     // The script's own changes for this fight end with it (PostCombat).
     const std::array<EclMemoryWrite, 7> cleared{
@@ -1605,20 +1627,21 @@ void RolfTourSession::finish_buck_rogers_fight(std::uint64_t request, std::uint1
          {movement_bonus, 0},
          {skips_combat_items, 0},
          {revives_team, 0}}};
-    if (!machine_.refresh_host_variables(request, cleared))
+    if (!tour.script_machine().refresh_host_variables(request, cleared))
     {
         throw EclError("The fight's end cells are not the script's");
     }
-    if (buck_rogers_menus_.booty_waiting())
+    if (tour.buck_rogers_menus().booty_waiting())
     {
-        buck_rogers_menus_.open_menu(*this, BuckRogersMenuService::Kind::booty, request);
+        tour.buck_rogers_menus().open_menu(tour, BuckRogersMenuService::Kind::booty, request);
         return;
     }
-    if (!machine_.resume_host(request, character_reply(selected_character_)))
+    if (!tour.script_machine().resume_host(request,
+                                           tour.character_reply(tour.selected_character())))
     {
         throw EclError("The fight's end was rejected");
     }
-    ++snapshot_.revision;
+    ++tour.screen().revision;
 }
 
 void BuckRogersMenuService::open_menu(TownServiceHost &host, Kind kind, std::uint64_t request,

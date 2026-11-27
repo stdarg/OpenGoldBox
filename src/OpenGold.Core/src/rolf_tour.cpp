@@ -617,7 +617,136 @@ RolfTourSession RolfTourSession::detached_copy() const
 void RolfTourSession::shops(std::vector<opengold::ShopSite> sites, opengold::ShopStock kept)
 {
     shop_service_.shops(town_.get(), std::move(sites), kept);
-    apply_entrances();
+    doors_.apply_entrances(*this);
+}
+
+bool RolfTourSession::has_sanctuary() const
+{
+    return sanctuary_.has_value();
+}
+
+void RolfTourSession::set_auto_equip(std::optional<opengold::UnidentifiedMagic> auto_equip) noexcept
+{
+    auto_equip_ = auto_equip;
+}
+
+bool RolfTourSession::can_select_member() const
+{
+    return can_leave() || snapshot_.phase == TourPhase::shopping ||
+           snapshot_.phase == TourPhase::treasure || buck_rogers_menus_.selects_member();
+}
+
+void RolfTourSession::set_searching(bool searching) noexcept
+{
+    snapshot_.searching = searching;
+}
+
+void RolfTourSession::difficulty(opengold::DifficultySetting setting) noexcept
+{
+    difficulty_setting_ = setting;
+    difficulty_ = opengold::played_difficulty(setting);
+    if (opengold::is_buck_rogers(game()))
+    {
+        (void)machine_.refresh_bound_variable(EclAddress{0x4BB6},
+                                              static_cast<std::uint16_t>(setting));
+    }
+}
+
+void RolfTourSession::difficulty(opengold::Difficulty difficulty) noexcept
+{
+    this->difficulty(opengold::difficulty_setting(difficulty));
+}
+
+void RolfTourSession::companion_rules(std::shared_ptr<const rules::CharacterRules> creation,
+                                      std::vector<CompanionDefinition> companions)
+{
+    companion_rules_ = std::move(creation);
+    companions_ = std::make_shared<const std::vector<CompanionDefinition>>(std::move(companions));
+}
+
+void RolfTourSession::temples(std::vector<opengold::TempleSite> sites)
+{
+    temple_service_.temples(std::move(sites));
+}
+
+const std::vector<opengold::TempleSite> &RolfTourSession::temples() const noexcept
+{
+    return temple_service_.temples();
+}
+
+const std::vector<opengold::ShopSite> &RolfTourSession::shops() const noexcept
+{
+    return shop_service_.shops();
+}
+
+const std::vector<std::vector<Equipment>> &RolfTourSession::town_stock() const noexcept
+{
+    return shop_service_.town_stock();
+}
+
+const TourSnapshot &RolfTourSession::snapshot() const noexcept
+{
+    return snapshot_;
+}
+
+const GeoMap &RolfTourSession::map() const noexcept
+{
+    return map_;
+}
+
+const std::array<opengold::Image, 3> &RolfTourSession::sprites() const noexcept
+{
+    return sprites_;
+}
+
+void RolfTourSession::show_original_walls(bool original) noexcept
+{
+    original_walls_ = original;
+}
+
+const WallArtSet &RolfTourSession::wall_art() const noexcept
+{
+    return wall_art_;
+}
+
+const TownParty &RolfTourSession::party() const noexcept
+{
+    return party_;
+}
+
+const std::vector<Equipment> &RolfTourSession::shop_stock() const noexcept
+{
+    return shop_service_.shop_stock();
+}
+
+const std::vector<Equipment> &RolfTourSession::treasure_pile() const noexcept
+{
+    return treasure_service_.treasure_pile();
+}
+
+const std::vector<std::string> &RolfTourSession::script_diagnostics() const noexcept
+{
+    return diagnostics_;
+}
+
+const std::optional<Image> &RolfTourSession::picture() const noexcept
+{
+    return picture_;
+}
+
+std::uint16_t RolfTourSession::script_variable(EclAddress address) const
+{
+    return machine_.variable(address);
+}
+
+bool RolfTourSession::turns_on_party(MemberId id) const
+{
+    return campaign_ && turncoat(id);
+}
+
+const std::optional<opengold::CampaignEncounter> &RolfTourSession::pending_encounter() const
+{
+    return encounters_.pending_encounter();
 }
 
 void RolfTourSession::use_shop_data(const std::filesystem::path &shop_folder,
@@ -643,7 +772,7 @@ void RolfTourSession::restart()
     }
     machine_ = EclMachine(program_);
     reset_run();
-    apply_entrances();
+    doors_.apply_entrances(*this);
 }
 
 void RolfTourSession::reset_run()
@@ -665,32 +794,19 @@ void RolfTourSession::reset_run()
     current_script_ = 0;
     event_stage_ = EventStage::none;
     selected_character_ = {};
-    staged_enemies_.clear();
-    staged_art_.clear();
-    staged_records_.clear();
-    staged_undead_loads_ = 0;
-    encounter_menu_.reset();
-    encounter_.reset();
-    monster_picture_id_.reset();
-    showing_monster_picture_ = false;
-    combat_request_ = 0;
+    encounters_.reset();
     treasure_service_.restore_loot({});
-    door_menu_ = pick_tried_ = false;
-    door_choices_.clear();
+    doors_.reset();
     who_request_ = damage_request_ = 0;
     damage_writes_.clear();
     snapshot_.choosing_member = false;
     victory_ = false;
-    duel_ = mirror_duel_ = false;
-    turncoats_.clear();
     who_slots_.clear();
     vault_service_ = {};
     temple_service_.close();
     hall_service_.close();
     pending_movement_.reset();
     teleport_arrival_.reset();
-    entrances_.clear();
-    wand_traps_.clear();
     transition_ = message_only_ = false;
     // Rolf's tour of New Phlan shows his sprite; Curse's root sprites are the
     // wilderness's encounters.
@@ -816,12 +932,9 @@ void RolfTourSession::roll_back_event()
     current_script_ = saved.script;
     map_ = std::move(saved.map);
     treasure_service_.restore_loot(std::move(saved.pending_loot));
-    door_menu_ = false;
-    door_choices_.clear();
     visited_areas_ = std::move(saved.visited_areas);
     seen_areas_ = std::move(saved.seen_areas);
-    entrances_ = std::move(saved.entrances);
-    wand_traps_ = std::move(saved.wand_traps);
+    doors_.roll_back(std::move(saved.entrances), std::move(saved.wand_traps));
     camp_service_.roll_back(saved.rest_checks);
     travel_mode_ = saved.travel_mode;
     dark_queen_combat_set_ = saved.dark_queen_combat_set;
@@ -833,8 +946,6 @@ void RolfTourSession::roll_back_event()
     damage_writes_.clear();
     snapshot_.choosing_member = false;
     snapshot_.game_won = victory_ = false;
-    duel_ = mirror_duel_ = false;
-    turncoats_.clear();
     who_slots_.clear();
     vault_service_.close();
     temple_service_.close();
@@ -844,15 +955,7 @@ void RolfTourSession::roll_back_event()
     transition_ = false;
     delayed_request_ = 0;
     shop_service_.close();
-    staged_enemies_.clear();
-    staged_art_.clear();
-    staged_records_.clear();
-    staged_undead_loads_ = 0;
-    encounter_menu_.reset();
-    encounter_.reset();
-    monster_picture_id_.reset();
-    showing_monster_picture_ = false;
-    combat_request_ = 0;
+    encounters_.reset();
     snapshot_.sprite_frame = -1;
     picture_.reset();
     ++snapshot_.picture_revision;
@@ -864,7 +967,7 @@ void RolfTourSession::publish_pose()
 {
     if (is_buck_rogers(game()))
     {
-        update_solar_map();
+        buck_rogers_.update_solar_map(*this);
         snapshot_.overland = false;
         if (game() == GoldBoxGame::matrix_cubed && machine_.variable(EclAddress{0x4BE6}) == 0x70)
         {
@@ -914,9 +1017,9 @@ void RolfTourSession::publish_pose()
         machine_.bind_variable(EclAddress{0x3D}, native_cell_flags(next.x, next.y));
     }
     snapshot_.overland = overland();
-    if (darkness_area_map())
+    if (vga_.darkness_area_map(*this))
     {
-        publish_darkness_area_square();
+        vga_.publish_darkness_area_square(*this);
     }
     else if (overland())
     {
@@ -974,13 +1077,13 @@ Image RolfTourSession::observe_view()
                                       healed ? town_->healed_overland_tiles : town_->overland_tiles,
                                       town_->party_icon, view);
     }
-    if (darkness_area_map())
+    if (vga_.darkness_area_map(*this))
     {
-        return render_darkness_area_map();
+        return vga_.render_darkness_area_map(*this);
     }
     if (snapshot_.solar_map)
     {
-        return render_solar_map();
+        return buck_rogers_.render_solar_map(*this);
     }
     const auto pose = snapshot_.pose;
     if (gateway_overland())
@@ -988,9 +1091,9 @@ Image RolfTourSession::observe_view()
         return render_symbol_map(map_, overland_symbols_, town_->symbol_sets.at(gateway_marks),
                                  pose.x, pose.y, pose.facing);
     }
-    if (treasures_overland())
+    if (vga_.treasures_overland(*this))
     {
-        return treasures_overland_view();
+        return vga_.treasures_overland_view(*this);
     }
     if (game() == GoldBoxGame::dark_queen_of_krynn && town_->dark_queen && !map_.raw.empty())
     {
@@ -1057,10 +1160,7 @@ void RolfTourSession::handle_host(const EclRequest &request)
         {
             --snapshot_.sprite_frame;
         }
-        if (encounter_distance_ > 0)
-        {
-            --encounter_distance_;
-        }
+        encounters_.approach();
         break;
     case 14:
         if (request.arguments[0].number() != 255)
@@ -1169,13 +1269,13 @@ void RolfTourSession::handle_host(const EclRequest &request)
         {
             // The original's one-on-one duel: the next COMBAT is the
             // selected member's alone (coab's isDuel).
-            duel_ = true;
+            encounters_.duel(false);
         }
         else if (service == EclAddress{routines.mirror_duel})
         {
             // The training hall's arena duel (eclmenu.pas CharFightsAlone):
             // the selected member fights alone against a copy of itself.
-            duel_ = mirror_duel_ = true;
+            encounters_.duel(true);
         }
         else if (service == EclAddress{routines.sound})
         {
@@ -1442,6 +1542,221 @@ const PhlanResources &RolfTourSession::town_resources() const
 TownParty &RolfTourSession::town_party() noexcept
 {
     return party_;
+}
+
+const TourSnapshot &RolfTourSession::screen() const noexcept
+{
+    return snapshot_;
+}
+
+unsigned RolfTourSession::current_script() const noexcept
+{
+    return current_script_;
+}
+
+unsigned RolfTourSession::current_area() const noexcept
+{
+    return current_area_;
+}
+
+GeoMap &RolfTourSession::loaded_map() noexcept
+{
+    return map_;
+}
+
+const GeoMap &RolfTourSession::loaded_map() const noexcept
+{
+    return map_;
+}
+
+WallArtSet &RolfTourSession::loaded_wall_art() noexcept
+{
+    return wall_art_;
+}
+
+std::array<Image, 3> &RolfTourSession::encounter_sprites() noexcept
+{
+    return sprites_;
+}
+
+std::optional<Image> &RolfTourSession::shown_picture() noexcept
+{
+    return picture_;
+}
+
+std::optional<unsigned> &RolfTourSession::shown_animation() noexcept
+{
+    return picture_animation_id_;
+}
+
+std::vector<EclMemoryWrite> &RolfTourSession::damage_writes() noexcept
+{
+    return damage_writes_;
+}
+
+const std::optional<ExplorationCommand> &RolfTourSession::pending_movement() const noexcept
+{
+    return pending_movement_;
+}
+
+DifficultySetting RolfTourSession::difficulty_setting() const noexcept
+{
+    return difficulty_setting_;
+}
+
+unsigned RolfTourSession::encounter_challenge() const noexcept
+{
+    return encounter_challenge_;
+}
+
+unsigned RolfTourSession::dark_queen_combat_set() const noexcept
+{
+    return dark_queen_combat_set_;
+}
+
+unsigned RolfTourSession::travel_mode() const noexcept
+{
+    return travel_mode_;
+}
+
+TreasureService &RolfTourSession::treasure_service() noexcept
+{
+    return treasure_service_;
+}
+
+ShopService &RolfTourSession::shop_service() noexcept
+{
+    return shop_service_;
+}
+
+CampService &RolfTourSession::camp_service() noexcept
+{
+    return camp_service_;
+}
+
+BuckRogersMenuService &RolfTourSession::buck_rogers_menus() noexcept
+{
+    return buck_rogers_menus_;
+}
+
+ShipService &RolfTourSession::ship_service() noexcept
+{
+    return ship_service_;
+}
+
+bool RolfTourSession::party_resting() const noexcept
+{
+    return event_stage_ == EventStage::camp_interrupted;
+}
+
+bool RolfTourSession::event_searched() const noexcept
+{
+    return event_searched_;
+}
+
+std::optional<WandSign> RolfTourSession::point_wand_of_secrets(MemberId member, std::uint64_t item)
+{
+    return doors_.point_wand_of_secrets(*this, member, item);
+}
+
+void RolfTourSession::romance_told() noexcept
+{
+    romance_told_ = camp_resumes_ = true;
+}
+
+void RolfTourSession::keep_event() noexcept
+{
+    event_checkpoint_.reset();
+}
+
+bool RolfTourSession::turncoat(MemberId id) const
+{
+    return encounters_.turncoat(*this, id);
+}
+
+bool RolfTourSession::magic_barred() const
+{
+    return vga_.magic_barred(*this);
+}
+
+bool RolfTourSession::vga_area_map() const
+{
+    return vga_.vga_area_map(*this);
+}
+
+std::optional<rules::Romance> RolfTourSession::treasures_romance() const
+{
+    return vga_.treasures_romance(*this);
+}
+
+bool RolfTourSession::turn_colors(double seconds)
+{
+    return vga_.turn_colors(*this, seconds);
+}
+
+bool RolfTourSession::camp_offers_fix() const
+{
+    return vga_.camp_offers_fix(*this);
+}
+
+bool RolfTourSession::camp_offers_crown() const
+{
+    return vga_.camp_offers_crown(*this);
+}
+
+bool RolfTourSession::camp_crown()
+{
+    return vga_.camp_crown(*this);
+}
+
+unsigned RolfTourSession::camp_crystals() const
+{
+    return vga_.camp_crystals(*this);
+}
+
+original::SolarMapState RolfTourSession::solar_map_state() const
+{
+    return buck_rogers_.solar_map_state(*this);
+}
+
+std::optional<std::size_t> RolfTourSession::orbited_body() const
+{
+    return buck_rogers_.orbited_body(*this);
+}
+
+TeamShip RolfTourSession::team_ship() const
+{
+    return buck_rogers_.team_ship(*this);
+}
+
+std::vector<CombatArt> RolfTourSession::buck_rogers_team_art() const
+{
+    return BuckRogersHost::buck_rogers_team_art(*this);
+}
+
+bool RolfTourSession::matrix_ending_completed() const
+{
+    return buck_rogers_.matrix_ending_completed(*this);
+}
+
+const std::vector<AnimationFrame> *RolfTourSession::monster_picture() const
+{
+    return encounters_.monster_picture(*this);
+}
+
+bool RolfTourSession::start_encounter()
+{
+    return encounters_.start_encounter(*this);
+}
+
+bool RolfTourSession::resolve_combat(const rules::Snapshot &result)
+{
+    return encounters_.resolve_combat(*this, result);
+}
+
+bool RolfTourSession::reject_combat(std::string diagnostic)
+{
+    return encounters_.reject_combat(*this, std::move(diagnostic));
 }
 
 void RolfTourSession::log_player(const std::string &action) const

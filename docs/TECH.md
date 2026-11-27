@@ -259,7 +259,24 @@ reaches the session only through `TownServiceHost`
 call, so a service keeps no pointer into a session that is copied or moved,
 and a test can serve a service from a host of its own. The session's own
 types live beside it: what the view shows in `tour_snapshot.h`, the areas it
-loads in `phlan_resources.h`.
+loads in `phlan_resources.h`, and the records it keeps of its events (the
+event checkpoint, Word of Recall's sanctuary, a Teleport's arrival, the
+hidden entrances) in `tour_records.h`.
+
+The session's script hosts are classes of their own too, each owning its
+state: `EncounterHost` (`encounter_host.h`: the monsters a script stages,
+SETUP MONSTER, LOAD MONSTER, the encounter menu, COMBAT's fight and its
+end, the Buck Rogers games' fights among them), `VgaHost` (`vga_host.h`: the
+256-color engine's commands, Treasures' overland, Fix, crown and romance,
+Pools of Darkness's area map), `BuckRogersHost` (`buck_rogers_host.h`: the
+Buck Rogers games' commands, the character record their scripts read and
+write, and the solar map) and `DoorHost` (`door_host.h`: locked doors,
+OpenGoldBox's hidden shop entrances and the Wand of Secrets). They reach the
+session only through `TourHost` (`tour_host.h`), which extends
+`TownServiceHost` with what a script host needs (the loaded map, the
+picture shown, the clock, the other services) and which the session also
+implements and lends for one call. The session dispatches each script
+command to its host and forwards its public calls.
 
 ### `OpenGold.Rules` and `OpenGold.Rules.Srd5`
 
