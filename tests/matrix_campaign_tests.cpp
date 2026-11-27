@@ -10,6 +10,7 @@
 #include "opengold/campaign_session.h"
 #include "opengold/character.h"
 #include "opengold/combat_demo.h"
+#include "opengold/directions.h"
 #include "opengold/buck_rogers_solar_map.h"
 #include "opengold/buck_rogers_ship_fight.h"
 #include "opengold/formats.h"
@@ -3387,8 +3388,6 @@ bool walk_venus_world(Campaign &campaign, const std::filesystem::path &folder, u
 {
     using Command = opengold::por::ExplorationCommand;
     constexpr unsigned width = 38, height = 15;
-    static constexpr std::array<int, 8> dx{0, 1, 1, 1, 0, -1, -1, -1},
-        dy{-1, -1, 0, 1, 1, 1, 0, -1};
     static constexpr std::array commands{Command::north,     Command::northeast, Command::east,
                                          Command::southeast, Command::south,     Command::southwest,
                                          Command::west,      Command::northwest};
@@ -3423,8 +3422,10 @@ bool walk_venus_world(Campaign &campaign, const std::filesystem::path &folder, u
             frontier.pop();
             for (unsigned side = 0; side < 8; ++side)
             {
-                const int nx = static_cast<int>(at % width) + dx[side],
-                          ny = static_cast<int>(at / width) + dy[side];
+                const int nx = static_cast<int>(at % width) +
+                               opengold::por::directions::step_x[side],
+                          ny = static_cast<int>(at / width) +
+                               opengold::por::directions::step_y[side];
                 if (nx < 0 || ny < 0 || nx >= static_cast<int>(width) ||
                     ny >= static_cast<int>(height))
                 {

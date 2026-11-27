@@ -10,6 +10,7 @@
 #include "godot_nodes.h"
 #include "guarded_handlers.h"
 #include "localization.h"
+#include "opengold/directions.h"
 
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/image.hpp>
@@ -90,11 +91,10 @@ constexpr std::array<std::pair<const char *, ExplorationCommand>, 8> pad{{
     const int sy = 2 * std::abs(dy) < std::abs(dx) ? 0 : sign(dy);
     for (const auto &[button, command] : pad)
     {
-        static constexpr std::array<int, 8> columns{0, 1, 1, 1, 0, -1, -1, -1},
-            rows{-1, -1, 0, 1, 1, 1, 0, -1};
         const auto way =
             static_cast<std::size_t>(command) - static_cast<std::size_t>(ExplorationCommand::north);
-        if (columns[way] == sx && rows[way] == sy)
+        if (opengold::por::directions::step_x[way] == sx &&
+            opengold::por::directions::step_y[way] == sy)
         {
             return command;
         }

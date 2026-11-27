@@ -1418,7 +1418,7 @@ msgstr ""
 msgid "Aura of Protection: you and allies within 10 feet add your Charisma modifier (at least +1) to saving throws, unless you are Incapacitated."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:40
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:41
 msgid "Aurora"
 msgstr ""
 
@@ -2470,7 +2470,7 @@ msgstr ""
 msgid "Central Wilderness, the grove"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:38
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
 msgid "Ceres"
 msgstr ""
 
@@ -4452,7 +4452,7 @@ msgstr ""
 msgid "Each roll must be assigned exactly once"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:38
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
 msgid "Earth"
 msgstr ""
 
@@ -4460,7 +4460,7 @@ msgstr ""
 msgid "Earthquake"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:45 src/OpenGoldBox/rolf_tour_view.cpp:80 src/OpenGoldBox/rolf_tour_view.cpp:83
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:46 src/OpenGoldBox/rolf_tour_view.cpp:80 src/OpenGoldBox/rolf_tour_view.cpp:83
 msgid "East"
 msgstr ""
 
@@ -5595,7 +5595,7 @@ msgstr ""
 msgid "Forgotten Realms"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:40
 msgid "Fortuna"
 msgstr ""
 
@@ -6590,7 +6590,7 @@ msgstr ""
 msgid "Hurled through the Lower Planes"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:40
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:41
 msgid "Hygeia"
 msgstr ""
 
@@ -7037,7 +7037,7 @@ msgstr ""
 msgid "Joins in an NPC position with its levels, experience and items; it brings no money."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:40
 msgid "Juno"
 msgstr ""
 
@@ -7951,7 +7951,7 @@ msgstr ""
 msgid "Manual of Bodily Health"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:38
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
 msgid "Mars"
 msgstr ""
 
@@ -8225,7 +8225,7 @@ msgstr ""
 msgid "Mercurian"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:38
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
 msgid "Mercury"
 msgstr ""
 
@@ -8928,15 +8928,15 @@ msgstr ""
 msgid "Norris the Gray"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:44 src/OpenGoldBox/rolf_tour_view.cpp:80 src/OpenGoldBox/rolf_tour_view.cpp:83
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:45 src/OpenGoldBox/rolf_tour_view.cpp:80 src/OpenGoldBox/rolf_tour_view.cpp:83
 msgid "North"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:45 src/OpenGoldBox/rolf_tour_view.cpp:83
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:46 src/OpenGoldBox/rolf_tour_view.cpp:83
 msgid "Northeast"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:44 src/OpenGoldBox/rolf_tour_view.cpp:84
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:45 src/OpenGoldBox/rolf_tour_view.cpp:84
 msgid "Northwest"
 msgstr ""
 
@@ -9440,7 +9440,7 @@ msgstr ""
 msgid "Paladine"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:40
 msgid "Pallas"
 msgstr ""
 
@@ -10069,7 +10069,7 @@ msgstr ""
 msgid "Protector"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:40
 msgid "Psyche"
 msgstr ""
 
@@ -12370,15 +12370,15 @@ msgstr ""
 msgid "Source: {class} class, level 1. Saving-throw training adds +2 proficiency to {first} and {second}."
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:45 src/OpenGoldBox/rolf_tour_view.cpp:80 src/OpenGoldBox/rolf_tour_view.cpp:84
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:46 src/OpenGoldBox/rolf_tour_view.cpp:80 src/OpenGoldBox/rolf_tour_view.cpp:84
 msgid "South"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:45 src/OpenGoldBox/rolf_tour_view.cpp:83
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:46 src/OpenGoldBox/rolf_tour_view.cpp:83
 msgid "Southeast"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:44 src/OpenGoldBox/rolf_tour_view.cpp:84
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:45 src/OpenGoldBox/rolf_tour_view.cpp:84
 msgid "Southwest"
 msgstr ""
 
@@ -13845,7 +13845,7 @@ msgstr ""
 msgid "Thrown weapon"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:40
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:41
 msgid "Thule"
 msgstr ""
 
@@ -14542,7 +14542,7 @@ msgstr ""
 msgid "Vault is full!"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:38
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
 msgid "Venus"
 msgstr ""
 
@@ -14554,7 +14554,7 @@ msgstr ""
 msgid "Versatile"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:39
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:40
 msgid "Vesta"
 msgstr ""
 
@@ -14884,7 +14884,7 @@ msgstr ""
 msgid "Well of Knowledge"
 msgstr ""
 
-#: src/OpenGoldBox/rolf_tour_solar_map.cpp:44 src/OpenGoldBox/rolf_tour_view.cpp:81 src/OpenGoldBox/rolf_tour_view.cpp:84
+#: src/OpenGoldBox/rolf_tour_solar_map.cpp:45 src/OpenGoldBox/rolf_tour_view.cpp:81 src/OpenGoldBox/rolf_tour_view.cpp:84
 msgid "West"
 msgstr ""
 

@@ -2,6 +2,7 @@
 
 #include "archive_io.h"
 #include "opengold/original_spells.h"
+#include "opengold/directions.h"
 #include "opengold/encounter_formation.h"
 #include "opengold/path_text.h"
 #include "opengold/ua_combat.h"
@@ -858,10 +859,6 @@ void UaSession::step_to(unsigned x, unsigned y, MapDirection facing)
     run_step_events(square_event(x, y));
 }
 
-// The kit's eight steps out of doors, 0 north and on clockwise.
-constexpr std::array<int, 8> wild_dx{0, 1, 1, 1, 0, -1, -1, -1};
-constexpr std::array<int, 8> wild_dy{-1, -1, 0, 1, 1, 1, 0, -1};
-
 std::optional<std::pair<unsigned, unsigned>> UaSession::overland_destination(unsigned facing) const
 {
     // The kit's wilderness is 38 squares by 15, and its edges stop a step.
@@ -869,7 +866,8 @@ std::optional<std::pair<unsigned, unsigned>> UaSession::overland_destination(uns
     const int columns = std::min<int>(area_.area.columns, wild_columns),
               rows = std::min<int>(area_.area.rows, wild_rows);
     const int x = static_cast<int>(snapshot_.pose.x), y = static_cast<int>(snapshot_.pose.y);
-    const int nx = x + wild_dx[facing & 7], ny = y + wild_dy[facing & 7];
+    const int nx = x + por::directions::step_x[facing & 7],
+              ny = y + por::directions::step_y[facing & 7];
     if (nx < 0 || ny < 0 || nx >= columns || ny >= rows)
     {
         return std::nullopt;
@@ -880,8 +878,8 @@ std::optional<std::pair<unsigned, unsigned>> UaSession::overland_destination(uns
     unsigned side = (facing & 7) / 2;
     if ((facing & 1) != 0)
     {
-        wx += wild_dx[facing - 1];
-        wy += wild_dy[facing - 1];
+        wx += por::directions::step_x[facing - 1];
+        wy += por::directions::step_y[facing - 1];
         side = ((facing + 1) & 6) / 2;
     }
     const bool inside = wx >= 0 && wy >= 0 && wx < static_cast<int>(area_.area.columns) &&
@@ -914,8 +912,8 @@ std::string UaSession::zone_text(unsigned zone) const
 bool UaSession::step_overland(unsigned facing)
 {
     const auto destination = overland_destination(facing);
-    const int nx = static_cast<int>(snapshot_.pose.x) + wild_dx[facing & 7],
-              ny = static_cast<int>(snapshot_.pose.y) + wild_dy[facing & 7];
+    const int nx = static_cast<int>(snapshot_.pose.x) + por::directions::step_x[facing & 7],
+              ny = static_cast<int>(snapshot_.pose.y) + por::directions::step_y[facing & 7];
     const bool on_map = nx >= 0 && ny >= 0 && nx < static_cast<int>(area_.area.columns) &&
                         ny < static_cast<int>(area_.area.rows);
     const auto words =
