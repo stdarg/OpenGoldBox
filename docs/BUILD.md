@@ -153,6 +153,12 @@ data and runtime DLLs. Keep that folder together. Run the game with:
 From `cmd.exe`, use `win-package\opengoldbox.console.exe`, which waits for the
 game, returns its exit code and then restores the prompt.
 
+To build without the tests and start the game in one step, run
+`play-opengoldbox.cmd`. It is meant for a desktop shortcut: point one at
+the script in your checkout (Target `C:\path\to\OpenGold\play-opengoldbox.cmd`,
+Start in the checkout's folder). It configures `build/game` the first time,
+and its window stays open only when the build fails.
+
 To rebuild only the game target after configuring:
 
 ```powershell

@@ -47,6 +47,8 @@ or an event).
   The build also makes the package for players,
   `build\game\OpenGoldBox-<version>-windows-x86_64.zip`, which runs from any folder,
   including a read-only one ([the package](docs/BUILD.md#the-package-for-players)).
+  To build without the tests and start the game, from a desktop shortcut or
+  PowerShell, run `.\play-opengoldbox.cmd`.
 - macOS (bash): `./build.sh`, then `open mac-package/OpenGoldBox.app`. `./build.sh`
   builds the game and re-exports the app without running tests.
 - Linux (bash): `./build.sh`, then `./linux-package/opengoldbox.x86_64`. The game
