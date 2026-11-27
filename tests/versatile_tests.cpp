@@ -1,5 +1,6 @@
 #include "opengold/srd5.h"
 #include "opengold/campaign_save.h"
+#include "test_support.h"
 #include <algorithm>
 #include <array>
 #include <iostream>
@@ -9,13 +10,7 @@ using namespace opengold::rules;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 auto module()
 {

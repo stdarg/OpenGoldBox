@@ -2,6 +2,7 @@
 // whichever step of a command fails, the fight is exactly as it was before.
 #include "failing_allocation.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
@@ -12,13 +13,7 @@ using namespace opengold::rules;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::unique_ptr<CombatSession> fight(const RulesModule &rules)
 {

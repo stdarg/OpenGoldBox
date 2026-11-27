@@ -1,9 +1,9 @@
 // How the computer plays monsters and Quick members (docs/AI.md, #266), on
 // fights drawn by hand: each rule the document states, one check at a time.
 #include "opengold/combat_demo.h"
+#include "test_support.h"
 #include <algorithm>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -12,13 +12,7 @@ using namespace opengold::rules;
 
 namespace
 {
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 CombatantView unit(EntityId id, Side side, Cell cell, int hit_points = 10, int maximum = 10)
 {

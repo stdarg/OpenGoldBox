@@ -1,5 +1,6 @@
 #include "../src/OpenGoldBox/cached_combat.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -10,13 +11,7 @@
 // checks keep the cache from serving a snapshot older than the combat.
 namespace
 {
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::unique_ptr<opengold::CombatDemo> training_demo()
 {

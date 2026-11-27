@@ -2,6 +2,7 @@
 #include "opengold/character.h"
 #include "opengold/srd5.h"
 #include "status_effects.h"
+#include "test_support.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -21,13 +22,7 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool ok, const char *message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::string read(const std::filesystem::path &p)
 {

@@ -1,5 +1,6 @@
 #include "opengold/character_art.h"
 #include "support/synthetic_dax.h"
+#include "test_support.h"
 #include <algorithm>
 #include <chrono>
 #include <fstream>
@@ -20,28 +21,7 @@ IconPose pose_of(bool action)
 
 using Bytes = std::vector<std::uint8_t>;
 
-void check(bool condition, const char *message)
-{
-    if (!condition)
-    {
-        throw std::logic_error(message);
-    }
-}
-
-template <class F> void rejects(F &&operation, std::string_view diagnostic)
-{
-    try
-    {
-        std::forward<F>(operation)();
-    }
-    catch (const std::runtime_error &error)
-    {
-        check(std::string_view(error.what()).find(diagnostic) != std::string_view::npos,
-              "Unexpected art rejection diagnostic");
-        return;
-    }
-    throw std::logic_error("Invalid art was accepted");
-}
+using opengold::test::check;
 
 Bytes picture(unsigned width, unsigned height, unsigned offset = 0)
 {
@@ -132,7 +112,7 @@ class Fixture
 CharacterArt archive_tests()
 {
     Fixture fixture;
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             (void)CharacterArt::load(fixture.path());
@@ -178,7 +158,7 @@ CharacterArt archive_tests()
         [&](const char *filename, const Bytes &replacement, const char *message)
     {
         fixture.write(filename, replacement);
-        rejects(
+        rejects_mentioning<std::runtime_error>(
             [&]
             {
                 (void)CharacterArt::load(fixture.path());
@@ -202,7 +182,7 @@ CharacterArt archive_tests()
     {
         fixture.write("HEAD" + std::to_string(disk) + ".DAX", literal_dax({}));
     }
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             (void)CharacterArt::load(fixture.path());
@@ -210,7 +190,7 @@ CharacterArt archive_tests()
         "Missing portraits");
     fixture.populate();
     std::filesystem::resize_file(fixture.path() / "HEAD1.DAX", 32 * 1024 * 1024 + 1);
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             (void)CharacterArt::load(fixture.path());
@@ -292,13 +272,13 @@ void composition_tests(const CharacterArt &art)
                   "Recoloring never mutates cached components");
         }
     }
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             (void)art.color_usage(appearance).contains(2, 0);
         },
         "Invalid character color region");
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             (void)art.color_usage(appearance).contains(0, 6);
@@ -312,14 +292,14 @@ void composition_tests(const CharacterArt &art)
               art.combat_anatomy(appearance, IconPose::ready).width == 24,
           "Combat icons do not require the portrait head to be loaded");
     (void)art.color_usage(appearance);
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             (void)art.portrait(appearance);
         },
         "Invalid character appearance selection");
     appearance.portrait_head = 2;
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             (void)art.portrait(appearance);
@@ -327,14 +307,14 @@ void composition_tests(const CharacterArt &art)
         "Invalid character appearance selection");
     auto head = art.combat_heads().at(0), body = art.combat_bodies().at(0);
     head.pixels[0] = 16;
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             (void)compose_character_icon(head, body, {});
         },
         "Invalid character icon pixel");
     head.pixels.pop_back();
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             (void)compose_character_icon(head, body, {});
@@ -364,19 +344,19 @@ void parts_keep_their_sizes()
     art.set_original_head(1, PortraitPart{"fixture", image(88, 40), "Head"});
     art.set_original_body(1, PortraitPart{"fixture", image(88, 48), "Body"});
     check(art.heads().size() == 1 && art.bodies().size() == 1, "Correctly sized parts are kept");
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             art.set_original_head(2, PortraitPart{"fixture", image(88, 88), "Too tall"});
         },
         "portrait head is 88x40");
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             art.set_original_body(2, PortraitPart{"fixture", image(88, 40), "Too short"});
         },
         "portrait body is 88x48");
-    rejects(
+    rejects_mentioning<std::runtime_error>(
         [&]
         {
             art.set_combat_body(0, IndexedIcon{24, 24, std::vector<std::uint8_t>(10)});

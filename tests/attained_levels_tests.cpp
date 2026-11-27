@@ -4,6 +4,7 @@
 #include "opengold/character_pool.h"
 #include "opengold/combat_demo.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
@@ -28,13 +29,7 @@ namespace
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 const bool verbose = std::getenv("OPENGOLD_ATTAINED_VERBOSE") != nullptr;
 
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::unique_ptr<RulesModule> module()
 {

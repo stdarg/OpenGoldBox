@@ -11,7 +11,6 @@
 #include <filesystem>
 #include <functional>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 using namespace opengold;
@@ -22,13 +21,7 @@ namespace
 namespace fx = opengold::srd5::detail;
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::unique_ptr<RulesModule> module()
 {

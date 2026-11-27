@@ -6,6 +6,7 @@
 #include "opengold/combat_demo.h"
 #include "opengold/difficulty.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
@@ -23,13 +24,7 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::string read(const std::filesystem::path &p)
 {

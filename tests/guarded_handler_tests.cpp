@@ -1,4 +1,5 @@
 #include "../src/OpenGoldBox/scoped_flag.h"
+#include "test_support.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -12,13 +13,7 @@
 // keep nodes taken out of the tree owned.
 namespace
 {
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 void scoped_flag_clears_however_the_scope_ends()
 {

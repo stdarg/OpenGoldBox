@@ -4,13 +4,13 @@
 #include "opengold/shop_data.h"
 #include "repository_data.h"
 #include "installed_games.h"
+#include "test_support.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <queue>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -26,13 +26,7 @@ static_assert(!std::is_copy_constructible_v<RolfTourSession> &&
 
 using Bytes = std::vector<std::uint8_t>;
 
-void check(bool ok, const char *message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::shared_ptr<const EclProgram> program(Bytes body)
 {

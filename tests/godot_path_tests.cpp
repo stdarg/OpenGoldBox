@@ -1,21 +1,15 @@
 #include "../src/OpenGoldBox/godot_path.h"
+#include "test_support.h"
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <stdexcept>
 #include <string>
 
 // Paths the game builds from Godot's UTF-8 strings: save names, the game
 // folder and the rules file.
 namespace
 {
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 void non_ascii_names_survive()
 {

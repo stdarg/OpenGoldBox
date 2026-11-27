@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <utility>
 #include "split_aim.h"
+#include "test_support.h"
 
 using namespace opengold;
 using namespace opengold::rules;
@@ -16,13 +17,7 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool value, const char *message)
-{
-    if (!value)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::string read(const std::filesystem::path &path)
 {

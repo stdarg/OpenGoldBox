@@ -5,6 +5,7 @@
 #include "opengold/vace_film.h"
 #include "opengold/vga_picture.h"
 #include "installed_games.h"
+#include "test_support.h"
 
 #include <algorithm>
 #include <fstream>
@@ -17,13 +18,7 @@
 namespace
 {
 
-void check(bool condition, const std::string &message)
-{
-    if (!condition)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 opengold::Image title_picture(const std::filesystem::path &folder, std::uint8_t id)
 {

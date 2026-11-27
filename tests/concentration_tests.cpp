@@ -1,4 +1,5 @@
 #include "concentration.h"
+#include "test_support.h"
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -6,13 +7,7 @@ using namespace opengold::srd5::detail;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 const Concentration first{{7, 1, 9}, 600000},
     second{{7, 2, 9}, 600000}; // Silence's maximum duration.

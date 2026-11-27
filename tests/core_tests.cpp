@@ -1,5 +1,6 @@
 #include "opengold/formats.h"
 #include "installed_games.h"
+#include "test_support.h"
 
 #include <algorithm>
 #include <array>
@@ -7,18 +8,11 @@
 #include <fstream>
 #include <iterator>
 #include <iostream>
-#include <stdexcept>
 #include <vector>
 
 namespace
 {
-void check(bool value, const char *message)
-{
-    if (!value)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 // Literal-only DAX encoding keeps malformed sprite fixtures independent of files.
 std::vector<std::uint8_t> archive(const std::vector<std::uint8_t> &record)

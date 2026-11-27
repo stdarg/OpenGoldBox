@@ -1,9 +1,9 @@
 #include "../src/OpenGoldBox/spell_effects.h"
 #include "spell_table.h"
+#include "test_support.h"
 #include <cstdlib>
 #include <iostream>
 #include <set>
-#include <stdexcept>
 #include <string>
 #include <tuple>
 
@@ -13,13 +13,7 @@ using presentation::spell_effects;
 
 namespace
 {
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 bool cast_in_combat(const SpellDef &spell)
 {

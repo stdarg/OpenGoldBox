@@ -24,19 +24,14 @@
 #include <string>
 #include <vector>
 #include "split_aim.h"
+#include "test_support.h"
 
 using namespace opengold;
 using namespace opengold::rules;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 

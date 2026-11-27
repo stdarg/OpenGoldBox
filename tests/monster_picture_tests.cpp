@@ -1,10 +1,10 @@
 #include "../src/OpenGoldBox/monster_picture_timing.h"
+#include "test_support.h"
 #include <array>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -12,13 +12,7 @@
 // frame delays; the session's frames go when the session is reset or replaced.
 namespace
 {
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 constexpr double tick = 1.0 / 18.2;
 

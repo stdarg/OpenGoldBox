@@ -1,5 +1,6 @@
 #include "opengold/campaign_save.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <array>
 #include <fstream>
 #include <iostream>
@@ -14,13 +15,7 @@ const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 constexpr std::array weapons{"dagger", "handaxe", "javelin", "light_hammer",
                              "spear",  "dart",    "trident"};
 
-void check(bool ok, const char *message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 auto module()
 {

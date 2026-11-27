@@ -1,4 +1,5 @@
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <array>
 #include <fstream>
 #include <iostream>
@@ -10,26 +11,17 @@ using namespace opengold;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
+using opengold::test::rejects;
 
-void rejects(std::string_view bytes)
+void rejects_content(std::string_view bytes)
 {
-    try
-    {
-        (void)srd5::parse_content(bytes);
-    }
-    catch (const std::runtime_error &)
-    {
-        return;
-    }
-    throw std::runtime_error("Malformed content was accepted: " +
-                             std::string(bytes.substr(0, 200)));
+    rejects<std::runtime_error>(
+        [&]
+        {
+            (void)srd5::parse_content(bytes);
+        },
+        "Malformed content was accepted: " + std::string(bytes.substr(0, 200)));
 }
 
 constexpr auto header = "OPENGOLD_SRD5 1 synthetic.1\n";
@@ -64,17 +56,18 @@ void malformed_content()
     for (const auto *invalid : {"", "OPENGOLD_SRD5", "OPENGOLD_SRD5 2 synthetic.1\n",
                                 "OTHER 1 synthetic.1\n", "OPENGOLD_SRD5 1 synthetic.1 extra\n"})
     {
-        rejects(std::string(invalid) + row());
+        rejects_content(std::string(invalid) + row());
     }
-    rejects(header);
-    rejects(std::string(header) + "# comments without definitions\n");
-    rejects("OPENGOLD_SRD5 1 " + std::string(81, 'x') + '\n' + row());
-    rejects(std::string(header) + row() + row());
-    rejects(std::string(header) + "creature missing-fields 12 11\n");
-    rejects(std::string(header) + "spell bandit" + row().substr(15));
-    rejects(std::string(header) + "creature " + std::string(81, 'x') + row().substr(15));
-    rejects(std::string(header) + row().substr(0, row().size() - 1) + " extra\n");
-    rejects(std::string(header) + "creature bandit 9999999999999999999999" + row().substr(18));
+    rejects_content(header);
+    rejects_content(std::string(header) + "# comments without definitions\n");
+    rejects_content("OPENGOLD_SRD5 1 " + std::string(81, 'x') + '\n' + row());
+    rejects_content(std::string(header) + row() + row());
+    rejects_content(std::string(header) + "creature missing-fields 12 11\n");
+    rejects_content(std::string(header) + "spell bandit" + row().substr(15));
+    rejects_content(std::string(header) + "creature " + std::string(81, 'x') + row().substr(15));
+    rejects_content(std::string(header) + row().substr(0, row().size() - 1) + " extra\n");
+    rejects_content(std::string(header) + "creature bandit 9999999999999999999999" +
+                    row().substr(18));
     // Both ends of every numeric field, plus non-grid movement and reversed ranges.
     static constexpr std::array<int, 19> low{1, 1,   -10, 5,  -10, 1, 2,   -10, -10, 1,
                                              2, -10, 5,   80, 0,   0, -10, 1,   0};
@@ -93,17 +86,17 @@ void malformed_content()
         {
             auto values = definition;
             values[i] = invalid;
-            rejects(std::string(header) + row(values));
+            rejects_content(std::string(header) + row(values));
         }
     }
     auto values = definition;
     values[3] = 31;
-    rejects(std::string(header) + row(values));
+    rejects_content(std::string(header) + row(values));
     auto maximum = std::string(header) + row() + "#";
     maximum.resize(65536, 'x');
     check(bool(srd5::parse_content(maximum)), "Maximum content size accepts");
     maximum += 'x';
-    rejects(maximum);
+    rejects_content(maximum);
 }
 
 void identities_and_sessions()

@@ -2,8 +2,8 @@
 // (PLACE-1 in docs/SRD-DECISIONS.md). Expected squares are worked out by hand
 // from the rules in src/OpenGold.Core/src/encounter_formation.cpp.
 #include "opengold/encounter_formation.h"
+#include "test_support.h"
 #include <iostream>
-#include <stdexcept>
 #include <vector>
 
 using namespace opengold::por;
@@ -12,13 +12,7 @@ using opengold::rules::Terrain;
 
 namespace
 {
-void check(bool value, const char *message)
-{
-    if (!value)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 // An all-floor arena whose exploration squares have no walls.
 DungeonBattlefield open_field()

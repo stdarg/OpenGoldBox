@@ -4,6 +4,7 @@
 #include "../tools/creature_data.h"
 #include "png_size_only.h"
 #include "installed_games.h"
+#include "test_support.h"
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -14,13 +15,7 @@ namespace
 using opengold::creatures::CreatureData;
 using opengold::detail::Json;
 
-void check(bool condition, const std::string &message)
-{
-    if (!condition)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 Json parsed(const std::string &text)
 {

@@ -4,11 +4,11 @@
 #include "opengold/campaign_party.h"
 #include "opengold/character.h"
 #include "opengold/srd5.h"
+#include "test_support.h"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -19,13 +19,7 @@ namespace
 {
 const auto root = std::filesystem::path(OPENGOLD_SOURCE_DIR);
 
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::unique_ptr<RulesModule> module_rules()
 {

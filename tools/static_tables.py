@@ -8,10 +8,15 @@ into two different arrays and gets the wrong answer (docs/TESTING.md,
 on Windows. Declaring the table `static constexpr` gives it one address on
 every compiler.
 
+It also finds a test file that defines its own check() or rejects(): every
+test takes them from tests/test_support.h, so a better failure message or a
+counter there reaches every test.
+
     static_tables.py [--fix] PATH...
 
 Without --fix it lists each offending declaration and exits 1 if there is
-one; with --fix it inserts `static` in place.
+one; with --fix it inserts `static` in place. A test's own check() or
+rejects() is always listed and fails the run; --fix leaves it alone.
 """
 
 import pathlib
@@ -32,6 +37,16 @@ TABLE = re.compile(
 NON_FUNCTION_SCOPE = re.compile(r"\b(?:namespace|class|struct|union|enum)\b|extern\s*$")
 CONSTANT_FUNCTION = re.compile(r"\b(?:constexpr|consteval)\b")
 IF_CONSTEXPR = re.compile(r"\bif\s+constexpr\b")
+
+# A definition of check() or rejects() in a test: a function with a return
+# type (not a call after return or throw), or a lambda bound to the name.
+LOCAL_ASSERTION = re.compile(
+    r"^[ \t]*(?:template\s*<[^>]*>\s*)?(?:(?:static|inline|constexpr|\[\[nodiscard\]\])\s+)*"
+    r"(?!(?:return|throw|co_return|else|case|new|delete)\b)[\w:<>]+[ \t]*[&*]*[ \t]+(?:check|rejects)\s*\("
+    r"|\b(?:auto|std::function<[^>]*>)[ \t&]+(?:check|rejects)\s*=",
+    re.M,
+)
+ASSERTION_HOME = "test_support.h"
 
 
 def strip_comments_and_literals(text: str) -> str:
@@ -115,6 +130,15 @@ def offending_lines(text: str) -> list[int]:
     return [n for n, source in enumerate(lines) if n in local and TABLE.match(source)]
 
 
+def local_assertion_lines(path: pathlib.Path, text: str) -> list[int]:
+    """The 0-based lines where a test file defines its own check() or
+    rejects()."""
+    if "tests" not in path.parts or path.name == ASSERTION_HOME:
+        return []
+    code = strip_comments_and_literals(text)
+    return [code.count("\n", 0, match.start()) for match in LOCAL_ASSERTION.finditer(code)]
+
+
 def source_files(paths: list[str]):
     for path in map(pathlib.Path, paths):
         if path.is_file():
@@ -130,8 +154,13 @@ def main(arguments: list[str]) -> int:
         print(__doc__)
         return 2
     found = 0
+    assertions = 0
     for path in source_files(paths):
         text = path.read_bytes().decode("utf-8")
+        for n in local_assertion_lines(path, text):
+            found += 1
+            assertions += 1
+            print(f"{path}:{n + 1}: test defines its own check() or rejects(); use tests/{ASSERTION_HOME}")
         offending = offending_lines(text)
         if not offending:
             continue
@@ -145,8 +174,8 @@ def main(arguments: list[str]) -> int:
         if fix:
             path.write_bytes("\n".join(lines).encode("utf-8"))
     if fix:
-        print(f"made {found} tables static")
-        return 0
+        print(f"made {found - assertions} tables static")
+        return 1 if assertions else 0
     return 1 if found else 0
 
 

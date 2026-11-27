@@ -1,4 +1,5 @@
 #include "opengold/dungeon_battlefield.h"
+#include "test_support.h"
 #include <algorithm>
 #include <array>
 #include <iostream>
@@ -8,13 +9,7 @@ using opengold::rules::Terrain;
 
 namespace
 {
-void check(bool value, const char *message)
-{
-    if (!value)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 std::uint64_t digest(const DungeonBattlefield &field)
 {

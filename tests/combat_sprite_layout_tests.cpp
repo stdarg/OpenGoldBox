@@ -1,18 +1,12 @@
 #include "../src/OpenGoldBox/combat_sprite_layout.h"
+#include "test_support.h"
 #include <iostream>
-#include <stdexcept>
 
 using namespace opengold::rules;
 
 namespace
 {
-void check(bool ok, const char *message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 void ordering()
 {

@@ -6,23 +6,17 @@
 // the pair beside the road comes only when the road has none, and a road that
 // reaches column 49 puts its ridge on the next row's first square.
 #include "opengold/overland.h"
+#include "test_support.h"
 #include <cstdlib>
 #include <deque>
 #include <iostream>
-#include <stdexcept>
 #include <string>
 
 using namespace opengold::por;
 
 namespace
 {
-void check(bool ok, const std::string &message)
-{
-    if (!ok)
-    {
-        throw std::runtime_error(message);
-    }
-}
+using opengold::test::check;
 
 // The heights for sight a tile of this frame has in the made-up table.
 std::uint8_t clearance_of(int frame)
