@@ -894,6 +894,14 @@ struct ItemAttackOption
     bool available{};
 };
 
+// A Bonus Action a combatant is entitled to: its command verb and the label the
+// combat view shows for it.
+struct BonusActionView
+{
+    std::string verb;
+    Message label;
+};
+
 // Which of its weapon sets a monster shows: as it was staged until it attacks.
 enum class WeaponSetShown : std::uint8_t
 {
@@ -922,7 +930,7 @@ struct CombatantView
     TemporaryHitPoints temporary_hp;
     std::vector<ResourcePool> resources;
     std::vector<Message> hp_messages;
-    std::vector<std::string>
+    std::vector<BonusActionView>
         bonus_actions; // Entitlements remain visible after spending the Bonus Action.
     std::vector<std::string> known_cantrips; // Knowledge persists while casting is unavailable.
     std::string form; // Wild Shape's Beast form, such as "wolf"; empty otherwise.

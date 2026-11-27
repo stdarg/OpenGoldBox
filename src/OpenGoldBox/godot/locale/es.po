@@ -688,7 +688,7 @@ msgstr "Oleada de acción"
 msgid "Action Surge ({remaining}/{maximum})"
 msgstr "Oleada de acción ({remaining}/{maximum})"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:939
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1065
 msgid "Action Surge action ready (no Magic)."
 msgstr "Acción de Oleada de acción disponible (sin Magia)."
 
@@ -1479,7 +1479,7 @@ msgstr "Perdición (Iniciado en la magia)"
 msgid "Bane (level 2 slot)"
 msgstr "Perdición (espacio de nivel 2)"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1011 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1012 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1137 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1138 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bane: -1d4 to attack rolls and saving throws."
 msgstr "Perdición: -1d4 a las tiradas de ataque y de salvación."
 
@@ -1859,7 +1859,7 @@ msgstr "Arco de hueso"
 msgid "Bonus"
 msgstr "Bonificación"
 
-#: src/OpenGoldBox/combat_weapon_controls.cpp:199 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGoldBox/combat_weapon_controls.cpp:76 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Bonus Action"
 msgstr "Acción adicional"
 
@@ -2691,7 +2691,7 @@ msgstr "Química"
 msgid "Chill Touch"
 msgstr "Toque helado"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:949
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1075
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Chill Touch ({source}): cannot regain HP."
 msgstr "Toque helado ({source}): no puede recuperar PG."
@@ -2709,7 +2709,7 @@ msgstr "Elegir [Enter]"
 msgid "Choose a Champions of Krynn save, then a character to bring into the party."
 msgstr "Elige una partida guardada de Champions of Krynn y después un personaje para traer al grupo."
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:480
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:602
 msgid "Choose a Cleave target, or skip."
 msgstr "Elige un objetivo para Hender, u omite el efecto."
 
@@ -2741,7 +2741,7 @@ msgstr "Elige un arma con Mellar y un ataque. Usa el ataque adicional de Ligera 
 msgid "Choose a Pool of Radiance save, then a character to bring into the party."
 msgstr "Elige una partida guardada de Pool of Radiance y después un personaje para traer al grupo."
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:481
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:603
 msgid "Choose a Push destination, or skip."
 msgstr "Elige un destino para Empujar, u omite el efecto."
 
@@ -4418,7 +4418,7 @@ msgstr "Resistencia enana"
 msgid "Dwarven Toughness"
 msgstr "Dureza enana"
 
-#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:596 src/OpenGold.Rules.Srd5/src/module.cpp:2039 src/OpenGold.Rules.Srd5/src/session_movement.cpp:894 src/OpenGoldBox/level_up_view.cpp:393
+#: src/OpenGold.Rules.Srd5/src/character_rules.cpp:596 src/OpenGold.Rules.Srd5/src/module.cpp:2039 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1020 src/OpenGoldBox/level_up_view.cpp:393
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Dwarven Toughness: +{hp} maximum HP."
 msgstr "Dureza enana: +{hp} PG máximos."
@@ -5681,7 +5681,7 @@ msgstr "Aldea de los gigantes de escarcha"
 msgid "Frost's Chill"
 msgstr "Escalofrío de la escarcha"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:988 src/OpenGold.Rules.Srd5/src/session_movement.cpp:989
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1114 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1115
 msgid "Frost's Chill: Speed reduced by 10 feet."
 msgstr "Escalofrío de la escarcha: Velocidad reducida en 10 pies."
 
@@ -6064,7 +6064,7 @@ msgstr "Saeta guía (Iniciado en la magia)"
 msgid "Guiding Bolt (level 2 slot)"
 msgstr "Saeta guía (espacio de nivel 2)"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1005 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1007 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1131 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1133 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Guiding Bolt: the next attack roll against it has Advantage."
 msgstr "Saeta guía: la siguiente tirada de ataque contra ella tiene ventaja."
 
@@ -6154,7 +6154,7 @@ msgstr "Golpes que entorpecen"
 msgid "Hamstring Blow"
 msgstr "Golpe desjarretante"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:983 src/OpenGold.Rules.Srd5/src/session_movement.cpp:984
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1109 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1110
 msgid "Hamstring Blow: Speed reduced by 15 feet."
 msgstr "Golpe desjarretante: velocidad reducida 15 pies."
 
@@ -7162,7 +7162,7 @@ msgstr "Pozo de Kuto, las catacumbas"
 msgid "Kuto's Well, the plaza"
 msgstr "Pozo de Kuto, la plaza"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:926
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1052
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "L2 slots: {count}"
 msgstr "Esp. N2: {count}"
@@ -7496,7 +7496,7 @@ msgstr "Cañón de acel. ligero"
 msgid "Light armor"
 msgstr "Armadura ligera"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:709
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:831
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Light attack — {weapon} ({hand})"
 msgstr "Ataque ligero — {weapon} ({hand})"
@@ -7533,7 +7533,7 @@ msgstr "Verde claro"
 msgid "Light hammer"
 msgstr "Martillo ligero"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:713
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:835
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Light ranged attack — {weapon} ({hand})"
 msgstr "Ataque ligero a distancia — {weapon} ({hand})"
@@ -7542,7 +7542,7 @@ msgstr "Ataque ligero a distancia — {weapon} ({hand})"
 msgid "Light red"
 msgstr "Rojo claro"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:717
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:839
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Light throw — {weapon} ({hand})"
 msgstr "Lanzamiento ligero — {weapon} ({hand})"
@@ -7712,7 +7712,7 @@ msgstr "Lunar"
 msgid "Luskan"
 msgstr "Luskan"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:932
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1058
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "L{level} slots: {count}"
 msgstr "Esp. N{level}: {count}"
@@ -7995,7 +7995,7 @@ msgstr "Máximo daño"
 msgid "Maximize defense"
 msgstr "Máxima defensa"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:888
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1014
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Maximum HP includes level {level}, d{die} Hit Die and Constitution modifier {modifier}."
 msgstr "Los PG máximos incluyen el nivel {level}, el Dado de Golpe d{die} y el modificador de Constitución {modifier}."
@@ -8345,7 +8345,7 @@ msgstr "Minutos"
 msgid "Mirror Image"
 msgstr "Imagen múltiple"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1181
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1307
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Mirror Image ({count} duplicates)"
 msgstr "Imagen múltiple ({count} duplicados)"
@@ -8731,17 +8731,17 @@ msgstr "Mellar"
 msgid "Nick attack"
 msgstr "Ataque con Mellar"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:680
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:802
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Nick attack — {weapon} ({hand})"
 msgstr "Ataque con Mellar — {weapon} ({hand})"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:684
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:806
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Nick ranged attack — {weapon} ({hand})"
 msgstr "Ataque a distancia con Mellar — {weapon} ({hand})"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:688
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:810
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Nick throw — {weapon} ({hand})"
 msgstr "Lanzamiento con Mellar — {weapon} ({hand})"
@@ -10495,7 +10495,7 @@ msgstr "Rayo debilitador resta {damage} de daño."
 msgid "Ray of Frost"
 msgstr "Rayo de escarcha"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:978 src/OpenGold.Rules.Srd5/src/session_movement.cpp:979
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1104 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1105
 msgid "Ray of Frost: Speed reduced by 10 feet."
 msgstr "Rayo de escarcha: Velocidad reducida en 10 pies."
 
@@ -11386,7 +11386,7 @@ msgstr "Santuario (espacio de nivel 2)"
 msgid "Sap"
 msgstr "Debilitar"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:962
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1088
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Sap ({source}): next attack roll has Disadvantage."
 msgstr "Debilitar ({source}): la siguiente tirada de ataque tiene Desventaja."
@@ -11586,7 +11586,7 @@ msgstr "Secomber"
 msgid "Second Wind"
 msgstr "Segundo aliento"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:943
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1069
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Second Wind: {count}"
 msgstr "Segundo aliento: {count}"
@@ -11822,7 +11822,7 @@ msgstr "Imagen de la nave según la distancia"
 msgid "Shocking Grasp"
 msgstr "Toque electrizante"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:973 src/OpenGold.Rules.Srd5/src/session_movement.cpp:974 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1099 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1100 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Shocking Grasp: cannot make Opportunity Attacks."
 msgstr "Toque electrizante: no puede realizar ataques de oportunidad."
 
@@ -12046,7 +12046,7 @@ msgstr "Espacio de nivel {level}"
 msgid "Slow"
 msgstr "Ralentizar"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:964
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1090
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Slow ({source}): Speed reduced by 10 feet."
 msgstr "Ralentizar ({source}): velocidad reducida en 10 pies."
@@ -12467,7 +12467,7 @@ msgstr "Ataques de conjuro y CD de salvación de estos conjuros."
 msgid "Spell slots of levels {levels}"
 msgstr "Espacios de conjuro de niveles {levels}"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:922
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1048
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Spell slots: {count}"
 msgstr "Espacios de conjuro: {count}"
@@ -12674,7 +12674,7 @@ msgstr "Estudiado"
 msgid "Studied Attacks"
 msgstr "Ataques estudiados"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:995 src/OpenGold.Rules.Srd5/src/session_movement.cpp:996
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1121 src/OpenGold.Rules.Srd5/src/session_movement.cpp:1122
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Studied Attacks ({source}): source's next attack against this creature has Advantage."
 msgstr "Ataques estudiados ({source}): el siguiente ataque de la fuente contra esta criatura tiene Ventaja."
@@ -12935,7 +12935,7 @@ msgstr "¿A qué sistema apuntar?"
 msgid "Target: {target}\nConstitution save DC {dc}; failure makes the target Prone.\nThe triggering Action or Reaction is already spent."
 msgstr "Objetivo: {target}\nSalvación de Constitución CD {dc}; si falla, queda Derribado.\nLa acción o reacción del ataque ya se ha gastado."
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:444
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:566
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Target: {target}\nGraze damage: {damage}\n\nUse Graze after this miss, or skip it.\nThe attack's Action or Reaction is already spent."
 msgstr "Objetivo: {target}\nDaño de Rozar: {damage}\n\nUsa Rozar tras este fallo u omítelo.\nLa Acción o Reacción del ataque ya está gastada."
@@ -14433,7 +14433,7 @@ msgstr "Arriba y Abajo eligen una fila; Izquierda y Derecha, o sus botones, la b
 msgid "Use"
 msgstr "Usar"
 
-#: src/OpenGoldBox/combat_weapon_controls.cpp:200 src/OpenGoldBox/godot/scenes/combat_demo.tscn:767
+#: src/OpenGoldBox/combat_weapon_controls.cpp:77 src/OpenGoldBox/godot/scenes/combat_demo.tscn:767
 msgid "Use Bonus Action"
 msgstr "Usar acción adicional"
 
@@ -14566,7 +14566,7 @@ msgstr "Veterano"
 msgid "Vex"
 msgstr "Hostigar"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:965
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1091
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Vex ({source}): source's next attack against this creature has Advantage."
 msgstr "Hostigar ({source}): el siguiente ataque de la fuente contra esta criatura tiene Ventaja."
@@ -14835,7 +14835,7 @@ msgstr "Aquí no entrenamos esa clase."
 msgid "We only train conscious people."
 msgstr "Solo entrenamos a gente consciente."
 
-#: src/OpenGoldBox/character_creation_view.cpp:94 src/OpenGoldBox/combat_weapon_controls.cpp:19 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:622 src/OpenGoldBox/godot/scenes/combat_demo.tscn:931
+#: src/OpenGoldBox/character_creation_view.cpp:94 src/OpenGoldBox/combat_weapon_controls.cpp:15 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:622 src/OpenGoldBox/godot/scenes/combat_demo.tscn:931
 msgid "Weapon"
 msgstr "Arma"
 
@@ -14980,7 +14980,7 @@ msgstr "Resurgimiento salvaje: sin usos de Forma salvaje, un espacio de conjuro 
 msgid "Wild Shape"
 msgstr "Forma salvaje"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1170
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:1296
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Wild Shape ({form})"
 msgstr "Forma salvaje ({form})"
@@ -16035,7 +16035,7 @@ msgstr "{finder} encuentra a {name}."
 msgid "{game} game files"
 msgstr "Archivos de {game}"
 
-#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:651
+#: src/OpenGold.Rules.Srd5/src/session_movement.cpp:773
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{hand} — {weapon}"
 msgstr "{hand} — {weapon}"

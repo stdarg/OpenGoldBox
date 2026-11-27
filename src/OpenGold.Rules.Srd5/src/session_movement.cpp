@@ -1,4 +1,8 @@
 #include "session.h"
+#include <array>
+#include <cctype>
+#include <string>
+#include <string_view>
 
 // Session: the zoned board, movement grids and paths, and the snapshot a
 // viewer sees.
@@ -318,6 +322,124 @@ std::vector<Cell> Session::path_to(const Actor &actor, Cell destination) const
 {
     return movement_grid(actor).reachable(movement_left(actor)).path_to(destination);
 }
+
+namespace
+{
+// A bonus action's label by its verb, for the verbs whose label is fixed; the
+// rest carry their option, cost, form or slot and are labelled where offered.
+struct BonusActionLabel
+{
+    std::string_view verb;
+    std::string_view label;
+};
+
+inline constexpr std::array bonus_action_labels{
+    BonusActionLabel{"metamagic_cancel", "Metamagic: cancel"},
+    BonusActionLabel{"leave_wild_shape", "Leave Wild Shape"},
+    BonusActionLabel{"cunning_dash", "Dash"},
+    BonusActionLabel{"cunning_disengage", "Disengage"},
+    BonusActionLabel{"cunning_hide", "Hide"},
+    BonusActionLabel{"lay_on_hands", "Lay On Hands"},
+    BonusActionLabel{"lay_on_hands_cure", "Lay On Hands: cure Poisoned (5)"},
+    BonusActionLabel{"lay_on_hands_restore", "Lay On Hands: Restoring Touch (5 per condition)"},
+    BonusActionLabel{"rage", "Rage"},
+    BonusActionLabel{"ignite_flame_tongue", "Flame Tongue: light"},
+    BonusActionLabel{"douse_flame_tongue", "Flame Tongue: douse"},
+    BonusActionLabel{"innate_sorcery", "Innate Sorcery"},
+    BonusActionLabel{"bardic_inspiration", "Bardic Inspiration"},
+    BonusActionLabel{"create_slot_1", "Font of Magic: create a level-1 slot (2 Sorcery Points)"},
+    BonusActionLabel{"create_slot_2", "Font of Magic: create a level-2 slot (3 Sorcery Points)"},
+    BonusActionLabel{"convert_slot_1", "Font of Magic: a level-1 slot into 1 Sorcery Point"},
+    BonusActionLabel{"convert_slot_2", "Font of Magic: a level-2 slot into 2 Sorcery Points"},
+    BonusActionLabel{"martial_arts", "Unarmed Strike"},
+    BonusActionLabel{"flurry_of_blows", "Flurry of Blows"},
+    BonusActionLabel{"flurry_addle", "Flurry of Blows: Addle"},
+    BonusActionLabel{"flurry_push", "Flurry of Blows: Push"},
+    BonusActionLabel{"flurry_topple", "Flurry of Blows: Topple"},
+    BonusActionLabel{"patient_defense", "Patient Defense: Disengage"},
+    BonusActionLabel{"patient_defense_focus", "Patient Defense: Disengage and Dodge (1 Focus)"},
+    BonusActionLabel{"step_of_the_wind", "Step of the Wind: Dash"},
+    BonusActionLabel{"step_of_the_wind_focus", "Step of the Wind: Disengage and Dash (1 Focus)"},
+    BonusActionLabel{"step_of_the_wind_carry",
+                     "Step of the Wind: Disengage and Dash, carrying an ally (1 Focus)"},
+    BonusActionLabel{"extend_rage", "Extend Rage"},
+    BonusActionLabel{"intimidating_presence", "Intimidating Presence"},
+    BonusActionLabel{"intimidating_presence_rage", "Intimidating Presence (1 Rage)"},
+    BonusActionLabel{"natures_veil", "Nature's Veil"},
+    BonusActionLabel{"woodland_disengage", "Disengage (Conjure Woodland Beings)"},
+    BonusActionLabel{"divine_smite_free", "Divine Smite (Paladin's Smite)"},
+    BonusActionLabel{"divine_smite", "Divine Smite"},
+    BonusActionLabel{"searing_smite", "Searing Smite"},
+    BonusActionLabel{"shining_smite", "Shining Smite"},
+    BonusActionLabel{"ensnaring_strike", "Ensnaring Strike"},
+    BonusActionLabel{"steady_aim", "Steady Aim"}};
+
+// "wild_shape_giant_lizard" reads "Wild Shape: Giant Lizard" when no use is
+// left to offer it.
+std::string wild_shape_label(const std::string &verb)
+{
+    std::string form = verb.substr(11);
+    for (std::size_t i = 0; i < form.size(); ++i)
+    {
+        if (form[i] == '_')
+        {
+            form[i] = ' ';
+        }
+        else if (i == 0 || form[i - 1] == ' ')
+        {
+            form[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(form[i])));
+        }
+    }
+    return "Wild Shape: " + form;
+}
+
+// The label of the command offered to `actor` with that verb, or `fallback`.
+std::string offered_label(const std::string &verb, EntityId actor,
+                          const std::vector<Command> &offered, const std::string &fallback)
+{
+    for (const auto &c : offered)
+    {
+        if (c.actor == actor && c.verb == verb)
+        {
+            return c.label;
+        }
+    }
+    return fallback;
+}
+
+// The label the combat view shows for one of `actor`'s Bonus Actions, offered
+// now or not.
+Message bonus_action_label(const std::string &verb, EntityId actor,
+                           const std::vector<Command> &offered)
+{
+    for (const auto &fixed : bonus_action_labels)
+    {
+        if (verb == fixed.verb)
+        {
+            return {std::string(fixed.label), {}};
+        }
+    }
+    // Metamagic and Wild Shape labels carry their option, cost or form, so
+    // they come from the offered command.
+    if (verb.starts_with("metamagic_"))
+    {
+        return {offered_label(verb, actor, offered, "Metamagic"), {}};
+    }
+    if (verb.starts_with("wild_shape_"))
+    {
+        return {offered_label(verb, actor, offered, wild_shape_label(verb)), {}};
+    }
+    if (verb.starts_with("divine_smite_"))
+    {
+        return {"Divine Smite (level " + verb.substr(13) + " slot)", {}};
+    }
+    if (verb.starts_with("shining_smite_"))
+    {
+        return {"Shining Smite (level " + verb.substr(14) + " slot)", {}};
+    }
+    return {offered_label(verb, actor, offered, verb), {}};
+}
+} // namespace
 
 Snapshot Session::snapshot() const
 {
@@ -729,82 +851,82 @@ Snapshot Session::snapshot() const
         {
             view.conditions.push_back({a.must_stay ? "Charging in panic" : "Fleeing in panic", {}});
         }
+        std::vector<std::string> bonus_verbs;
         if (def(a).cunning)
         {
-            view.bonus_actions = {"cunning_dash", "cunning_disengage", "cunning_hide"};
+            bonus_verbs = {"cunning_dash", "cunning_disengage", "cunning_hide"};
         }
         else if (def(a).nimble_escape)
         {
-            view.bonus_actions = {"cunning_disengage", "cunning_hide"};
+            bonus_verbs = {"cunning_disengage", "cunning_hide"};
         }
         if (def(a).sneak_level >= 3)
         {
-            view.bonus_actions.push_back("steady_aim");
+            bonus_verbs.push_back("steady_aim");
         }
         if (def(a).lay_on_hands)
         {
-            view.bonus_actions.push_back("lay_on_hands");
-            view.bonus_actions.push_back("lay_on_hands_cure");
+            bonus_verbs.push_back("lay_on_hands");
+            bonus_verbs.push_back("lay_on_hands_cure");
             if (def(a).restoring_touch)
             {
-                view.bonus_actions.push_back("lay_on_hands_restore");
+                bonus_verbs.push_back("lay_on_hands_restore");
             }
         }
         if (def(a).rages)
         {
-            view.bonus_actions.insert(view.bonus_actions.end(), {"rage", "extend_rage"});
+            bonus_verbs.insert(bonus_verbs.end(), {"rage", "extend_rage"});
         }
         if (def(a).flame_tongue)
         {
-            view.bonus_actions.push_back(a.flame_lit ? "douse_flame_tongue"
-                                                     : "ignite_flame_tongue");
+            bonus_verbs.push_back(a.flame_lit ? "douse_flame_tongue" : "ignite_flame_tongue");
         }
         if (basic_poison_left(a))
         {
-            view.bonus_actions.push_back("coat_weapon");
+            bonus_verbs.push_back("coat_weapon");
         }
         if (def(a).intimidating_presence)
         {
-            view.bonus_actions.insert(view.bonus_actions.end(),
-                                      {"intimidating_presence", "intimidating_presence_rage"});
+            bonus_verbs.insert(bonus_verbs.end(),
+                               {"intimidating_presence", "intimidating_presence_rage"});
         }
         if (def(a).natures_veil)
         {
-            view.bonus_actions.push_back("natures_veil");
+            bonus_verbs.push_back("natures_veil");
         }
         if (detail::knows_spell(def(a).spells, "conjure_woodland_beings"))
         {
-            view.bonus_actions.push_back("woodland_disengage");
+            bonus_verbs.push_back("woodland_disengage");
         }
         if (def(a).martial_arts)
         {
-            view.bonus_actions.push_back("martial_arts");
+            bonus_verbs.push_back("martial_arts");
         }
         if (def(a).innate_sorcery)
         {
-            view.bonus_actions.push_back("innate_sorcery");
+            bonus_verbs.push_back("innate_sorcery");
         }
         if (def(a).bardic_inspiration)
         {
-            view.bonus_actions.push_back("bardic_inspiration");
+            bonus_verbs.push_back("bardic_inspiration");
         }
         if (def(a).wild_shapes)
         {
             for (const auto &form : detail::beast_forms)
             {
-                view.bonus_actions.push_back("wild_shape_" + std::string(form.key));
+                bonus_verbs.push_back("wild_shape_" + std::string(form.key));
             }
-            view.bonus_actions.push_back("leave_wild_shape");
+            bonus_verbs.push_back("leave_wild_shape");
         }
         if (def(a).sorcery_points)
         {
             for (unsigned level = 1; level <= 5; ++level)
             {
-                view.bonus_actions.push_back("create_slot_" + std::to_string(level));
+                bonus_verbs.push_back("create_slot_" + std::to_string(level));
             }
             for (unsigned level = 1; level <= max_slot_level; ++level)
             {
-                view.bonus_actions.push_back("convert_slot_" + std::to_string(level));
+                bonus_verbs.push_back("convert_slot_" + std::to_string(level));
             }
         }
         for (const auto &known : def(a).metamagic)
@@ -813,35 +935,35 @@ Snapshot Session::snapshot() const
             {
                 for (const auto type : transmuted_types)
                 {
-                    view.bonus_actions.push_back("metamagic_transmuted_" + std::string(type));
+                    bonus_verbs.push_back("metamagic_transmuted_" + std::string(type));
                 }
             }
             else
             {
-                view.bonus_actions.push_back("metamagic_" + known);
+                bonus_verbs.push_back("metamagic_" + known);
             }
         }
         if (!def(a).metamagic.empty())
         {
-            view.bonus_actions.push_back("metamagic_cancel");
+            bonus_verbs.push_back("metamagic_cancel");
         }
         if (def(a).focus)
         {
-            view.bonus_actions.insert(view.bonus_actions.end(),
-                                      {"flurry_of_blows", "flurry_addle", "flurry_push",
-                                       "flurry_topple", "flurry_stun", "patient_defense",
-                                       "patient_defense_focus", "step_of_the_wind",
-                                       "step_of_the_wind_focus", "step_of_the_wind_carry"});
+            bonus_verbs.insert(bonus_verbs.end(),
+                               {"flurry_of_blows", "flurry_addle", "flurry_push", "flurry_topple",
+                                "flurry_stun", "patient_defense", "patient_defense_focus",
+                                "step_of_the_wind", "step_of_the_wind_focus",
+                                "step_of_the_wind_carry"});
         }
         if (detail::knows_spell(def(a).spells, "divine_smite") && def(a).free_smite)
         {
-            view.bonus_actions.push_back("divine_smite_free");
+            bonus_verbs.push_back("divine_smite_free");
         }
         for (const auto *smite : {"divine_smite", "searing_smite", "ensnaring_strike"})
         {
             if (detail::knows_spell(def(a).spells, smite))
             {
-                view.bonus_actions.push_back(smite);
+                bonus_verbs.push_back(smite);
             }
         }
         // Divine Smite and Shining Smite from each higher slot level the
@@ -854,13 +976,17 @@ Snapshot Session::snapshot() const
             }
             if (detail::knows_spell(def(a).spells, "divine_smite"))
             {
-                view.bonus_actions.push_back("divine_smite_" + std::to_string(level));
+                bonus_verbs.push_back("divine_smite_" + std::to_string(level));
             }
             if (detail::knows_spell(def(a).spells, "shining_smite"))
             {
-                view.bonus_actions.push_back(level == 2 ? std::string("shining_smite")
-                                                        : "shining_smite_" + std::to_string(level));
+                bonus_verbs.push_back(level == 2 ? std::string("shining_smite")
+                                                 : "shining_smite_" + std::to_string(level));
             }
+        }
+        for (const auto &verb : bonus_verbs)
+        {
+            view.bonus_actions.push_back({verb, bonus_action_label(verb, a.source.id, offered)});
         }
         for (const auto &descriptor : resource_descriptors)
         {
