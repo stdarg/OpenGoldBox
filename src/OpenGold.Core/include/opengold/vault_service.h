@@ -39,9 +39,8 @@ class VaultService
     }
 
     // Reads `vault`'s contents from a campaign save, or writes a const one
-    // (campaign_save.cpp); `recorded` is false in a format before the
-    // vault's, which keeps none.
-    template <class Codec, class Vault> static void save(Codec &codec, Vault &vault, bool recorded);
+    // (campaign_save.cpp).
+    template <class Codec, class Vault> static void save(Codec &codec, Vault &vault);
 
   private:
     enum class VaultMenu

@@ -2180,7 +2180,7 @@ msgstr "Camp [C]"
 msgid "Camp actions are for active members"
 msgstr "Camp actions are for active members"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:498
+#: src/OpenGoldBox/campaign_save_view.cpp:486
 msgid "Campaign loaded."
 msgstr "Campaign loaded."
 
@@ -3423,7 +3423,7 @@ msgstr "Conjure Minor Elementals: Lightning"
 msgid "Conjure Woodland Beings"
 msgstr "Conjure Woodland Beings"
 
-#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:292 src/OpenGold.Rules.Srd5/src/session_turns.cpp:900 src/OpenGoldBox/character_sheet_text.cpp:214 src/OpenGoldBox/character_text.h:10 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1751
+#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:293 src/OpenGold.Rules.Srd5/src/session_turns.cpp:900 src/OpenGoldBox/character_sheet_text.cpp:214 src/OpenGoldBox/character_text.h:10 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1751
 msgid "Constitution"
 msgstr "Constitution"
 
@@ -3936,7 +3936,7 @@ msgstr "Devious Strikes: three more Cunning Strike effects. Daze (2 dice): a Con
 msgid "Devouring Blade"
 msgstr "Devouring Blade"
 
-#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:292 src/OpenGold.Rules.Srd5/src/session_turns.cpp:900 src/OpenGoldBox/buck_rogers_creation_pages.cpp:68 src/OpenGoldBox/character_sheet_text.cpp:214 src/OpenGoldBox/character_text.h:9 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1724
+#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:293 src/OpenGold.Rules.Srd5/src/session_turns.cpp:900 src/OpenGoldBox/buck_rogers_creation_pages.cpp:68 src/OpenGoldBox/character_sheet_text.cpp:214 src/OpenGoldBox/character_text.h:9 src/OpenGoldBox/godot/locale/dynamic_sources.json:1 src/OpenGoldBox/godot/scenes/character_creation.tscn:1724
 msgid "Dexterity"
 msgstr "Dexterity"
 
@@ -4577,7 +4577,7 @@ msgstr "Elemental Fury: Potent Spellcasting (your Wisdom modifier added to Druid
 msgid "Elemental spirits flit around {name}."
 msgstr "Elemental spirits flit around {name}."
 
-#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:285 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:286 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Elementals"
 msgstr "Elementals"
 
@@ -5081,7 +5081,7 @@ msgstr "Feral Instinct"
 msgid "Feral Instinct: Advantage on Initiative.\nInstinctive Pounce: move up to half your Speed as part of entering a Rage."
 msgstr "Feral Instinct: Advantage on Initiative.\nInstinctive Pounce: move up to half your Speed as part of entering a Rage."
 
-#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:285 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:286 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Fey"
 msgstr "Fey"
 
@@ -9133,11 +9133,11 @@ msgstr "One extra Cleric cantrip; add your Wisdom modifier (minimum +1) to Intel
 msgid "One extra Druid cantrip."
 msgstr "One extra Druid cantrip."
 
-#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:94 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:95 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "One level-one spell slot"
 msgstr "One level-one spell slot"
 
-#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:102 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:103 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "One level-two spell slot"
 msgstr "One level-two spell slot"
 
@@ -11023,7 +11023,7 @@ msgstr "Rest type"
 msgid "Restart"
 msgstr "Restart"
 
-#: src/OpenGoldBox/campaign_save_view.cpp:594
+#: src/OpenGoldBox/campaign_save_view.cpp:582
 msgid "Restart test"
 msgstr "Restart test"
 
@@ -12462,7 +12462,7 @@ msgstr "Spell Choices"
 msgid "Spell attacks and save DCs for these spells."
 msgstr "Spell attacks and save DCs for these spells."
 
-#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:91
+#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:92
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "Spell slots of levels {levels}"
 msgstr "Spell slots of levels {levels}"
@@ -13801,6 +13801,11 @@ msgid "This save holds no player characters."
 msgstr "This save holds no player characters."
 
 #: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
+msgid "This save is version {saved}, and this version of OpenGoldBox reads only save version {version}."
+msgstr "This save is version {saved}, and this version of OpenGoldBox reads only save version {version}."
+
+#: src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "This save was made by an older pre-release version of OpenGoldBox and can't be loaded."
 msgstr "This save was made by an older pre-release version of OpenGoldBox and can't be loaded."
 
@@ -14213,7 +14218,7 @@ msgstr "Two Wizard cantrips and a level 1 Wizard spell, cast once per Long Rest 
 msgid "Two Wizard cantrips and one level-one spell, cast once per Long Rest without a slot; Intelligence, Wisdom or Charisma for them."
 msgstr "Two Wizard cantrips and one level-one spell, cast once per Long Rest without a slot; Intelligence, Wisdom or Charisma for them."
 
-#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:98 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
+#: src/OpenGold.Rules.Srd5/src/actor_state.cpp:99 src/OpenGoldBox/godot/locale/dynamic_sources.json:1
 msgid "Two level-one spell slots"
 msgstr "Two level-one spell slots"
 
@@ -16055,7 +16060,7 @@ msgstr "{helper} cures {patient}'s poison."
 msgid "{helper} heals {patient} for {points}."
 msgstr "{helper} heals {patient} for {points}."
 
-#: src/OpenGoldBox/localization.cpp:263
+#: src/OpenGoldBox/localization.cpp:272
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{high},{low}"
 msgstr "{high},{low}"
@@ -16075,12 +16080,12 @@ msgstr "{items} goes to the pack."
 msgid "{item}"
 msgstr "{item}"
 
-#: src/OpenGoldBox/localization.cpp:135
+#: src/OpenGoldBox/localization.cpp:144
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} (Fast Hands)"
 msgstr "{item} (Fast Hands)"
 
-#: src/OpenGoldBox/localization.cpp:146
+#: src/OpenGoldBox/localization.cpp:155
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{item} (unidentified magic)"
 msgstr "{item} (unidentified magic)"
@@ -19594,27 +19599,27 @@ msgstr "{source} ({bonus})"
 msgid "{spell}"
 msgstr "{spell}"
 
-#: src/OpenGoldBox/localization.cpp:126
+#: src/OpenGoldBox/localization.cpp:135
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell} (Divine Intervention)"
 msgstr "{spell} (Divine Intervention)"
 
-#: src/OpenGoldBox/localization.cpp:161
+#: src/OpenGoldBox/localization.cpp:170
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell} (Mystic Arcanum)"
 msgstr "{spell} (Mystic Arcanum)"
 
-#: src/OpenGoldBox/localization.cpp:168
+#: src/OpenGoldBox/localization.cpp:177
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell} (Natural Recovery)"
 msgstr "{spell} (Natural Recovery)"
 
-#: src/OpenGoldBox/localization.cpp:195
+#: src/OpenGoldBox/localization.cpp:204
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell} (level {level} slot)"
 msgstr "{spell} (level {level} slot)"
 
-#: src/OpenGoldBox/localization.cpp:153
+#: src/OpenGoldBox/localization.cpp:162
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell} (scroll)"
 msgstr "{spell} (scroll)"
@@ -19639,7 +19644,7 @@ msgstr "{spell} fails; the spell slot is kept."
 msgid "{spell} takes hold of {name}."
 msgstr "{spell} takes hold of {name}."
 
-#: src/OpenGoldBox/localization.cpp:177
+#: src/OpenGoldBox/localization.cpp:186
 #. Preserve {named} placeholders and any [BBCode] tags; values may be reordered.
 msgid "{spell} with {name}"
 msgstr "{spell} with {name}"

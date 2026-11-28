@@ -5,7 +5,7 @@ F02 is split into the [rules/persistence layer (#187)](https://github.com/stdarg
 [completion of missing saved choices (#189)](https://github.com/stdarg/OpenGoldBox/issues/189).
 All three layers are now implemented, completing parent [#29](https://github.com/stdarg/OpenGoldBox/issues/29).
 The #189 party panel Review Training dialog, which completed training missing
-from old saves, was later removed with the [pre-1.0 save cutoff](SAVES.md#pre-10-format-policy).
+from old saves, was later removed with the [pre-1.0 save cutoff](SAVES.md#one-save-version).
 Training is selected at creation and level-up, and
 [training halls](TRAINING-HALL.md) teach skill lessons.
 
@@ -85,7 +85,7 @@ The campaign stores the original training selections as well as the acquired
 grant records, which must agree on load. Character profile recipes validate grant
 entitlements and choices before creating an actor. Loading never generates or
 fills training choices, and combat restoration does not manufacture them. See
-[saves](SAVES.md#pre-10-format-policy).
+[saves](SAVES.md#one-save-version).
 
 ## Verification
 

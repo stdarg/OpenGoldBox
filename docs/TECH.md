@@ -125,12 +125,12 @@ original campaign conversions and prices. The [armor catalog](ARMOR.md)
 uses shared category definitions for equipment, AC and starting-class training;
 equipped ability checks combine these penalties with character skill/tool grants.
 Core only collects equipped IDs and delegates the query to the rules module. The campaign
-save (`OPENGOLD-CAMPAIGN 40`) stores the clock, encounter scopes, rules-owned effect state and
+save (`OPENGOLD-CAMPAIGN 56`, one save version for every game) stores the clock, encounter scopes, rules-owned effect state and
 acquired feature/feat grants with source IDs, acquisition levels and choices.
 It also stores training selections and source grants, completed Short Rest
 spending tickets and individual eligibility records.
-Older formats are rejected, not migrated; see the
-[format policy](SAVES.md#pre-10-format-policy). Core owns campaign clock advancement
+Other save versions are rejected, not migrated; see the
+[save version](SAVES.md#one-save-version). Core owns campaign clock advancement
 and transactional commits; the rules module owns rest qualification, timing,
 completion benefits and resource arithmetic. A rest completes in one step or is
 interrupted and grants nothing
@@ -968,7 +968,7 @@ continues to describe complete reference poses and is never rewritten by the
 demo or compositor. Missing/deleted mappings visibly fall back to unarmed.
 
 The release notes below record the format numbers each release introduced. Only
-the current formats load; see the [format policy](SAVES.md#pre-10-format-policy).
+the current formats load; see the [format policy](SAVES.md#one-save-version).
 
 Rules 0.6.15 also persists Orc Adrenaline Rush uses and pending Temporary HP
 replacement in combat format 12 and SRD7; see [Temporary HP](TEMPORARY-HP.md).

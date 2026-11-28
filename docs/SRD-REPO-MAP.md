@@ -22,7 +22,7 @@ architecture document or completion ledger. See [TECH](TECH.md) for boundaries.
 | Advancement and sheets | `src/OpenGoldBox/level_up_view.cpp`, `character_sheet_view.cpp` | Feature-specific player-path checks and advancement checks |
 | Demo research tools | `demos/src/OpenGold.Godot/` (sprite, equipment and sound-board demos only; the character, combat and Rolf views are the game's) | Build `opengold_godot` with `OPENGOLD_BUILD_GODOT=ON` in its own build directory |
 | Localization | `src/OpenGoldBox/godot/locale/dynamic_sources.json`, `en.po`, `es.po`; `tools/localization.py` | `python3 tools/localization.py --check` |
-| Test registration and save checks | Root `CMakeLists.txt`, `src/OpenGoldBox/CMakeLists.txt`, `tests/fixtures/README.md` | Current-writer round-trips, exact continuation and older-format rejection; see [saves](SAVES.md#pre-10-format-policy) |
+| Test registration and save checks | Root `CMakeLists.txt`, `src/OpenGoldBox/CMakeLists.txt`, `tests/fixtures/README.md` | Current-writer round-trips, exact continuation and older-format rejection; see [saves](SAVES.md#one-save-version) |
 
 Core paths in the table are relative to `src/OpenGold.Core/src/` where shortened.
 Rules own SRD semantics; Core owns campaign orchestration; Godot presents queries

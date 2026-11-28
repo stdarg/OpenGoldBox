@@ -113,8 +113,8 @@ std::shared_ptr<opengold::CampaignParty> new_campaign_party(const GameRules &rul
 
 GameRules game_rules_of(const opengold::CampaignRules &saved)
 {
-    // Any other module is the SRD's: decoding refuses one this build does not
-    // play, or an older version of it, with the older-save message.
+    // Any other module is the SRD's: decoding refuses a module this build does
+    // not play.
     if (saved.identity.module != opengold::original::identity().module)
     {
         return {};

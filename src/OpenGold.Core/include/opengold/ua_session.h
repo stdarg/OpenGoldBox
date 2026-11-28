@@ -179,6 +179,9 @@ class UaSession final : public ExplorationSession
     // that does not fit the design.
     [[nodiscard]] static UaSession resume(DesignFiles files, std::string_view state);
 
+    // The first line of a saved state, naming its layout, which the save
+    // version covers (docs/SAVES.md): a new tag needs a new save version.
+    static constexpr std::string_view saved_state_format = "UA-STATE 4";
     // What a saved game keeps of the design's play: the area and pose, the
     // quest flags, the events done, the clock, the vault and the tithe. A game
     // is saved only while nothing waits for the player (can_leave), so no

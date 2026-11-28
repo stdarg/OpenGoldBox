@@ -40,7 +40,7 @@ committed expenditure. There are no combat saving controls.
 
 The PC44 profile carries the fixed grant; SRD11 records spent Arcane Recovery.
 The combat checkpoint retains the use alongside ordinary or physical inventory
-mode. See [saves](SAVES.md#pre-10-format-policy).
+mode. See [saves](SAVES.md#one-save-version).
 
 | Requirement | Evidence |
 | --- | --- |

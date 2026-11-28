@@ -175,12 +175,6 @@ void a_fighter_trains_and_keeps_the_level()
               loaded.party.roster.front().character.sheet().original->class_levels ==
                   trained.original->class_levels,
           "A saved level is made again the same");
-    check(throws(
-              [&]
-              {
-                  (void)encode_campaign_in_format(party, nullptr, "training-check", 49);
-              }),
-          "An older format cannot keep what a level rolled");
 
     // Experience for two levels trains one, and is cut short of the second.
     party.award_experience(60000, "test:lots");

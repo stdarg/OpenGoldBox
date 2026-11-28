@@ -1,0 +1,392 @@
+OPENGOLD-CAMPAIGN 56
+uint64 checksum of what follows
+string
+string
+string
+string
+uint32
+string
+if Unlimited Adventures design:
+  string
+array 8
+  uint32
+uint32
+uint32
+uint32
+bool
+array 7
+  uint32
+uint64
+uint64
+uint32
+int32
+uint64
+uint64
+uint64
+list
+  string
+uint32
+uint64
+map
+  uint32
+  uint32
+list
+  string
+  string
+  string
+  string
+  string
+  string
+  list
+    string
+  array 6
+    array 4
+      int32
+    uint32
+  array 6
+    uint32
+  uint32
+  bool
+  map
+    string
+    list
+      string
+  optional
+    list
+      string
+  optional
+    map
+      string
+      list
+        string
+    optional
+      list
+        string
+    string
+    string
+  string
+  uint32
+  uint32
+  uint32
+  uint32
+  uint32
+  array 2
+    array 6
+      uint32
+  string
+  int32
+  list
+    string
+    string
+    array 6
+      uint32
+    list
+      string
+    map
+      string
+      list
+        string
+    optional
+      map
+        string
+        list
+          string
+    optional
+      string
+    string
+    string
+    string
+    string
+    string
+    string
+    string
+    string
+    string
+  list
+    uint32
+    uint64
+    map
+      string
+      list
+        string
+    optional
+      list
+        string
+    string
+    string
+  list
+    uint32
+    uint64
+    list
+      string
+  list
+    uint32
+    string
+  uint64
+  list
+    uint64
+    string
+    string
+    uint32
+    int32
+  uint32
+  string
+  int32
+  bool
+  string
+  string
+  list
+    uint64
+  uint32
+  uint32
+  optional
+    uint64
+  map
+    uint64
+    uint64
+    array 63
+      uint8
+    string
+    uint8
+    array 3
+      uint8
+    int32
+    int32
+    uint8
+    uint8
+    uint8
+    uint16
+    uint16
+    uint8
+    array 3
+      uint8
+    array 16
+      uint8
+    uint8
+    uint8
+    uint8
+    uint8
+    uint8
+    uint8
+    uint8
+    uint8
+    int32
+    uint8
+    uint8
+    int32
+    uint8
+    uint8
+    uint8
+    optional
+      int32
+    optional
+      int32
+    optional
+      int32
+    optional
+      int32
+    int32
+    string
+    string
+  string
+  bool
+  uint32
+  uint8
+  list
+    string
+    string
+    uint32
+    map
+      string
+      string
+bool
+if town:
+  uint32
+  uint32
+  uint64
+  uint32
+  uint32
+  bool
+  if Dark Queen of Krynn:
+    uint32
+    array 3
+      uint32
+    list
+      uint64
+      array 63
+        uint8
+      string
+      uint8
+      array 3
+        uint8
+      int32
+      int32
+      uint8
+      uint8
+      uint8
+      uint16
+      uint16
+      uint8
+      array 3
+        uint8
+      array 16
+        uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      int32
+      uint8
+      uint8
+      int32
+      uint8
+      uint8
+      uint8
+      optional
+        int32
+      optional
+        int32
+      optional
+        int32
+      optional
+        int32
+      int32
+      string
+      string
+  uint32
+  map
+    uint32
+    string
+  bool
+  uint32
+  uint32
+  uint32
+  uint32
+  map
+    string
+    uint32
+  list
+    uint32
+  list
+    list
+      uint32
+    string
+    bool
+    array 7
+      uint32
+    uint32
+    list
+      uint64
+      array 63
+        uint8
+      string
+      uint8
+      array 3
+        uint8
+      int32
+      int32
+      uint8
+      uint8
+      uint8
+      uint16
+      uint16
+      uint8
+      array 3
+        uint8
+      array 16
+        uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      uint8
+      int32
+      uint8
+      uint8
+      int32
+      uint8
+      uint8
+      uint8
+      optional
+        int32
+      optional
+        int32
+      optional
+        int32
+      optional
+        int32
+      int32
+      string
+      string
+  map
+    uint16
+    uint16
+  list
+    uint8
+  map
+    uint32
+    uint32
+  array 6
+    bool
+  uint64
+  uint64
+  string
+  if Matrix Cubed:
+    bool
+    if Matrix Cubed won:
+      uint32
+  string
+  uint32
+  uint32
+  uint32
+  uint32
+  string
+  map
+    uint32
+    string
+if Unlimited Adventures design:
+  string
+uint64
+optional
+  uint64
+  uint64
+  uint64
+  uint32
+  list
+    uint32
+  uint64
+  uint64
+optional
+  uint64
+  uint64
+  uint64
+  uint32
+  list
+    uint32
+  uint64
+  uint64
+optional
+  uint64
+  uint64
+  uint64
+  uint32
+  list
+    uint32
+  uint64
+  uint64
+bool
+bool
+records kept as text, by their tags:
+  SRD13
+  FX9
+  combatant14
+  combatant15
+  OGBUCKROGERS 2
+  UA-STATE 4

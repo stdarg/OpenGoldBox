@@ -22692,7 +22692,7 @@ void item_types_carry_their_properties()
     check(darts.has(bit::thrown) && darts.rate_of_fire == 6, "Darts are thrown, three a round");
 }
 
-// A save names its game; a save made before format 48 is Pool of Radiance's.
+// A save names its game.
 void a_save_names_its_game()
 {
     const auto rules_file =
@@ -22703,21 +22703,12 @@ void a_save_names_its_game()
     const auto &creation = *creation_rules;
     const auto curse_save =
         opengold::encode_campaign(party, nullptr, "files", GoldBoxGame::curse_of_the_azure_bonds);
-    check(curse_save.starts_with("OPENGOLD-CAMPAIGN 53\n"), "Saves are format 53");
+    check(curse_save.starts_with("OPENGOLD-CAMPAIGN " + std::to_string(opengold::save_version) +
+                                 "\n"),
+          "Every game's saves carry the one save version");
     check(opengold::decode_campaign(curse_save, creation, *module, "files", nullptr).game ==
               GoldBoxGame::curse_of_the_azure_bonds,
           "The save keeps its game");
-    const auto older = opengold::encode_campaign_in_format(party, nullptr, "files", 47);
-    check(opengold::decode_campaign(older, creation, *module, "files", nullptr).game ==
-              GoldBoxGame::pool_of_radiance,
-          "A format 47 save is Pool of Radiance's");
-    rejects(
-        [&]
-        {
-            static_cast<void>(opengold::encode_campaign_in_format(
-                party, nullptr, "files", 47, GoldBoxGame::curse_of_the_azure_bonds));
-        },
-        "Format 47 cannot record another game");
 
     // The numbers saves carry stay as released: Native is 9, followed by the
     // Buck Rogers games at 10 and 11.

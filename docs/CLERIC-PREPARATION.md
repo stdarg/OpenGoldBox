@@ -58,7 +58,7 @@ The Divine Order is a training grant; prepared spells are the character's
 prepared list. Both replay through creation and advancement history, and the
 character profile records the cantrips and prepared spells. Saves from 0.6.62
 are rejected by the rules identity, as the
-[pre-1.0 policy](SAVES.md#pre-10-format-policy) requires.
+[pre-1.0 policy](SAVES.md#one-save-version) requires.
 
 ## Verification
 

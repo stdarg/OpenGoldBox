@@ -130,8 +130,7 @@ namespace
 {
 // Version 2 keeps the second item list (TCharacter alternateItems), which
 // version 1 did not; version 1 reads with none.
-constexpr std::string_view ground_record_prefix = "OGBUCKROGERS ",
-                           ground_record_format = "OGBUCKROGERS 2";
+constexpr std::string_view ground_record_prefix = "OGBUCKROGERS ";
 
 void put_hex(std::string &text, std::span<const std::uint8_t> bytes)
 {

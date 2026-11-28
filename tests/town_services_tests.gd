@@ -369,32 +369,39 @@ func check_portrait_change() -> void:
 		sheet.get_node("Close").pressed.emit()
 		await settle(10)
 
-# A save from before characters chose original portraits (format 45) gives
-# its members on the default head 1 and body 1 random ones; a current save
-# keeps them.
-func check_saves_before_portraits(file: String) -> void:
-	var option: OptionButton = town().get_parent().get_node("GameMenu/Options/Interface/PortraitArt")
-	option.select(1)
-	option.item_selected.emit(1)
-	var shown := {}
-	# The expedition test writes each place also as format 45, beside it.
-	for format in [0, 45]:
-		var source := file if format == 0 else file + ".format45"
-		if not await load_fixture(source, "portraits-" + str(format)):
-			return
-		var names := []
-		for slot in range(8):
-			var card: Control = town().get_node("%PartyList/Rows/Member" + str(slot))
-			if card.visible: names.append(portrait_name(card.get("_portrait")))
-		shown[format] = names
-	option = town().get_parent().get_node("GameMenu/Options/Interface/PortraitArt")
-	option.select(0)
-	option.item_selected.emit(0)
-	var defaults: Array = shown[0].filter(func(n): return n == "original-head-1-body-1")
-	if defaults.is_empty():
-		bug("the portrait check's save has no member on the default head and body", str(shown[0]))
-	elif shown[45].all(func(n): return n == "original-head-1-body-1"):
-		bug("a save from before original portraits keeps the default head and body", str(shown[45]))
+# A save of any other version, older or newer, is refused on the Load screen
+# with a message naming its version and the one this build reads, in the
+# player's language (docs/SAVES.md).
+func check_other_versions_refused(file: String) -> void:
+	var text := FileAccess.get_file_as_bytes(fixtures.path_join(file)).get_string_from_utf8()
+	var magic := "OPENGOLD-CAMPAIGN "
+	var header_end := text.find("\n")
+	var version := int(text.substr(magic.length(), header_end - magic.length()))
+	for saved in [version - 1, version + 1]:
+		for locale in ["en", "es"]:
+			var slot := "version-" + str(saved)
+			# The checksum covers only what follows the header.
+			var out := FileAccess.open(slot_path(slot), FileAccess.WRITE)
+			out.store_buffer((magic + str(saved) + text.substr(header_end)).to_utf8_buffer())
+			out.close()
+			change_scene_to_file("res://scenes/character_creation.tscn")
+			await settle(8)
+			TranslationServer.set_locale(locale)
+			await press("Party")
+			await press("PartyPanel/Load")
+			var list: ItemList = node("SaveSlots/Slots")
+			for i in range(list.item_count):
+				if list.get_item_text(i) == slot:
+					list.select(i)
+					list.item_selected.emit(i)
+			await press("SaveSlots/Action")
+			await press("SaveSlots/Action")
+			var expected := TranslationServer.translate("This save is version {saved}, and this version of OpenGoldBox reads only save version {version}.").format({"saved": str(saved), "version": str(version)})
+			var shown: String = (node("SaveSlots/Status") as Label).text
+			if shown != expected or (locale == "es" and not shown.begins_with("Esta partida")):
+				bug("a save of version " + str(saved) + " is not refused naming both versions in " + locale, "'" + shown + "'")
+			TranslationServer.set_locale("en")
+			DirAccess.remove_absolute(slot_path(slot))
 
 # Without the new art the 3D view shows the original walls; choosing its folder
 # on the Options screen while exploring shows the new walls at once, still
@@ -858,7 +865,7 @@ func run() -> void:
 		if places == 1:
 			await check_party_cards("while exploring")
 			await check_portrait_change()
-			await check_saves_before_portraits(file)
+			await check_other_versions_refused(file)
 			await check_new_art_folder(file)
 			if not await load_fixture(file): continue
 		if party == "outlaw":

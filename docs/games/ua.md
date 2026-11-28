@@ -858,8 +858,7 @@ map (`ua_session.cpp`; the reconstruction's `rest.c` and `camp.c`).
   party has stood on. An area larger than 16 by 16 squares shows a window
   of 16 by 16 that keeps the party in its middle and stays within the area,
   as the kit's map scrolls (`map_scroll`); the squares stood on are kept
-  for the whole area, and saved (the session's state `UA-STATE 2` and
-  after; a state saved before reads as its first 16 by 16).
+  for the whole area, and saved.
 
 `opengold_ua_session_tests` rests in the hall (healed, the rules' time
 passed) and in the cellar, whose rats break the rest at its first hour,
@@ -974,9 +973,9 @@ the kit's `SavGamA..J.csv`:
   while no party plays, the session's dice, the tithe given, the vault and
   the items left in it (added in `UA-STATE 3`), the tavern's next tale and
   drink, the tavern tales heard on this square, and whether the adventure
-  was won (`UA-STATE 4`). States 1, 2 and 3 still load; states before 3
-  have no vault items and states before 4 have no saved victory.
-  Campaign format 51 (`DesignSave`); older saves load as before.
+  was won (`UA-STATE 4`, the only state read; the save version covers it,
+  [SAVES.md](../SAVES.md#one-save-version)), kept in the campaign save
+  (`DesignSave`).
 - **When:** only while nothing waits for the player (`can_leave`), as in the
   DAX games, so no event and no fight is ever saved half-run; a party made
   and not yet exploring is saved at the design's start.

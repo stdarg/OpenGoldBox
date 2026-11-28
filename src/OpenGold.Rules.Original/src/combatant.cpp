@@ -1,4 +1,5 @@
 #include "opengold/original_combat.h"
+#include "opengold/buck_rogers_combat.h"
 #include "champions_rules.h"
 #include "death_knights_effects.h"
 #include "dark_queen_effects.h"
@@ -1492,6 +1493,11 @@ std::string rested_state(std::span<const Effect> conditions)
                 std::to_string(e.strength) + ' ' + (e.on_remove ? '1' : '0');
     }
     return text;
+}
+
+std::vector<std::string_view> saved_record_formats()
+{
+    return {profile_format, native_profile_format, ground_record_format};
 }
 
 std::uint8_t usability_of(const std::array<int, 8> &class_levels, GoldBoxGame game)

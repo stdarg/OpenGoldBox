@@ -127,6 +127,9 @@ struct GroundRecord
     std::vector<buck_rogers::Item> alternate_items{};
 };
 
+// The tag of the record encode_ground_record writes, which a party member
+// keeps in its vital state (CampaignParty::keep_game_record).
+inline constexpr std::string_view ground_record_format = "OGBUCKROGERS 2";
 [[nodiscard]] std::string encode_ground_record(const GroundRecord &record);
 [[nodiscard]] std::optional<GroundRecord> decode_ground_record(std::string_view text);
 

@@ -53,7 +53,7 @@ section contains the spell sources and the spell list must agree with them.
 Campaign saves store explicit starting cantrip choices. Campaigns replay creation
 and recorded advancement to reconstruct knowledge, including now-unprepared
 spells, then validate their grant ledger. Missing choices remain pending.
-Loading does not replenish resources or roll dice. See [saves](SAVES.md#pre-10-format-policy).
+Loading does not replenish resources or roll dice. See [saves](SAVES.md#one-save-version).
 
 Campaign saves and reloads preserve wounds,
 equipment, spent slots, Hit Dice, Adrenaline Rush, Temporary HP and clocks.

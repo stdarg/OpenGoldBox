@@ -3,7 +3,6 @@
 // progress, the session's own state, as text the campaign save carries.
 #include "opengold/ua_session.h"
 
-#include <algorithm>
 #include <iomanip>
 #include <locale>
 #include <sstream>
@@ -13,14 +12,6 @@ namespace opengold::ua
 {
 namespace
 {
-
-// The first line of a saved state, naming its layout: 4 keeps an adventure's
-// victory; 3 keeps the items
-// left in the vault; 2, saved before the vault kept items, every square the
-// party has stood on in its area; 1, saved before areas larger than 16 by 16
-// had a map, kept the first 16 by 16.
-constexpr std::string_view state_tag = "UA-STATE 4", third_state_tag = "UA-STATE 3",
-                           second_state_tag = "UA-STATE 2", first_state_tag = "UA-STATE 1";
 
 void require(bool ok, const char *message)
 {
@@ -134,7 +125,7 @@ std::string UaSession::saved_state() const
     std::ostringstream out;
     out.imbue(std::locale::classic());
     const auto &pose = snapshot_.pose;
-    out << state_tag << '\n'
+    out << saved_state_format << '\n'
         << area_.number << ' ' << pose.x << ' ' << pose.y << ' ' << por::index(pose.facing) << '\n';
     const auto back = step_back_pose_.value_or(pose);
     out << back.x << ' ' << back.y << ' ' << por::index(back.facing) << '\n';
@@ -173,9 +164,7 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
     in.imbue(std::locale::classic());
     std::string tag;
     std::getline(in, tag);
-    require(tag == state_tag || tag == third_state_tag || tag == second_state_tag ||
-                tag == first_state_tag,
-            "The saved design's state is not one this build reads");
+    require(tag == saved_state_format, "The saved design's state is not one this build reads");
     auto session = start(std::move(files));
     const auto area = next<unsigned>(in);
     if (area != session.area_.number)
@@ -215,24 +204,7 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
         flag = static_cast<std::uint8_t>(value);
     }
     session.done_bits_ = bits_from_hex(next<std::string>(in), session.done_bits_.size());
-    if (tag == first_state_tag)
-    {
-        // The first 16 by 16 squares stood on (and seen, the same squares).
-        const decltype(session.snapshot_.visited) visited(next<std::string>(in));
-        (void)next<std::string>(in);
-        const unsigned columns = map.columns;
-        for (unsigned y = 0; y < std::min(16U, unsigned{map.rows}); ++y)
-        {
-            for (unsigned x = 0; x < std::min(16U, columns); ++x)
-            {
-                session.stood_on_[std::size_t{y} * columns + x] = visited.test(y * 16 + x);
-            }
-        }
-    }
-    else
-    {
-        session.stood_on_ = bits_from_hex(next<std::string>(in), session.stood_on_.size());
-    }
+    session.stood_on_ = bits_from_hex(next<std::string>(in), session.stood_on_.size());
     session.refresh_map_window();
     for (auto &steps : session.step_counts_)
     {
@@ -247,18 +219,15 @@ UaSession UaSession::resume(DesignFiles files, std::string_view state)
         require(static_cast<bool>(in), "The saved design's state is cut short");
         session.tavern_tales_.push_back(std::move(tale));
     }
-    if (tag == state_tag || tag == third_state_tag)
+    const auto kept = next<std::size_t>(in);
+    require(kept <= 50, "The saved vault holds too many items");
+    for (std::size_t n = 0; n < kept; ++n)
     {
-        const auto kept = next<std::size_t>(in);
-        require(kept <= 50, "The saved vault holds too many items");
-        for (std::size_t n = 0; n < kept; ++n)
-        {
-            const auto item = read_item(in);
-            require(item.type < session.items_.types.size(), "A saved vault item has no type");
-            session.vault_items_.push_back(item);
-        }
+        const auto item = read_item(in);
+        require(item.type < session.items_.types.size(), "A saved vault item has no type");
+        session.vault_items_.push_back(item);
     }
-    if (tag == state_tag && next<bool>(in))
+    if (next<bool>(in))
     {
         session.adventure_won_ = session.party_lost_ = true;
         session.end_events();

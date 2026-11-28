@@ -24,7 +24,7 @@ spell criticals distinct from the expanded weapon/Unarmed Strike threshold.
 
 Older-save and legacy-encounter requirements above are superseded: saves now
 have one pre-1.0 format and nothing is migrated; see
-[SAVES.md](SAVES.md#pre-10-format-policy).
+[SAVES.md](SAVES.md#one-save-version).
 
 ## Approved decisions
 

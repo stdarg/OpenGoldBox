@@ -4,10 +4,12 @@
 #include "opengold/combat_demo.h"
 #include "opengold/original.h"
 #include "opengold/original_combat.h"
+#include "opengold/ua_session.h"
 #include "test_support.h"
 #include <iostream>
 #include <chrono>
 #include <fstream>
+#include <iterator>
 using namespace opengold;
 
 namespace
@@ -47,20 +49,11 @@ template <class F> std::string rejection_message(F f)
     return {};
 }
 
-// The campaign format this build writes. It also reads format 45, saved
-// before characters chose original portraits, 46, before drafts carried the
-// original rules' rolls, 47, before a save named its game, 48, before it kept
-// its rules' setting, and 49, before a level kept what it rolled.
-constexpr unsigned current_campaign_format = 53;
-constexpr unsigned unchosen_portraits_format = 45;
-constexpr unsigned draft_rules_data_format = 47;
-constexpr unsigned rules_setting_format = 49;
-
 // The checksum line covers only the body, so rewriting the header number
-// changes nothing but the claimed format.
-std::string with_campaign_format(const std::string &saved, unsigned format)
+// changes nothing but the claimed version.
+std::string with_save_version(const std::string &saved, unsigned version)
 {
-    return "OPENGOLD-CAMPAIGN " + std::to_string(format) + saved.substr(saved.find('\n'));
+    return "OPENGOLD-CAMPAIGN " + std::to_string(version) + saved.substr(saved.find('\n'));
 }
 
 std::string changed_identity(const std::string &saved, const std::string &identity,
@@ -243,9 +236,8 @@ void fog_saves(const std::filesystem::path &directory)
     auto town_base = prototype();
     const auto decode_with_knowledge = [&](const std::string &fields)
     {
-        return decode_campaign(
-            campaign_payload(current_campaign_format, body + fields + after_knowledge),
-            *srd5::character_rules(), *rules, "fog-fixture", &town_base);
+        return decode_campaign(campaign_payload(save_version, body + fields + after_knowledge),
+                               *srd5::character_rules(), *rules, "fog-fixture", &town_base);
     };
     check(decode_with_knowledge(knowledge).town->snapshot().seen == single.snapshot().seen,
           "The reassembled fixture loads its exact knowledge");
@@ -334,13 +326,11 @@ void file_safety(const std::filesystem::path &directory)
         });
 }
 
-// Before 1.0 there is no save migration but one: only the current campaign
-// format with the current rules identity loads, and older saves are refused
-// with one message. Format 45 still loads, listing its members on the default
-// head and body for a random original portrait.
-void check_campaign_format_cutoff(const CampaignParty &party, const por::RolfTourSession &town,
-                                  const std::string &saved, const rules::RulesModule &rules,
-                                  const por::RolfTourSession &town_template)
+// A build reads and writes one save version: a save of any other version,
+// older or newer, is refused with a message naming both. A different rules
+// version or content alone refuses nothing; only another rules module does.
+void check_save_version(const std::string &saved, const rules::RulesModule &rules,
+                        const por::RolfTourSession &town_template)
 {
     const auto decode_error = [&](const std::string &bytes)
     {
@@ -351,47 +341,74 @@ void check_campaign_format_cutoff(const CampaignParty &party, const por::RolfTou
                                       &town_template);
             });
     };
-    check(saved.starts_with("OPENGOLD-CAMPAIGN " + std::to_string(current_campaign_format) + "\n"),
-          "The writer emits the current campaign format");
+    check(saved.starts_with("OPENGOLD-CAMPAIGN " + std::to_string(save_version) + "\n"),
+          "The writer emits the save version at the start of the file");
     check(decode_error(saved).empty(), "The current writer's campaign loads");
-    check(decode_error(with_campaign_format(saved, unchosen_portraits_format - 1)) ==
-              rules::older_save_message,
-          "An older campaign format is refused as an older pre-release save");
-    const auto current =
-        decode_campaign(saved, *srd5::character_rules(), rules, "fixture-v1", &town_template);
-    const auto before_portraits = decode_campaign(
-        encode_campaign_in_format(party, &town, "fixture-v1", unchosen_portraits_format),
-        *srd5::character_rules(), rules, "fixture-v1", &town_template);
-    const auto before_rules_data = decode_campaign(
-        encode_campaign_in_format(party, &town, "fixture-v1", draft_rules_data_format - 1),
-        *srd5::character_rules(), rules, "fixture-v1", &town_template);
-    check(before_rules_data.party.roster.size() == current.party.roster.size() &&
-              before_rules_data.unchosen_portraits.empty(),
-          "A save from before drafts carried rules data loads");
-    const auto before_setting =
-        encode_campaign_in_format(party, &town, "fixture-v1", rules_setting_format - 1);
-    check(decode_error(before_setting).empty() &&
-              saved_campaign_rules(before_setting).identity == rules.identity() &&
-              saved_campaign_rules(before_setting).setting.empty(),
-          "A save from before it kept its rules' setting loads under the SRD rules");
-    std::vector<MemberId> defaults;
-    for (const auto &m : before_portraits.party.roster)
+    for (const unsigned other : {save_version - 1, save_version + 1, 45U})
     {
-        if (m.character.appearance().portrait_head == 1 &&
-            m.character.appearance().portrait_body == 1)
+        const auto refusal = decode_error(with_save_version(saved, other));
+        check(refusal == "This save is version " + std::to_string(other) +
+                             ", and this version of OpenGoldBox reads only save version " +
+                             std::to_string(save_version) + ".",
+              "A save of version " + std::to_string(other) + " is refused naming both versions");
+        check(refused_save_version(refusal) == std::to_string(other),
+              "A refusal names the save's version for the host to translate");
+        check(rejection_message(
+                  [&]
+                  {
+                      (void)saved_campaign_rules(with_save_version(saved, other));
+                  }) == refusal,
+              "Reading only a save's rules refuses another version first");
+    }
+    check(!refused_save_version("Campaign save checksum mismatch") &&
+              !refused_save_version(save_version_message),
+          "Only a refusal of another version names a version");
+    check(decode_error(changed_identity(saved, rules.identity().version, "0.6.61")).empty() &&
+              decode_error(changed_identity(saved, rules.identity().content, "other-content"))
+                  .empty(),
+          "A campaign from another rules version or content loads");
+    check(decode_error(changed_identity(saved, rules.identity().module)) ==
+              "Campaign rules module mismatch",
+          "A campaign from another rules module is refused");
+}
+
+// The layout of every save this build writes is committed for its version
+// (docs/save-schema/v<version>.txt): any change to what a save holds fails
+// here until the save version is raised and the new layout committed. The
+// records the rules modules and an Unlimited Adventures design keep as text
+// are listed by the tags that name their layouts.
+void schema_matches_its_version()
+{
+    auto party = std::make_shared<CampaignParty>(module());
+    party->add_pc(character("fighter"));
+    auto town = prototype();
+    town.campaign_party(party);
+    settle(town);
+    auto schema = campaign_save_schema(*party, town);
+    schema += "records kept as text, by their tags:\n";
+    for (const auto &formats : {srd5::saved_record_formats(), original::saved_record_formats(),
+                                std::vector<std::string_view>{ua::UaSession::saved_state_format}})
+    {
+        for (const auto format : formats)
         {
-            defaults.push_back(m.id);
+            schema += "  " + std::string(format) + "\n";
         }
     }
-    check(current.unchosen_portraits.empty() && !defaults.empty() &&
-              before_portraits.unchosen_portraits == defaults,
-          "A save from before original portraits lists its members on the default head and body");
-    check(decode_error(changed_identity(saved, rules.identity().version, "0.6.61")) ==
-              rules::older_save_message,
-          "A campaign from another rules version is refused as an older pre-release save");
-    check(decode_error(with_campaign_format(saved, current_campaign_format + 1)) ==
-              "Unsupported campaign save version",
-          "An unknown newer campaign format is unsupported");
+    const auto name = "v" + std::to_string(save_version) + ".txt";
+    std::ifstream in(std::filesystem::path(OPENGOLD_SOURCE_DIR) / "docs/save-schema" / name,
+                     std::ios::binary);
+    const std::string committed{std::istreambuf_iterator<char>(in),
+                                std::istreambuf_iterator<char>()};
+    if (committed != schema)
+    {
+        // Beside the test's working directory, which outlives the test.
+        const auto generated = std::filesystem::current_path() / ("save-schema-" + name);
+        std::ofstream(generated, std::ios::binary) << schema;
+        check(false, "The save layout differs from docs/save-schema/" + name +
+                         ": raise save_version (opengold/save_version.h) and commit the new "
+                         "layout, written to " +
+                         generated.string());
+    }
 }
 
 void roundtrip(const std::filesystem::path &directory)
@@ -457,7 +474,7 @@ void roundtrip(const std::filesystem::path &directory)
     loaded.town->attach_restored_party(replacement);
     check(encode_campaign(*replacement, &*loaded.town, "fixture-v1") == saved,
           "Complete serialized state round trips");
-    check_campaign_format_cutoff(*party, town, saved, *rules, base);
+    check_save_version(saved, *rules, base);
     const auto encounter = [](const CampaignParty &p)
     {
         rules::Encounter e{{8, 8, std::vector<rules::Terrain>(64)}, p.participants()};
@@ -533,16 +550,12 @@ void roundtrip(const std::filesystem::path &directory)
             (void)decode_campaign(saved, *srd5::character_rules(), *rules, "different-assets",
                                   &base);
         });
-    for (const auto &identity :
-         {rules->identity().module, rules->identity().version, rules->identity().content})
-    {
-        rejects(
-            [&]
-            {
-                (void)decode_campaign(changed_identity(saved, identity), *srd5::character_rules(),
-                                      *rules, "fixture-v1", &base);
-            });
-    }
+    rejects(
+        [&]
+        {
+            (void)decode_campaign(changed_identity(saved, rules->identity().module),
+                                  *srd5::character_rules(), *rules, "fixture-v1", &base);
+        });
 #ifdef _WIN32
     {
         std::ifstream held(path, std::ios::binary);
@@ -741,13 +754,6 @@ void original_rules_saves_keep_their_aging()
                                         "fixture-v1", nullptr);
               }) == "Campaign rules setting mismatch",
           "An original-rules save is refused under another aging");
-    check(rejection_message(
-              [&]
-              {
-                  (void)encode_campaign_in_format(*party, nullptr, "fixture-v1",
-                                                  rules_setting_format - 1);
-              }) == "An older campaign format cannot record the rules' setting",
-          "An older format cannot record the rules' aging");
 }
 
 // A later Sword petition can return an imported Crown knight to its starting
@@ -851,6 +857,7 @@ int main()
         original_rules_saves_keep_their_aging();
         original_knight_petition_preparation_roundtrips();
         TestDirectory directory;
+        schema_matches_its_version();
         roundtrip(directory.path);
         level_four_roundtrip(directory.path);
         fog_saves(directory.path);

@@ -1,6 +1,7 @@
 #include "godot_text.h"
 #include "localization.h"
 #include "application_settings.h"
+#include "opengold/save_version.h"
 #include <godot_cpp/classes/config_file.hpp>
 #include <godot_cpp/classes/button.hpp>
 #include <godot_cpp/classes/label.hpp>
@@ -107,6 +108,14 @@ String text(std::string_view source)
     if (source.empty())
     {
         return {};
+    }
+    // The refusal of a save of another version names two versions, which the
+    // translation keeps as numbers.
+    if (const auto saved = opengold::refused_save_version(source))
+    {
+        return format(
+            opengold::save_version_message,
+            {{"saved", gs(*saved)}, {"version", static_cast<int>(opengold::save_version)}});
     }
     const String translated = TranslationServer::get_singleton()->translate(gs(source));
     // "Longsword +2", an enchanted item, is its translated label and its bonus.

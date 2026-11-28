@@ -50,7 +50,7 @@
    genuine0.6.53 writer evidence before changing any affected writer. No combat
    save controls, fabricated old fixtures or reduction in supported history.
    (Superseded: saves now have one pre-1.0 format and nothing is migrated; see
-   [SAVES.md](SAVES.md#pre-10-format-policy).)
+   [SAVES.md](SAVES.md#one-save-version).)
 7. Main EN/ES and demo EN,1120×800/1920×1080: controls, keyboard/mouse targeting,
    disabled states, Cancel/Escape atomicity and native comparison of saved state.
    Focused checks, final integrated regression, coverage, commit/push then only
@@ -102,7 +102,7 @@ per-hit decision. Preserve existing source, replacement and separate-feat rules.
 ## Independent compatibility work while controls await approval
 
 Seven genuine0.6.53 campaign/combat captures and a verifier were added (since
-deleted under the [pre-1.0 format policy](SAVES.md#pre-10-format-policy)).
+deleted under the [pre-1.0 format policy](SAVES.md#one-save-version)).
 The full training test passes after rebuilding; no runtime source was changed.
 This proves prior-style/weapon/history continuation, not Light/TWF completion.
 No original issue is closed by this preparation.

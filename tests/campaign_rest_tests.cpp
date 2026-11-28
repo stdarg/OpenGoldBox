@@ -959,7 +959,8 @@ std::string payload(std::string body)
         hash ^= c;
         hash *= 1099511628211ULL;
     }
-    return "OPENGOLD-CAMPAIGN 53\n" + std::to_string(hash) + '\n' + body;
+    return "OPENGOLD-CAMPAIGN " + std::to_string(opengold::save_version) + "\n" +
+           std::to_string(hash) + '\n' + body;
 }
 
 void malformed_continuation()

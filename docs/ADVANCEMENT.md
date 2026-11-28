@@ -92,7 +92,7 @@ attribution applies; original game resources are loaded locally.
 
 Campaign saves record each confirmed choice and reconstruct the resulting
 sheet and Constitution history through the rules module; see
-[saves](SAVES.md#pre-10-format-policy). Spent resources and death-save counters
+[saves](SAVES.md#one-save-version). Spent resources and death-save counters
 persist. Profiles carry HP history and grants.
 Campaign saves explicitly store acquired grants with stable feature/feat IDs,
 source IDs, acquisition levels and named choices. Soldier's Savage Attacker is a

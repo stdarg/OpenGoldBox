@@ -18,49 +18,6 @@ namespace opengold
 namespace
 {
 constexpr std::size_t limit = 16 * 1024 * 1024;
-// The campaign format this build writes. Pre-1.0 formats are rejected rather
-// than migrated; change this format in place until 1.0. The one exception is
-// format 45, the same fields saved before characters chose original portraits:
-// it still loads, and its members on head 1 and body 1 (the default, never
-// chosen) are listed for a random original portrait.
-constexpr unsigned campaign_format = 55;
-constexpr unsigned released_campaign_format = 53;
-// Only appended game 9 writes this extension; released games retain their
-// format-53 bytes, and all their supported older versions remain readable.
-constexpr unsigned native_vault_format = 54;
-// Matrix's first supported campaign payload retains its actual terminal
-// PROGRAM 2 receipt. Earlier Matrix party-only saves remain readable.
-constexpr unsigned matrix_terminal_format = 55;
-
-constexpr bool supported_game_format(unsigned format, GoldBoxGame game)
-{
-    return format < native_vault_format ||
-           (format == native_vault_format && game == GoldBoxGame::dark_queen_of_krynn) ||
-           (format == matrix_terminal_format && game == GoldBoxGame::matrix_cubed);
-}
-
-constexpr unsigned unchosen_portraits_format = 45;
-// The first format with a creation draft's rules data (the original rules'
-// rolls); earlier saves are all SRD, whose drafts have none.
-constexpr unsigned draft_rules_data_format = 47;
-// The first format that names the campaign's game; earlier saves are all Pool
-// of Radiance's (docs/GAMES.md).
-constexpr unsigned game_format = 48;
-// The first format that keeps the setting the game chose for its rules (the
-// original rules' aging); earlier saves are all SRD, which has none.
-constexpr unsigned rules_setting_format = 49;
-// The first format that keeps what a level-up rolled (the original rules' Hit
-// Points); earlier saves are all SRD, whose levels roll nothing.
-constexpr unsigned advancement_rules_data_format = 50;
-// The first format that keeps an Unlimited Adventures design's play (its
-// folder and its session's state); earlier saves have no design.
-constexpr unsigned design_format = 51;
-// The first format that keeps how long the rest whose spells wait to be
-// chosen lasted (the original rules' memorizing); earlier saves keep none.
-constexpr unsigned rest_length_format = 52;
-// The first format that keeps when an interruption ends the rest whose spells
-// wait to be chosen; earlier saves' rests went on uninterrupted.
-constexpr unsigned rest_interruption_format = 53;
 constexpr std::string_view campaign_magic = "OPENGOLD-CAMPAIGN ";
 
 struct BuckWilderness
@@ -214,8 +171,13 @@ template <bool Reading> struct SaveCodec
     std::stringstream stream;
     const rules::CharacterRules *creation{};
     const rules::RulesModule *module{};
-    // The format being read, which decides the fields older formats lack.
-    unsigned format{campaign_format};
+    // Set when the writer describes a save's layout instead of writing one
+    // (campaign_save_schema): each value adds a line naming its type, each
+    // collection or optional value the layout of one element, indented, and
+    // each part only some saves have the condition it is written under.
+    bool describing{};
+    std::string schema;
+    unsigned depth{};
 
     explicit SaveCodec(std::string_view bytes)
         requires reading
@@ -233,6 +195,76 @@ template <bool Reading> struct SaveCodec
     template <class... T> void fields(T &...value)
     {
         (field(value), ...);
+    }
+
+    void describe(std::string_view line)
+    {
+        schema.append(2 * std::size_t{depth}, ' ').append(line).append("\n");
+    }
+
+    // Describing, a collection's line and the layout of one element under it.
+    // The elements are copies, so the reader, which never describes, compiles
+    // the call too.
+    template <class... T> void describe_element(std::string_view collection, T... element)
+    {
+        describe(collection);
+        ++depth;
+        fields(element...);
+        --depth;
+    }
+
+    // A part of the layout only some saves have. Writing or reading, it is
+    // visited when present; describing, always, under a line naming its condition.
+    class Part
+    {
+      public:
+        Part(SaveCodec &codec, std::string_view condition, bool present)
+            : codec_(codec), present_(present)
+        {
+            if (codec_.describing)
+            {
+                codec_.describe("if " + std::string(condition) + ":");
+                ++codec_.depth;
+            }
+        }
+
+        Part(const Part &) = delete;
+        Part &operator=(const Part &) = delete;
+
+        ~Part()
+        {
+            if (codec_.describing)
+            {
+                --codec_.depth;
+            }
+        }
+
+        explicit operator bool() const noexcept
+        {
+            return present_ || codec_.describing;
+        }
+
+      private:
+        SaveCodec &codec_;
+        bool present_;
+    };
+
+    [[nodiscard]] Part part(std::string_view condition, bool present)
+    {
+        return Part(*this, condition, present);
+    }
+
+    // The name of an integer type in a described layout.
+    template <class T> static std::string integer_type()
+    {
+        if constexpr (std::is_same_v<T, bool>)
+        {
+            return "bool";
+        }
+        else
+        {
+            return (std::is_signed_v<T> ? "int" : "uint") + std::to_string(8 * sizeof(T));
+        }
     }
 
     template <class T>
@@ -265,6 +297,11 @@ template <bool Reading> struct SaveCodec
                 value = static_cast<T>(n);
             }
         }
+        else if (describing)
+        {
+            describe(integer_type<std::remove_const_t<T>>());
+            return;
+        }
         else if constexpr (std::is_signed_v<T>)
         {
             stream << static_cast<std::int64_t>(value) << ' ';
@@ -282,6 +319,11 @@ template <bool Reading> struct SaveCodec
         {
             stream >> std::quoted(value);
         }
+        else if (describing)
+        {
+            describe("string");
+            return;
+        }
         else
         {
             stream << std::quoted(value) << ' ';
@@ -293,6 +335,12 @@ template <bool Reading> struct SaveCodec
         requires is_fixed_array<std::remove_const_t<Array>>
     void field(Array &values)
     {
+        if (describing)
+        {
+            const auto size = std::distance(std::begin(values), std::end(values));
+            describe_element("array " + std::to_string(size), *std::begin(values));
+            return;
+        }
         for (auto &v : values)
         {
             field(v);
@@ -303,6 +351,11 @@ template <bool Reading> struct SaveCodec
         requires is_std_vector<std::remove_const_t<Vector>>
     void field(Vector &values)
     {
+        if (describing)
+        {
+            describe_element("list", typename Vector::value_type{});
+            return;
+        }
         std::uint64_t count = values.size();
         field(count);
         require(count <= 65536, "Save collection too large");
@@ -329,6 +382,11 @@ template <bool Reading> struct SaveCodec
         requires is_std_map<std::remove_const_t<Map>>
     void field(Map &values)
     {
+        if (describing)
+        {
+            describe_element("map", typename Map::key_type{}, typename Map::mapped_type{});
+            return;
+        }
         std::uint64_t count = values.size();
         field(count);
         require(count <= 65536, "Save map too large");
@@ -356,6 +414,11 @@ template <bool Reading> struct SaveCodec
         requires is_std_optional<std::remove_const_t<Optional>>
     void field(Optional &value)
     {
+        if (describing)
+        {
+            describe_element("optional", typename Optional::value_type{});
+            return;
+        }
         bool present = value.has_value();
         field(present);
         if constexpr (reading)
@@ -398,11 +461,8 @@ template <bool Reading> struct SaveCodec
     void field(Visited<rules::AdvancementChoice> v)
     {
         fields(v.character_class, v.feat, v.abilities, v.spells, v.training, v.spell_learning,
-               v.fighting_style, v.cantrip_swap, v.spell_swap, v.option_swap, v.discovery_swap);
-        if (format >= advancement_rules_data_format)
-        {
-            field(v.rules_data);
-        }
+               v.fighting_style, v.cantrip_swap, v.spell_swap, v.option_swap, v.discovery_swap,
+               v.rules_data);
     }
 
     void field(Visited<rules::LevelSwap> v)
@@ -414,11 +474,7 @@ template <bool Reading> struct SaveCodec
     {
         fields(v.race, v.gender, v.character_class, v.alignment, v.background, v.name,
                v.target_classes, v.rolls, v.assignment, v.adjustment, v.rolled, v.training,
-               v.cantrips, v.spells);
-        if (format >= draft_rules_data_format)
-        {
-            field(v.rules_data);
-        }
+               v.cantrips, v.spells, v.rules_data);
     }
 
     void field(Visited<rules::SpellChoices> v)
@@ -511,15 +567,8 @@ template <bool Reading> struct SaveCodec
 
     void field(Visited<ShortRestSession> v)
     {
-        fields(v.ticket, v.completed_minutes, v.completed_subminute_milliseconds, v.members);
-        if (format >= rest_length_format)
-        {
-            field(v.rested_minutes);
-        }
-        if (format >= rest_interruption_format)
-        {
-            field(v.interrupted_minutes);
-        }
+        fields(v.ticket, v.completed_minutes, v.completed_subminute_milliseconds, v.members,
+               v.rested_minutes, v.interrupted_minutes);
     }
 
     void rest(Visited<PartyState> v)
@@ -576,7 +625,18 @@ template <bool Reading> struct SaveCodec
         }
         fields(v.subminute_milliseconds, v.next_combat_scope, rest_offsets);
         std::uint64_t count = v.roster.size();
-        field(count);
+        if (describing)
+        {
+            // One member stands for all, so there must be one to visit.
+            require(count != 0, "Describing a save needs a party member");
+            describe("list");
+            ++depth;
+            count = 1;
+        }
+        else
+        {
+            field(count);
+        }
         require(count <= 128, "Too many saved party members");
         if constexpr (reading)
         {
@@ -643,8 +703,9 @@ template <bool Reading> struct SaveCodec
         }
         else
         {
-            for (const auto &m : v.roster)
+            for (std::uint64_t i = 0; i < count; ++i)
             {
+                const auto &m = v.roster[i];
                 const auto &draft = m.character.creation_data();
                 const auto &appearance = m.character.appearance();
                 auto level = m.character.sheet().level;
@@ -657,6 +718,10 @@ template <bool Reading> struct SaveCodec
                 field(m.character.inventory());
                 member(m);
             }
+        }
+        if (describing)
+        {
+            --depth;
         }
         if constexpr (reading)
         {
@@ -679,6 +744,11 @@ template <bool Reading> struct SaveCodec
     // table.
     template <class Table> void variable_table(Table &table)
     {
+        if (describing)
+        {
+            describe_element("map", std::uint16_t{}, std::uint16_t{});
+            return;
+        }
         std::uint64_t count = table.size();
         field(count);
         require(count <= 65536, "Save map too large");
@@ -769,36 +839,27 @@ template <class Codec, class Camp> void CampService::save(Codec &codec, Camp &ca
     codec.field(camp.rest_checks_);
 }
 
-template <class Codec, class Vault>
-void VaultService::save(Codec &codec, Vault &vault, bool recorded)
+template <class Codec, class Vault> void VaultService::save(Codec &codec, Vault &vault)
 {
-    if (recorded)
-    {
-        codec.fields(vault.dark_queen_vault_money_, vault.dark_queen_vault_items_);
-        require(vault.dark_queen_vault_items_.size() <= 50, "Native vault is over capacity");
-    }
-    else
-    {
-        require(Codec::reading || (vault.dark_queen_vault_items_.empty() &&
-                                   std::ranges::all_of(vault.dark_queen_vault_money_,
-                                                       [](unsigned amount)
-                                                       {
-                                                           return amount == 0;
-                                                       })),
-                "An older native save cannot record a vault");
-        if constexpr (Codec::reading)
-        {
-            vault.dark_queen_vault_money_ = {};
-            vault.dark_queen_vault_items_.clear();
-        }
-    }
+    codec.fields(vault.dark_queen_vault_money_, vault.dark_queen_vault_items_);
+    require(vault.dark_queen_vault_items_.size() <= 50, "Native vault is over capacity");
 }
 
 template <class Codec, class Treasure, class EncounterLoot>
 void TreasureService::save(Codec &codec, Treasure &treasure, const EncounterLoot &encounter_loot)
 {
     std::uint64_t pending = treasure.pending_loot_.size();
-    codec.field(pending);
+    // Describing a save's layout, one entry stands for all.
+    if (codec.describing)
+    {
+        codec.describe("list");
+        ++codec.depth;
+        pending = 1;
+    }
+    else
+    {
+        codec.field(pending);
+    }
     require(pending <= 1024, "Too many pending rewards");
     if constexpr (Codec::reading)
     {
@@ -811,7 +872,7 @@ void TreasureService::save(Codec &codec, Treasure &treasure, const EncounterLoot
         bool items = true;
         std::array<unsigned, 7> wealth{};
         unsigned loot_area{};
-        if constexpr (!Codec::reading)
+        if (!Codec::reading && !codec.describing)
         {
             const auto &loot = treasure.pending_loot_[index];
             records = loot.records;
@@ -824,7 +885,7 @@ void TreasureService::save(Codec &codec, Treasure &treasure, const EncounterLoot
         // Script treasure has no creature records, and monsters may have
         // used some of their gear (DIFF-1): the items are saved.
         std::vector<por::Equipment> saved_items;
-        if constexpr (!Codec::reading)
+        if (!Codec::reading && !codec.describing)
         {
             saved_items = treasure.pending_loot_[index].items;
         }
@@ -849,6 +910,10 @@ void TreasureService::save(Codec &codec, Treasure &treasure, const EncounterLoot
                     "Saved loot does not match its original creatures");
             loot.items = std::move(saved_items);
         }
+    }
+    if (codec.describing)
+    {
+        --codec.depth;
     }
 }
 
@@ -891,11 +956,12 @@ template <class Codec, class Tour> void RolfTourSession::save(Codec &codec, Tour
     codec.fields(tour.current_script_, tour.selected_character_, tour.next_ticket_);
     CampService::save(codec, tour.camp_service_);
     codec.fields(tour.travel_mode_, tour.snapshot_.searching);
-    if (tour.game() == GoldBoxGame::dark_queen_of_krynn)
+    if (const auto native =
+            codec.part("Dark Queen of Krynn", tour.game() == GoldBoxGame::dark_queen_of_krynn))
     {
         codec.field(tour.dark_queen_combat_set_);
         require(tour.dark_queen_combat_set_ <= 255, "Invalid native combat tile set");
-        VaultService::save(codec, tour.vault_service_, codec.format >= native_vault_format);
+        VaultService::save(codec, tour.vault_service_);
     }
     // On the wilderness map only in a wilderness script, with its data.
     require(tour.travel_mode_ >= 1 && tour.travel_mode_ <= 4 &&
@@ -926,8 +992,8 @@ template <class Codec, class Tour> void RolfTourSession::save(Codec &codec, Tour
         }
         return controller;
     }();
-    // Only the new game has larger maps. Keep every released game's
-    // original 256-character encoding byte for byte in format 53.
+    // Only Dark Queen has larger maps. Every other game keeps the original
+    // 256 characters.
     const std::size_t knowledge_size =
         tour.game() == GoldBoxGame::dark_queen_of_krynn
             ? por::GeoMap::max_cells
@@ -1091,25 +1157,20 @@ template <class Codec, class Tour> void RolfTourSession::save(Codec &codec, Tour
         }
     }
     bool matrix_won = false;
-    if (tour.game() == GoldBoxGame::matrix_cubed)
+    const bool matrix = tour.game() == GoldBoxGame::matrix_cubed;
+    if (const auto matrix_part = codec.part("Matrix Cubed", matrix))
     {
         if constexpr (!Codec::reading)
         {
-            matrix_won = tour.matrix_ending_completed();
+            matrix_won = matrix && tour.matrix_ending_completed();
         }
-        require(codec.format >= matrix_terminal_format || !matrix_won,
-                "An older campaign format cannot record a Matrix victory");
-        if (codec.format >= matrix_terminal_format)
+        codec.field(matrix_won);
+        if (const auto won = codec.part("Matrix Cubed won", matrix_won))
         {
-            codec.field(matrix_won);
-            if (matrix_won)
+            codec.machine_address(tour.machine_);
+            if constexpr (Codec::reading)
             {
-                codec.machine_address(tour.machine_);
-                if constexpr (Codec::reading)
-                {
-                    require(tour.matrix_ending_completed(),
-                            "Invalid Matrix terminal victory receipt");
-                }
+                require(tour.matrix_ending_completed(), "Invalid Matrix terminal victory receipt");
             }
         }
     }
@@ -1186,7 +1247,7 @@ template <class Codec, class Tour> void RolfTourSession::save(Codec &codec, Tour
         tour.transition_ = tour.message_only_ = false;
         tour.event_stage_ = EventStage::none;
         tour.publish_pose();
-        if (tour.game() == GoldBoxGame::matrix_cubed)
+        if (matrix)
         {
             s.game_won = matrix_won;
         }
@@ -1213,129 +1274,124 @@ static_assert(encodes_const_campaign<SaveWriter>);
 static_assert(!encodes_const_campaign<SaveReader>, "Only the writer may visit const state");
 } // namespace
 
-std::string encode_campaign(const CampaignParty &party, const por::RolfTourSession *town,
-                            std::string_view assets, GoldBoxGame game, const DesignSave *design)
+namespace
 {
-    const auto format = game == GoldBoxGame::matrix_cubed          ? matrix_terminal_format
-                        : game == GoldBoxGame::dark_queen_of_krynn ? native_vault_format
-                                                                   : released_campaign_format;
-    return encode_campaign_in_format(party, town, assets, format, game, design);
-}
-
-std::string encode_campaign_in_format(const CampaignParty &party, const por::RolfTourSession *town,
-                                      std::string_view assets, unsigned format, GoldBoxGame game,
-                                      const DesignSave *design)
+// A campaign's fields after its header, written or, describing, walked.
+void write_campaign(SaveWriter &out, const CampaignParty &party, const por::RolfTourSession *town,
+                    std::string_view assets, GoldBoxGame game, const DesignSave *design)
 {
-    require(supported_game_format(format, game), "Unsupported campaign save version");
-    const bool design_game = game == GoldBoxGame::unlimited_adventures;
-    require(format >= design_format || !design_game,
-            "An older campaign format cannot record a design");
-    require(design_game == (design != nullptr) && !(design && town),
-            "Only an Unlimited Adventures campaign records a design, and no town with it");
-    require(format >= game_format || game == GoldBoxGame::pool_of_radiance,
-            "An older campaign format cannot record another game");
-    require(format >= unchosen_portraits_format && format <= campaign_format,
-            "This build cannot write that campaign format");
-    require(format >= draft_rules_data_format ||
-                std::ranges::all_of(party.state().roster,
-                                    [](const auto &member)
-                                    {
-                                        return member.character.creation_data().rules_data.empty();
-                                    }),
-            "An older campaign format cannot record original-rules characters");
-    require(format >= rules_setting_format || party.game_setting().empty(),
-            "An older campaign format cannot record the rules' setting");
-    require(format >= advancement_rules_data_format ||
-                std::ranges::all_of(party.state().roster,
-                                    [](const auto &member)
-                                    {
-                                        return std::ranges::all_of(
-                                            member.character.advancements(),
-                                            [](const auto &level)
-                                            {
-                                                return level.rules_data.empty();
-                                            });
-                                    }),
-            "An older campaign format cannot record what a level rolled");
-    require(!party.in_combat(), "Cannot save during combat");
-    SaveWriter out;
-    out.format = format;
     auto identity = party.identity();
     std::string asset(assets);
     const auto &state = party.state();
-    out.fields(identity, asset);
-    if (format >= game_format)
+    auto game_number = static_cast<unsigned>(game);
+    auto setting = party.game_setting();
+    out.fields(identity, asset, game_number, setting);
+    const DesignSave no_design;
+    const auto &played = design ? *design : no_design;
+    if (const auto designed = out.part("Unlimited Adventures design", design != nullptr))
     {
-        auto game_number = static_cast<unsigned>(game);
-        out.field(game_number);
-    }
-    if (format >= rules_setting_format)
-    {
-        auto setting = party.game_setting();
-        out.field(setting);
-    }
-    if (design)
-    {
-        out.field(design->folder);
+        out.field(played.folder);
     }
     out.field(state);
     bool has_town = town != nullptr;
     out.field(has_town);
-    if (town)
+    if (const auto in_town = out.part("town", has_town))
     {
         out.town(*town);
     }
-    if (design)
+    if (const auto designed = out.part("Unlimited Adventures design", design != nullptr))
     {
-        out.field(design->state);
+        out.field(played.state);
     }
     out.rest(state);
+}
+
+std::string with_header(std::string_view body)
+{
+    return std::string(campaign_magic) + std::to_string(save_version) + "\n" +
+           std::to_string(fingerprint(body)) + "\n" + std::string(body);
+}
+
+// The refusal of a save of version `saved` (save_version_message).
+std::string other_version_refusal(std::string_view saved)
+{
+    std::string message(save_version_message);
+    for (const auto &[name, value] :
+         {std::pair<std::string_view, std::string>{"{saved}", std::string(saved)},
+          {"{version}", std::to_string(save_version)}})
+    {
+        message.replace(message.find(name), name.size(), value);
+    }
+    return message;
+}
+} // namespace
+
+std::string encode_campaign(const CampaignParty &party, const por::RolfTourSession *town,
+                            std::string_view assets, GoldBoxGame game, const DesignSave *design)
+{
+    const bool design_game = game == GoldBoxGame::unlimited_adventures;
+    require(design_game == (design != nullptr) && !(design && town),
+            "Only an Unlimited Adventures campaign records a design, and no town with it");
+    require(!party.in_combat(), "Cannot save during combat");
+    SaveWriter out;
+    write_campaign(out, party, town, assets, game, design);
     auto body = out.stream.str();
     require(body.size() <= limit, "Campaign save too large");
-    return std::string(campaign_magic) + std::to_string(format) + "\n" +
-           std::to_string(fingerprint(body)) + "\n" + body;
+    return with_header(body);
+}
+
+std::string campaign_save_schema(const CampaignParty &party, const por::RolfTourSession &town)
+{
+    SaveWriter out;
+    out.describing = true;
+    write_campaign(out, party, &town, {}, GoldBoxGame::pool_of_radiance, nullptr);
+    return std::string(campaign_magic) + std::to_string(save_version) +
+           "\nuint64 checksum of what follows\n" + out.schema;
+}
+
+std::optional<std::string> refused_save_version(std::string_view message)
+{
+    const auto refusal = other_version_refusal("{saved}");
+    const auto at = refusal.find("{saved}");
+    const auto before = std::string_view(refusal).substr(0, at);
+    const auto after = std::string_view(refusal).substr(at + std::string_view("{saved}").size());
+    if (message.size() <= before.size() + after.size() || !message.starts_with(before) ||
+        !message.ends_with(after))
+    {
+        return std::nullopt;
+    }
+    const auto saved = message.substr(before.size(), message.size() - before.size() - after.size());
+    if (saved.find_first_not_of("0123456789") != std::string_view::npos)
+    {
+        return std::nullopt;
+    }
+    return std::string(saved);
 }
 
 namespace
 {
-// Parses the header's format number without trusting its length or digits.
-unsigned saved_format(std::string_view digits)
-{
-    require(!digits.empty() && digits.size() <= 9 &&
-                digits.find_first_not_of("0123456789") == std::string_view::npos,
-            "Unsupported campaign save version");
-    unsigned format{};
-    (void)std::from_chars(digits.data(), digits.data() + digits.size(), format);
-    return format;
-}
-
-struct CheckedSave
-{
-    unsigned format{};
-    std::string_view body;
-};
-
-// The save's format and its body, once the header and checksum hold.
-CheckedSave checked_save(std::string_view bytes)
+// The save's body, once its header and checksum hold. The version comes first:
+// a save of any version but save_version is refused before anything else is read.
+std::string_view checked_save(std::string_view bytes)
 {
     require(bytes.size() <= limit, "Campaign save too large");
     const auto header_end = bytes.find('\n');
     require(bytes.starts_with(campaign_magic) && header_end != bytes.npos,
             "Unsupported campaign save version");
-    const auto version =
-        saved_format(bytes.substr(campaign_magic.size(), header_end - campaign_magic.size()));
-    if (version < unchosen_portraits_format)
-    {
-        throw std::runtime_error(std::string(rules::older_save_message));
-    }
-    require(version >= unchosen_portraits_format && version <= campaign_format,
+    const auto version = bytes.substr(campaign_magic.size(), header_end - campaign_magic.size());
+    require(!version.empty() && version.size() <= 9 &&
+                version.find_first_not_of("0123456789") == std::string_view::npos,
             "Unsupported campaign save version");
+    if (version != std::to_string(save_version))
+    {
+        throw std::runtime_error(other_version_refusal(version));
+    }
     const auto end = bytes.find('\n', header_end + 1);
     require(end != bytes.npos, "Truncated campaign save");
     const auto body = bytes.substr(end + 1);
     require(bytes.substr(header_end + 1, end - header_end - 1) == std::to_string(fingerprint(body)),
             "Campaign save checksum mismatch");
-    return {version, body};
+    return body;
 }
 
 void validate_saved_member(const PartyMember &member, const rules::RulesModule &module)
@@ -1388,39 +1444,29 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
                               const rules::RulesModule &module, std::string_view assets,
                               const std::function<por::RolfTourSession()> &make_town_template)
 {
-    const auto [version, body] = checked_save(bytes);
-    SaveReader in(body);
-    in.format = version;
+    SaveReader in(checked_save(bytes));
     in.creation = &creation;
     in.module = &module;
     rules::Identity identity;
     std::string asset;
     in.fields(identity, asset);
-    if (identity != module.identity())
-    {
-        throw std::runtime_error(std::string(rules::older_save_message));
-    }
+    // Only the save version decides whether a save loads (docs/SAVES.md): the
+    // rules module is checked because a save is read by the module it names,
+    // not the module's version or content.
+    require(identity.module == module.identity().module, "Campaign rules module mismatch");
     require(asset == assets, "Campaign original asset identity mismatch");
     SavedCampaign result;
-    if (version >= game_format)
-    {
-        unsigned game_number{};
-        in.field(game_number);
-        const auto game = game_numbered(game_number);
-        require(game.has_value(), "Unknown campaign game");
-        result.game = *game;
-        require(supported_game_format(version, result.game), "Unsupported campaign save version");
-    }
+    unsigned game_number{};
+    in.field(game_number);
+    const auto game = game_numbered(game_number);
+    require(game.has_value(), "Unknown campaign game");
+    result.game = *game;
     std::string setting;
-    if (version >= rules_setting_format)
-    {
-        in.field(setting);
-    }
+    in.field(setting);
     require(setting == creation.game_setting(), "Campaign rules setting mismatch");
     const bool design = result.game == GoldBoxGame::unlimited_adventures;
     if (design)
     {
-        require(version >= design_format, "Unsupported campaign save version");
         result.design.emplace();
         in.field(result.design->folder);
     }
@@ -1429,12 +1475,6 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
     for (const auto &m : result.party.roster)
     {
         validate_saved_member(m, module);
-        const auto &appearance = m.character.appearance();
-        if (version == unchosen_portraits_format && appearance.portrait_head == 1 &&
-            appearance.portrait_body == 1)
-        {
-            result.unchosen_portraits.push_back(m.id);
-        }
     }
     bool has_town{};
     in.field(has_town);
@@ -1459,26 +1499,15 @@ SavedCampaign decode_campaign(std::string_view bytes, const rules::CharacterRule
 
 CampaignRules saved_campaign_rules(std::string_view bytes)
 {
-    const auto [version, body] = checked_save(bytes);
-    SaveReader in(body);
-    in.format = version;
+    SaveReader in(checked_save(bytes));
     CampaignRules saved;
     std::string asset;
-    in.fields(saved.identity, asset);
-    if (version >= game_format)
-    {
-        unsigned game_number{};
-        in.field(game_number);
-        const auto game = game_numbered(game_number);
-        require(game.has_value(), "Unknown campaign game");
-        saved.game = *game;
-        require(supported_game_format(version, saved.game), "Unsupported campaign save version");
-    }
-    if (version >= rules_setting_format)
-    {
-        in.field(saved.setting);
-    }
-    if (version >= design_format && saved.game == GoldBoxGame::unlimited_adventures)
+    unsigned game_number{};
+    in.fields(saved.identity, asset, game_number, saved.setting);
+    const auto game = game_numbered(game_number);
+    require(game.has_value(), "Unknown campaign game");
+    saved.game = *game;
+    if (saved.game == GoldBoxGame::unlimited_adventures)
     {
         in.field(saved.design_folder);
     }

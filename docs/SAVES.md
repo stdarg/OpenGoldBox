@@ -57,8 +57,7 @@ serialized at-win payload exists, so changes made before a successful retry
 cannot be reconstructed. Errors are logged. Pending retries are in memory,
 so quitting or loading another campaign does not preserve them.
 
-The save is an ordinary campaign save in the game's own format (Native writes
-54, *Matrix Cubed* 55, *Unlimited Adventures* its own, the others 53), named
+The save is an ordinary campaign save of the one save version, named
 by the game's own files' identity, in the game's save folder as
 `winning-party.ogs`. A player's save is named by its name's hexadecimal
 digits (`save_slots.cpp`), so the bank never replaces one; a later win
@@ -94,58 +93,75 @@ and CTest's fixtures hand them on: *Gateway*'s to *Treasures*' earned ending,
 are banked for *Dark Queen*; *Countdown*'s earned ending banks its party at
 its win for `opengold_winner_bank_matrix_from_countdown`.
 
-## Pre-1.0 format policy
+## One save version
 
-Until 1.0, every save kind has exactly one accepted format, and it always writes
-every field:
+A campaign save (`.ogs`) starts with its header, `OPENGOLD-CAMPAIGN 56`: the
+save version, then a line with the checksum of what follows. A build reads
+and writes exactly one save version, the same for every game
+(`opengold::save_version`, `opengold/save_version.h`), decided by the owner
+on 2026-11-27 (#477). The loader reads the version first, before anything
+else: a save of any other version, older or newer, is refused with the
+localized message "This save is version {saved}, and this version of
+OpenGoldBox reads only save version {version}.", naming both. Nothing is
+migrated, and no older layout is read.
 
-- Campaign saves (`.ogs`): header `OPENGOLD-CAMPAIGN 53`, *Dark Queen of
-  Krynn* 54 and *Matrix Cubed* 55 (`campaign_format` and its neighbours in
-  `campaign_save.cpp`). Format 45 records the class each level was taken in
-  (multiclassing, [MULTI-1](SRD-DECISIONS.md#multi-1-2026-11-05-multiclassing)).
-  Format 47 adds each creation draft's rules data, where the original rules
-  keep their creation rolls ([ORIGINAL-RULES.md](ORIGINAL-RULES.md)). Formats
-  45 and 46 still load: their drafts are SRD drafts, which have none, and a
-  format 45 save gives members still on the first portrait a random original
-  one. Format 48 names the campaign's game ([GAMES.md](GAMES.md)); a save in
-  an earlier format is *Pool of Radiance*'s, and still loads. Format 49 keeps
-  the setting the game chose for its rules, the original rules' aging
-  ([ORIGINAL-RULES.md](ORIGINAL-RULES.md#plan)); an SRD game has none, so a
-  format 48 save loads as before. The game reads a save's rules and setting
-  first (`saved_campaign_rules`) and loads it under them. Format 50 keeps what
-  each level-up rolled (`AdvancementChoice::rules_data`: under the original
-  rules the classes trained and the Hit Dice's total), so a saved level is
-  made again the same; SRD levels roll nothing, so a format 49 save loads.
-  The script machine's dice are saved as their 624 state words and the
-  position of the next one (`MersenneTwister::state_text`), the same on every
-  platform. Saves made before the project owned these dice hold the standard
-  library's text for `std::mt19937`, which differs between platforms (libc++
-  and MSVC write 624 words, libstdc++ also the position); both forms load
-  everywhere, and a Linux save is written again byte for byte. The format
-  number did not change.
+Only the save version decides whether a save loads. A save keeps the rules
+it was made under (`rules::Identity`: module, version, content; currently
+`opengold.srd5` 0.6.275, `content.identity` in `srd5.cpp`), but the loader
+checks only the module (the original rules or the SRD's), which picks
+the rules that read it; a new rules version or new game data (monsters,
+spells, prices) refuses nothing. The installed original files are still
+checked: a save made with other DAX archives or ITEMS files is refused.
+
+The save version covers everything written into a save, the records kept in
+it as text included. Its layout is committed for each version as
+`docs/save-schema/v<version>.txt`, made from the codec itself:
+`campaign_save_schema` walks the same `field` visits that write and read a
+save, recording each value's type in order, one element of each collection
+and optional value, and, under its condition, each part only some saves have
+(a town, a design, Dark Queen's vault, Matrix's victory). The records the
+rules modules keep as text (`rules::VitalState::resources`: the SRD's
+`SRD13` with its `FX9` effects, the original rules' `combatant14` and
+`combatant15`, Buck Rogers' `OGBUCKROGERS 2`) and an Unlimited Adventures
+design's state (`UA-STATE 4`) are opaque strings to the codec; the schema
+lists them by the tags that name their layouts (`srd5::saved_record_formats`,
+`original::saved_record_formats`, `ua::UaSession::saved_state_format`).
+`opengold_save_tests` fails when the layout it generates differs from the
+committed file for the current version, and writes the generated layout
+beside the test.
+
+**Any change to what a save holds raises the save version**: a field added,
+removed, reordered or retyped, a new part, or a new tag of a record kept as
+text. Raise `save_version`, commit the new layout as
+`docs/save-schema/v<new version>.txt`, and regenerate any save a test keeps.
+A change inside a record kept as text needs a new tag for that record too,
+since the schema sees only its tag; the records without one (the original
+rules' `rested` conditions, the history entries in `rules_data`) are covered
+by the rule alone.
+
+The script machine's dice are saved as their 624 state words and the
+position of the next one (`MersenneTwister::state_text`), the same on every
+platform.
+
+A vital state (`SRD13`) keeps one count of a class resource for each class
+that has it.
+
+Other save kinds keep their own formats:
+
 - The internal training-combat checkpoint: `OGCOMBAT 77` (`checkpoint_format`
   in `srd5.cpp`); 76 keeps each class's resource counts apart, 77 records
-  whether a member attacked its own side (Attack Ally).
+  whether a member attacked its own side (Attack Ally). It also carries the
+  SRD's character profile recipe `PC44` (an explicit spell ID list and each
+  level's class) and concentration `CN1`.
 - The original rules' combat checkpoint: `OGORIGINALCOMBAT 30` for the
   earlier games, and 31 for Native (`combat_session.cpp`). Both keep each
   square's movement cost; Native also keeps its starting time and underwater
   state. Formats 27, Death Knights' 28 and Native's 29 still read without
   movement costs, preserving their original field layouts.
-- Records embedded by the SRD module: character profile recipe `PC44` (an
-  explicit spell ID list and each level's class), vital state `SRD13`, effect
-  state `FX9` and concentration `CN1`. A vital state keeps one count of a class
-  resource for each class that has it, so a single-class character's reads as
-  before.
 
-A save or checkpoint with an older format number, or one written under a
-different rules identity (module, version or content hash; currently
-`opengold.srd5` 0.6.275, `content.identity` in `srd5.cpp`), is rejected with
-the localized message "This save was made by an older pre-release version of
-OpenGoldBox and can't be loaded." A newer or unknown campaign number reports
-"Unsupported campaign save version". Nothing is migrated.
-
-New work adds no save migrations. When a format needs to change before 1.0,
-change the current format in place.
+A checkpoint of an older format or another rules identity is refused with
+"This save was made by an older pre-release version of OpenGoldBox and
+can't be loaded."
 
 ## Supported boundaries and state
 
@@ -204,7 +220,7 @@ saved state writes it through its own `save` at its place in the field order:
 vault, `DoorHost` the hidden entrances and the Wand of Secrets' traps,
 `TreasureService` the deferred loot. The order and bytes are those the
 session wrote before its services and hosts were classes of their own
-(#399), so no format number changed. The encounter, 256-color and Buck
+(#399). The encounter, 256-color and Buck
 Rogers hosts save nothing of their own. Every expedition fixture save loads
 as the game loads it and saves again byte for byte
 (`opengold_expedition_saves_resave`).
@@ -228,10 +244,10 @@ Saves live in Godot's writable **user://saves** directory (normally
 encoded into safe filenames, with `.ogs` and previous-version `.ogs.bak` files.
 Original installations may remain read-only.
 
-The loader checks the format version, rules module/version/content identity and
-an ordered fingerprint manifest of installed DAX archives and ITEMS. A different
-asset installation, unknown definition, malformed resource state or different
-format or rules identity rejects explicitly. Reinstalling identical assets at a
+The loader checks the save version, the rules module and an ordered
+fingerprint manifest of installed DAX archives and ITEMS. A different asset
+installation, unknown definition, malformed resource state, other save version
+or other rules module rejects explicitly. Reinstalling identical assets at a
 new path is valid. FNV-1a fingerprints/checksums detect accidental changes; they
 are not signatures or protection against deliberate tampering.
 
@@ -274,12 +290,15 @@ spending and the next committed die.
 `opengold_save_tests` writes actual files and covers inventory IDs, reserve members,
 HP/resources, levels, money, reward/rest continuity, ECL continuation, deterministic
 subsequent combat and service RNG, incompatible identities, malformed/truncated
-files, backup rotation and failed Windows replacement. It runs alongside the
-other native suites.
+files, backup rotation and failed Windows replacement, the refusal of other
+save versions and the committed layout (`docs/save-schema`). It runs alongside
+the other native suites.
 
 Tests build saves and checkpoints with the current writer, check exact
-round-trips and continuation, and check that older formats and different rules
-identities are rejected. No frozen prior-writer save files are kept.
+round-trips and continuation, and check that other save versions and other
+rules modules are rejected. No frozen prior-writer save files are kept.
+`opengold_godot_town_services` checks the refusal of an older and a newer
+version on the Load screen, in English and in Spanish.
 
 For visual checks, after the restart route:
 

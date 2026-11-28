@@ -103,7 +103,7 @@ Training **Save combat** / **Load combat** use `checks/combat.save` in the user
 data folder, retaining
 the previous save as `.bak`. Saves include pending reactions and RNG state. Older
 formats and other module or content identities reject; see the
-[format policy](SAVES.md#pre-10-format-policy). This demo does not save its
+[format policy](SAVES.md#one-save-version). This demo does not save its
 Slums event; the game saves the campaign, including the Slums, at idle
 exploration ([saves](SAVES.md)).
 
@@ -328,7 +328,7 @@ Reference content and attribution are recorded in
 [official SRD 5.2.1](https://www.dndbeyond.com/srd).
 
 The release notes below record the format numbers each release introduced. Only
-the current formats load; see the [format policy](SAVES.md#pre-10-format-policy).
+the current formats load; see the [format policy](SAVES.md#one-save-version).
 
 Rules 0.6.13 introduces [typed damage](DAMAGE.md), creature damage/defense metadata
 and Dwarf Poison resistance. PC8 requires its fixed sourced grant. Campaign and combat stay at format 10.

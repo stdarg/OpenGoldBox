@@ -1130,10 +1130,6 @@ void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t millisecond
     }
 }
 
-// The only effect-state tag written or read. It lives inside campaign saves and
-// combat checkpoints, whose format numbers reject older data.
-constexpr std::string_view effects_magic = "FX9";
-
 void write_effects(std::ostream &out, const EffectState &effects)
 {
     out << effects_magic << ' ' << effects.next_id << ' ' << effects.active.size();

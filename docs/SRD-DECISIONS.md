@@ -42,7 +42,7 @@ player outcomes and elapsed time at a 60-minute checkpoint (90-minute maximum).
 See [workflow](SRD-WORKFLOW.md) for the batch card and enforcement steps.
 Questions remain numbered, visible in conversation and preceded by sound.
 
-The [pre-1.0 save cutoff](SAVES.md#pre-10-format-policy) supersedes every
+The [pre-1.0 save cutoff](SAVES.md#one-save-version) supersedes every
 old-save clause below: older saves are rejected, not migrated. Old-save training
 choices (Q22 and the old-save entry), Q28's Review Training dialog, Q41's
 old-Fighter replay, SCHOLAR-1's Review Training completion and WIZCHOICE's
@@ -329,7 +329,7 @@ The user approved on 2026-09-30 the following scope limits.
   Superseded on 2026-11-05 by [MULTI-1](#multi-1-2026-11-05-multiclassing).
 - **Pre-1.0 save compatibility:** a hard cutoff. Each save kind has one current
   format; older saves are rejected with a clear message and are not migrated.
-  See [Saves](SAVES.md#pre-10-format-policy).
+  See [Saves](SAVES.md#one-save-version).
 - **Rare-situation features not pursued:** Wizard spellbook copying and book
   loss (the copying part of #97; learning and preparation stay), the mounted
   Lance rules, armor don/doff timing (#198), non-costly material components and

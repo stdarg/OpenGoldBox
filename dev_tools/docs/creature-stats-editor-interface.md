@@ -72,9 +72,10 @@ and writes the edit's reason in a comment right above the changed `creature`
 row (`# Creature Stats Editor (date): reason`), replacing the one an earlier
 import wrote there.
 
-**The rules version.** The rules identity includes the file's content hash, so a
-changed file already makes older saves fail to load. By convention the version
-number goes up too: when an import changes `combat.rules`, the importer raises
+**The rules version.** The rules identity includes the file's content hash; a
+changed file no longer makes saves fail to load, since only the save version
+decides that ([SAVES.md](../../docs/SAVES.md#one-save-version)). By convention
+the version number goes up: when an import changes `combat.rules`, the importer raises
 `"0.6.N"` in `src/OpenGold.Rules.Srd5/src/srd5.cpp` and
 `` `opengold.srd5` 0.6.N `` in `docs/SAVES.md`, once per import, and refuses
 the import if the two are missing or disagree. The new number shows in a game

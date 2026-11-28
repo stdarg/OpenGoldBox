@@ -28,7 +28,6 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -2606,36 +2605,20 @@ void a_game_saves_and_loads(const std::filesystem::path &kit)
     first.place(5, 4, 9, MapDirection::north);
     check(first.explore(ExplorationCommand::turn_right), "The party turns");
     const opengold::DesignSave saved_design{design.string(), first.saved_state()};
-    // Earlier layouts had no victory field; before layout 3 there were no
-    // vault items, and layout 1 kept the map as two bitsets.
-    std::istringstream saved_lines(saved_design.state);
-    std::vector<std::string> lines;
-    for (std::string line; std::getline(saved_lines, line);)
+    // Only the current layout of a design's state loads: an older one is refused.
+    auto older_state = saved_design.state;
+    older_state.replace(0, ua::UaSession::saved_state_format.size(), "UA-STATE 3");
+    bool older_refused = false;
+    try
     {
-        lines.push_back(std::move(line));
+        (void)ua::UaSession::resume(files, older_state);
     }
-    for (const unsigned version : {1U, 2U, 3U})
+    catch (const std::runtime_error &)
     {
-        std::ostringstream legacy;
-        legacy << "UA-STATE " << version << '\n';
-        const auto end = lines.size() - (version == 3 ? 1 : 2);
-        for (std::size_t n = 1; n < end; ++n)
-        {
-            if (n == 7 && version == 1)
-            {
-                legacy << first.snapshot().visited.to_string() << '\n'
-                       << first.snapshot().seen.to_string() << '\n';
-            }
-            else
-            {
-                legacy << lines[n] << '\n';
-            }
-        }
-        const auto resumed = ua::UaSession::resume(files, legacy.str());
-        check(!resumed.snapshot().game_won && resumed.snapshot().pose == first.snapshot().pose &&
-                  resumed.saved_state() == first.saved_state(),
-              "Supported design state " + std::to_string(version) + " keeps the game in progress");
+        older_refused = true;
     }
+    check(saved_design.state.starts_with(ua::UaSession::saved_state_format) && older_refused,
+          "An older design state is refused");
     // A save names the kit's items it was made with, as a DAX save its archives.
     const auto assets = opengold::campaign_asset_identity(kit);
     check(assets.starts_with("UA:ITEMS.DAT:"), "The kit's items identify its saves: " + assets);
@@ -2643,17 +2626,6 @@ void a_game_saves_and_loads(const std::filesystem::path &kit)
                                                  GoldBoxGame::unlimited_adventures, &saved_design);
     check(opengold::saved_campaign_rules(bytes).design_folder == design.string(),
           "The save's header names its design's folder");
-    bool older = false;
-    try
-    {
-        (void)opengold::encode_campaign_in_format(*party, nullptr, assets, 50,
-                                                  GoldBoxGame::unlimited_adventures, &saved_design);
-    }
-    catch (const std::runtime_error &)
-    {
-        older = true;
-    }
-    check(older, "An older campaign format cannot record a design");
     auto loaded = opengold::decode_campaign(bytes, *party->character_rules(), party->rule_module(),
                                             assets, nullptr);
     check(loaded.game == GoldBoxGame::unlimited_adventures && loaded.design && !loaded.town &&
@@ -2714,7 +2686,7 @@ void a_game_saves_and_loads(const std::filesystem::path &kit)
     bool unreadable = false;
     try
     {
-        (void)ua::UaSession::resume(files, "UA-STATE 1\n99 0 0 0\n");
+        (void)ua::UaSession::resume(files, "UA-STATE 4\n99 0 0 0\n");
     }
     catch (const std::runtime_error &)
     {

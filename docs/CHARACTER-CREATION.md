@@ -283,11 +283,8 @@ archive IDs and indexed combat pixels. No extracted artwork is distributed.
   characters without a current catalog entry display a deterministic recommendation.
 - Every character also has an original head-and-body portrait, shown in place
   of the new one while the Options screen's Portraits are Original or the new
-  portrait cannot be loaded; the log then names the file. A save from before
-  characters chose original portraits (campaign format 45) still loads, and
-  each member on the default head 1 and body 1 gets a random original
-  portrait, kept from the next save on. Players may change any of them at any
-  time from the member's sheet.
+  portrait cannot be loaded; the log then names the file. Players may change
+  any of them at any time from the member's sheet.
 
 ### Combat parts
 

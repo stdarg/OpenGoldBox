@@ -387,18 +387,6 @@ void CharacterCreationView::load_campaign_bytes(const std::string &bytes)
                           static_cast<std::uint64_t>(microseconds.count()));
     }
     replacement->restore(std::move(saved.party));
-    // Characters saved before they chose original portraits get a random one,
-    // which players may change at any time.
-    for (const auto id : saved.unchosen_portraits)
-    {
-        const auto &member = replacement->member(id);
-        auto appearance = member.character.appearance();
-        const auto &draft = member.character.creation_data();
-        opengold::por::choose_original_portrait(
-            appearance, portraits_->original_art(), draft.race, draft.gender,
-            static_cast<std::uint32_t>(UtilityFunctions::randi()));
-        replacement->set_appearance(id, appearance);
-    }
     for (const auto &m : replacement->state().roster)
     {
         art_->validate(m.character.appearance());

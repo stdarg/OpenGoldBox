@@ -2166,7 +2166,7 @@ class EarnedPlayer
         }
         const auto bytes =
             opengold::encode_campaign(*campaign_.party, &session, assets_, countdown);
-        const auto verify_saved = [&](const std::string &bytes, std::optional<unsigned> format)
+        const auto verify_saved = [&](const std::string &bytes)
         {
             // Reload into independently loaded assets, not a copy whose current
             // snapshot could accidentally supply state missing from the save.
@@ -2187,10 +2187,7 @@ class EarnedPlayer
                 check(loaded.town->solar_map_state() == session.solar_map_state(),
                       "A restored earned flight retains its actual phase, days and rocket cell");
             }
-            const auto again =
-                format ? opengold::encode_campaign_in_format(*party, &*loaded.town, assets_,
-                                                             *format, countdown)
-                       : opengold::encode_campaign(*party, &*loaded.town, assets_, countdown);
+            const auto again = opengold::encode_campaign(*party, &*loaded.town, assets_, countdown);
             check(again == bytes, "The earned checkpoint reloads and saves byte for byte");
             if (name == "mars-camp" || name == "mars-departure" || name == "venus-outskirts" ||
                 name == "venus-departure")
@@ -2220,10 +2217,7 @@ class EarnedPlayer
                     opengold::test::TourAccess::set_variable(changed, address,
                                                              static_cast<std::uint16_t>(value));
                     const auto bad =
-                        format ? opengold::encode_campaign_in_format(*campaign_.party, &changed,
-                                                                     assets_, *format, countdown)
-                               : opengold::encode_campaign(*campaign_.party, &changed, assets_,
-                                                           countdown);
+                        opengold::encode_campaign(*campaign_.party, &changed, assets_, countdown);
                     bool rejected = false;
                     try
                     {
@@ -2243,20 +2237,7 @@ class EarnedPlayer
                 }
             }
         };
-        verify_saved(bytes, std::nullopt);
-        if (name == "mars-camp" || name == "mars-departure" || name == "venus-outskirts" ||
-            name == "venus-departure")
-        {
-            // Formats49 through53 can represent this rules setting and
-            // retain the same native controller; current writes53 above.
-            // Format48 cannot write a nondefault rules setting.
-            for (unsigned format = 49; format < 53; ++format)
-            {
-                verify_saved(opengold::encode_campaign_in_format(*campaign_.party, &session,
-                                                                 assets_, format, countdown),
-                             format);
-            }
-        }
+        verify_saved(bytes);
         if (const auto *prefix = std::getenv("OPENGOLD_COUNTDOWN_EARNED_SAVES"))
         {
             std::ofstream out(std::string(prefix) + std::string(name) + ".ogs", std::ios::binary);

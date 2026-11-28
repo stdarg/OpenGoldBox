@@ -74,7 +74,7 @@ printed pp28–29,47–48,54,58–59,62 and90, checked2026-09-26.
 Superseded: the old-save, released-format and Review Training parts of items 1,
 9 and 10 (and MASTERY-1 below) predate the pre-1.0 save policy. Saves now have
 one format with no migrations, and Review Training was removed; see
-[SAVES.md](SAVES.md#pre-10-format-policy).
+[SAVES.md](SAVES.md#one-save-version).
 
 ## Approved controls
 

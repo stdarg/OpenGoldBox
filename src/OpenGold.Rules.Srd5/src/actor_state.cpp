@@ -1,6 +1,7 @@
 #include "conditions.h"
 #include "resource_pools.h"
 #include "spell_table.h"
+#include "opengold/srd5.h"
 #include <algorithm>
 #include <charconv>
 #include <cmath>
@@ -580,3 +581,11 @@ VitalState vitals(const Actor &a)
     return {a.life.hp, a.life.dead, out.str(), description};
 }
 } // namespace opengold::srd5::detail
+
+namespace opengold::srd5
+{
+std::vector<std::string_view> saved_record_formats()
+{
+    return {detail::vitals_magic, detail::effects_magic};
+}
+} // namespace opengold::srd5

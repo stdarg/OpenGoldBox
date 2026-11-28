@@ -11,6 +11,10 @@ namespace opengold::srd5
 // The returned module owns its parsed content; the input may be discarded.
 [[nodiscard]] std::unique_ptr<rules::RulesModule> parse_content(std::string_view content);
 [[nodiscard]] std::unique_ptr<rules::CharacterRules> character_rules();
+// The tags of the records this module writes into a campaign save as text
+// (rules::VitalState::resources). Each names its record's layout, which the
+// save version covers (docs/SAVES.md): a new tag needs a new save version.
+[[nodiscard]] std::vector<std::string_view> saved_record_formats();
 // Pure SRD arithmetic, also used by the deterministic combat resolver.
 [[nodiscard]] std::string equipment_note(const rules::CharacterSheet &sheet, std::string_view item);
 // What one charged item's quantity counts ("charges", "missiles"); empty when the

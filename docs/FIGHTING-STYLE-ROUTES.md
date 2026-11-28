@@ -48,7 +48,7 @@
    and existing current module0.6.52 evidence; capture another writer only for a
    missing acceptance case. Version new grants/choices where validation requires.
    (Superseded: saves now have one pre-1.0 format and no migrations, and Review
-   Training was removed; see [SAVES.md](SAVES.md#pre-10-format-policy).)
+   Training was removed; see [SAVES.md](SAVES.md#one-save-version).)
 6. Main EN/ES and demo EN controls/input/render at1120×800 and1920×1080;
    exact native comparison of saved choices. Relevant focused checks, final
    native regression for shared rules/history, affected Godot checks/builds.

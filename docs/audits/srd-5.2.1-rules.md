@@ -42,7 +42,7 @@ corrected by I04. The coverage gaps retain their open status in the ledger.
 
 **Save policy update:** the save-migration steps below (E1, E4, Stage 1, Stage 2
 and the verification strategy) predate the pre-1.0 hard cutoff. Saves are not
-migrated before 1.0; see the [format policy](../SAVES.md#pre-10-format-policy).
+migrated before 1.0; see the [format policy](../SAVES.md#one-save-version).
 
 ## Authority, scope, and evidence
 

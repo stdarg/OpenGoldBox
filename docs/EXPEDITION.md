@@ -209,7 +209,7 @@ initiative, large-arena checkpoints, coin overflow and duplicate loot. The
 installed-data route also checks the four-orc flag, original silver award and
 return to New Phlan. Campaign saves retain district, visited maps, script state,
 RNG and uncollected loot. Older save formats are rejected; see
-[saves](SAVES.md#pre-10-format-policy).
+[saves](SAVES.md#one-save-version).
 
 ### Every map's events on the town screen
 

@@ -103,7 +103,7 @@ std::string MersenneTwister::state_text() const
 std::optional<MersenneTwister> MersenneTwister::from_state_text(std::string_view text)
 {
     const auto read = numbers(text, state_size + 1);
-    if (!read || read->size() < state_size)
+    if (!read || read->size() != state_size + 1 || (*read)[state_size] > state_size)
     {
         return std::nullopt;
     }
@@ -112,17 +112,7 @@ std::optional<MersenneTwister> MersenneTwister::from_state_text(std::string_view
     {
         engine.words_[i] = static_cast<result_type>((*read)[i]);
     }
-    // libc++ and MSVC write the last 624 values made, oldest first: the block
-    // a fresh twist starts from, so the next draw twists, as after a seed.
-    engine.next_ = state_size;
-    if (read->size() == state_size + 1)
-    {
-        if ((*read)[state_size] > state_size)
-        {
-            return std::nullopt;
-        }
-        engine.next_ = static_cast<std::size_t>((*read)[state_size]);
-    }
+    engine.next_ = static_cast<std::size_t>((*read)[state_size]);
     return engine;
 }
 } // namespace opengold

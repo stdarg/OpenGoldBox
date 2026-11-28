@@ -96,7 +96,7 @@ are prepared in an owned candidate before replacing live campaign state.
   Prone does not outlast combat.
 - **OPENGOLD-CAMPAIGN 40** stores sub-minute time, precise rest-completion offsets
   and the next encounter scope. Older formats and other rules identities reject;
-  see the [pre-1.0 format policy](SAVES.md#pre-10-format-policy).
+  see the [pre-1.0 format policy](SAVES.md#one-save-version).
 - Campaign saves and PC44 profiles store acquired feature/feat provenance and
   choices, separately from spent resources and timed effects.
 - They also store training choices and sources alongside effects, wounds and

@@ -50,7 +50,7 @@ Q44 requests the project policy rather than presenting one as an SRD rule.
 - Historical saves/recipes retain their supported continuation. Capture actual
   module 0.6.46 writer evidence before runtime changes; do not rewrite old fixtures.
   (Superseded: saves now have one pre-1.0 format, nothing is migrated and those
-  fixtures were deleted; see [SAVES.md](SAVES.md#pre-10-format-policy).)
+  fixtures were deleted; see [SAVES.md](SAVES.md#one-save-version).)
 - Main/demo keyboard/mouse controls; main EN/ES and demo EN at both supported
   sizes; rules remain in static SRD library, Core owns inventory transactions.
 - Excluded: #57 ammunition, #59 Light bonus attacks, #60 mastery effects,

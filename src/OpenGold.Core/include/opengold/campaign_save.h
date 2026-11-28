@@ -2,6 +2,7 @@
 #define OPENGOLD_CAMPAIGN_SAVE_H
 #include "opengold/difficulty.h"
 #include "opengold/rolf_tour.h"
+#include "opengold/save_version.h"
 #include <functional>
 
 namespace opengold
@@ -21,12 +22,9 @@ struct SavedCampaign
 {
     PartyState party;
     std::optional<por::RolfTourSession> town;
-    // Members saved before characters chose original portraits, still on the
-    // default head and body: the game gives each a random original portrait.
-    std::vector<MemberId> unchosen_portraits;
-    // The game the campaign belongs to; saves before format 48 are Pool of Radiance's.
+    // The game the campaign belongs to.
     GoldBoxGame game{GoldBoxGame::pool_of_radiance};
-    // A design's play, in an Unlimited Adventures save (format 51 on).
+    // A design's play, in an Unlimited Adventures save.
     std::optional<DesignSave> design;
 };
 
@@ -45,7 +43,7 @@ struct CampaignRules
 };
 
 // Reads only the save's header, its rules and game; throws as decode_campaign
-// does on a save that is not a campaign or is too old.
+// does on a save that is not a campaign or is of another version.
 [[nodiscard]] CampaignRules saved_campaign_rules(std::string_view);
 template <bool Reading> struct SaveCodec;
 [[nodiscard]] std::string campaign_asset_identity(const std::filesystem::path &directory);
@@ -55,17 +53,13 @@ template <bool Reading> struct SaveCodec;
                                           std::string_view assets,
                                           GoldBoxGame game = GoldBoxGame::pool_of_radiance,
                                           const DesignSave *design = nullptr);
-// The campaign in an earlier format this build still reads, from 45, for
-// checks that such saves load. Throws when the party holds what that format
-// cannot record: before 47, a character made under the original rules; before
-// 48, a game other than Pool of Radiance; before 49, a setting for its rules;
-// before 50, what a level rolled; before 51, a design. Before 52 the length
-// of the rest whose spells wait to be chosen is left out, and before 53 its
-// interruption. Format 54 is reserved for Dark Queen's saved vault; other
-// games continue writing format 53 with their existing bytes.
-[[nodiscard]] std::string encode_campaign_in_format(
-    const CampaignParty &, const por::RolfTourSession *, std::string_view assets, unsigned format,
-    GoldBoxGame game = GoldBoxGame::pool_of_radiance, const DesignSave *design = nullptr);
+// The layout of every save this build writes, from the same walk of the
+// fields that writes and reads them: each value's type in order, one element
+// of each collection or optional value, and each part only some saves have
+// under its condition. The values of `party` (with at least one member) and
+// of the idle `town` decide nothing; they are only something to walk.
+[[nodiscard]] std::string campaign_save_schema(const CampaignParty &,
+                                               const por::RolfTourSession &town);
 [[nodiscard]] SavedCampaign decode_campaign(std::string_view, const rules::CharacterRules &,
                                             const rules::RulesModule &, std::string_view assets,
                                             const por::RolfTourSession *town_template);

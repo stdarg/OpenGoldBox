@@ -1911,22 +1911,16 @@ void installed_records_decode()
                       party->member(hero).vitals.dead && party->member(hero).vitals.hit_points == 0,
                   "The continuation never restores a left-behind original");
             const auto after_flight = party->state();
-            for (unsigned format = 49; format <= 54; ++format)
-            {
-                const auto bytes = encode_campaign_in_format(*party, nullptr,
-                                                             "native-flight-fixture", format, game);
-                auto saved = decode_campaign(bytes, *creation, *audit_module,
-                                             "native-flight-fixture", nullptr);
-                party->restore(std::move(saved.party));
-                check(encode_campaign_in_format(*party, nullptr, "native-flight-fixture", format,
-                                                game) == bytes &&
-                          party->state().slots == after_flight.slots &&
-                          party->state().roster.size() == after_flight.roster.size() &&
-                          party->member(hero).vitals.dead &&
-                          party->member(survivor).vitals.hit_points == survivor_hp - 1,
-                      "Supported Native save history retains escaped slots and lost records: " +
-                          std::to_string(format));
-            }
+            const auto bytes = encode_campaign(*party, nullptr, "native-flight-fixture", game);
+            auto saved =
+                decode_campaign(bytes, *creation, *audit_module, "native-flight-fixture", nullptr);
+            party->restore(std::move(saved.party));
+            check(encode_campaign(*party, nullptr, "native-flight-fixture", game) == bytes &&
+                      party->state().slots == after_flight.slots &&
+                      party->state().roster.size() == after_flight.roster.size() &&
+                      party->member(hero).vitals.dead &&
+                      party->member(survivor).vitals.hit_points == survivor_hp - 1,
+                  "A Native save retains escaped slots and lost records");
         }
         party->restore(before_flight);
     }
@@ -1976,14 +1970,8 @@ void installed_records_decode()
         check(vault.can_leave() && vault.script_variable(por::EclAddress{0x31}) == 0,
               "Leaving the vault resumes the script and clears its service flag");
         const auto encoded = encode_campaign(*party, &vault, "native-vault-fixture", game);
-        check(encoded.starts_with("OPENGOLD-CAMPAIGN 54\n"),
-              "Only the new native campaign writes the vault extension");
-        test::rejects(
-            [&]
-            {
-                (void)encode_campaign_in_format(*party, &vault, "native-vault-fixture", 53, game);
-            },
-            "An older native format cannot silently discard stored property");
+        check(encoded.starts_with("OPENGOLD-CAMPAIGN " + std::to_string(save_version) + "\n"),
+              "The native campaign writes the one save version");
         auto saved =
             decode_campaign(encoded, *creation, *audit_module, "native-vault-fixture", &vault);
         party->restore(saved.party);
@@ -2004,11 +1992,6 @@ void installed_records_decode()
         check(party->member(hero).character.inventory().items().size() == held_count,
               "The saved item is returned to its chosen recipient");
         choose(*saved.town, "Exit");
-        const auto empty_legacy =
-            encode_campaign_in_format(*party, &*saved.town, "native-vault-fixture", 53, game);
-        auto legacy =
-            decode_campaign(empty_legacy, *creation, *audit_module, "native-vault-fixture", &vault);
-        check(legacy.town.has_value(), "Earlier native checkpoints still load with an empty vault");
         party->restore(before_vault);
         // A later unsupported instruction must roll back both sides of a
         // vault transaction, rather than duplicate the deposited property.

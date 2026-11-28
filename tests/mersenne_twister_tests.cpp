@@ -6,7 +6,6 @@
 #include <iostream>
 #include <iterator>
 #include <random>
-#include <sstream>
 #include <string>
 
 using opengold::MersenneTwister;
@@ -67,45 +66,18 @@ void round_trips_its_text()
     }
 }
 
-// What the host's standard library writes for std::mt19937 loads and goes on
-// with the same draws: on macOS libc++'s text, on Linux libstdc++'s, on
-// Windows MSVC's.
-void reads_the_host_library_text()
+// The engine writes the text libstdc++ writes for std::mt19937, and reads it
+// back to go on with the same draws. The fixture is seed 5489 after 1,000
+// draws.
+void reads_libstdcxx_text()
 {
-    for (const int drawn : {0, 1, 623, 624, 625, 1000, 5000})
+    auto loaded = MersenneTwister::from_state_text(fixture("mt19937-libstdcxx-5489-1000.txt"));
+    check(loaded.has_value(), "libstdc++'s text must load");
+    for (const std::uint32_t expected :
+         {2500741117U, 4263797064U, 2322457777U, 1155622524U, 3736368257U})
     {
-        std::mt19937 standard(7U);
-        standard.discard(static_cast<unsigned long long>(drawn));
-        std::ostringstream out;
-        out.imbue(std::locale::classic());
-        out << standard;
-        auto loaded = MersenneTwister::from_state_text(out.str());
-        check(loaded.has_value(), "The host library's std::mt19937 text must load");
-        for (int i = 0; i < 3000; ++i)
-        {
-            check((*loaded)() == standard(),
-                  "After " + std::to_string(drawn) +
-                      " draws the loaded text must go on as std::mt19937");
-        }
+        check((*loaded)() == expected, "libstdc++'s text must go on with its draws");
     }
-}
-
-// Saves written before this engine hold libc++'s or libstdc++'s text; both
-// load on every platform. Both fixtures are seed 5489 after 1,000 draws.
-void reads_both_libraries_saved_text()
-{
-    for (const auto *name : {"mt19937-libcxx-5489-1000.txt", "mt19937-libstdcxx-5489-1000.txt"})
-    {
-        auto loaded = MersenneTwister::from_state_text(fixture(name));
-        check(loaded.has_value(), std::string("The text of ") + name + " must load");
-        for (const std::uint32_t expected :
-             {2500741117U, 4263797064U, 2322457777U, 1155622524U, 3736368257U})
-        {
-            check((*loaded)() == expected, std::string(name) + " must go on with its draws");
-        }
-    }
-    // libstdc++'s form is the one the engine writes: a Linux save made before
-    // stays byte-identical when written again.
     MersenneTwister engine;
     for (int i = 0; i < 1000; ++i)
     {
@@ -124,8 +96,8 @@ void rejects_other_text()
     MersenneTwister engine;
     const auto words = engine.state_text();
     const auto without_position = words.substr(0, words.rfind(' '));
-    check(MersenneTwister::from_state_text(without_position).has_value(),
-          "624 words are libc++'s form");
+    check(!MersenneTwister::from_state_text(without_position).has_value(),
+          "624 words without the position are no engine");
     check(!MersenneTwister::from_state_text("").has_value(), "Empty text is no engine");
     check(!MersenneTwister::from_state_text("1 2 3").has_value(), "Three words are no engine");
     check(!MersenneTwister::from_state_text(words + " 7").has_value(), "626 words are no engine");
@@ -145,8 +117,7 @@ int main()
     {
         draws_what_std_mt19937_draws();
         round_trips_its_text();
-        reads_the_host_library_text();
-        reads_both_libraries_saved_text();
+        reads_libstdcxx_text();
         rejects_other_text();
         std::cout << "Mersenne Twister tests passed\n";
         return 0;

@@ -56,7 +56,7 @@ unsupported catalog choices stay pending instead of shrinking SRD counts.
 
 WIZCHOICE-2: A party panel Spellbook dialog that completed Wizard knowledge
 missing from old saves. It was later removed with the pre-1.0 save cutoff; see
-[saves](SAVES.md#pre-10-format-policy). Wizard spells are learned only at
+[saves](SAVES.md#one-save-version). Wizard spells are learned only at
 creation and level-up.
 
 WIZCHOICE-3: After a completed Long Rest, present each eligible Wizard's centered

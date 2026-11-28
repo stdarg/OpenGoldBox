@@ -38,7 +38,7 @@ validate the caster against the owner, the application against the area/effect
 registry, and duration against the named spell. It must reject trailing fields
 at its own record boundary. Existing save formats remain unchanged; embedding
 it changes the current formats in place without migration (see the
-[pre-1.0 format policy](SAVES.md#pre-10-format-policy)).
+[pre-1.0 format policy](SAVES.md#one-save-version)).
 
 ## Combat integration
 

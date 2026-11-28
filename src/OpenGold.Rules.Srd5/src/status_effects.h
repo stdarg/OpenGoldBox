@@ -780,6 +780,9 @@ struct AttackConditions
 [[nodiscard]] RollModifiers mental_save_modifiers(Ability ability, const EffectSubject &subject);
 void elapse_effects(std::span<EffectSubject> subjects, std::uint64_t milliseconds,
                     std::uint64_t &rng, const EffectObserver &observe = {});
+// The only effect-state tag written or read. It lives inside campaign saves and
+// combat checkpoints, whose format numbers reject older data.
+inline constexpr std::string_view effects_magic = "FX9";
 void write_effects(std::ostream &out, const EffectState &effects);
 [[nodiscard]] EffectState read_effects(std::istream &in);
 } // namespace opengold::srd5::detail

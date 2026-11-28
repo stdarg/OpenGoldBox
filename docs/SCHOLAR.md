@@ -40,7 +40,7 @@ Existing level-two through level-four Wizards keep missing choices pending and
 complete them in the existing Review Training checkbox groups. Previously chosen
 training stays locked. Cancel discards edits; keyboard access and wounds/resources
 are preserved. The existing windows retain their dimensions. The user replied “1. Approved.” Implement within this recorded scope.
-Review Training was later removed with the [pre-1.0 save cutoff](SAVES.md#pre-10-format-policy);
+Review Training was later removed with the [pre-1.0 save cutoff](SAVES.md#one-save-version);
 Scholar is chosen only at Wizard level two.
 
 ## Implementation

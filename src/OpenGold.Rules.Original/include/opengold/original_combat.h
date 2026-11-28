@@ -419,6 +419,10 @@ struct CarriedState
 [[nodiscard]] CarriedState carried_state(std::string_view resources, GoldBoxGame game);
 // A rested member's state: its lasting conditions, or empty for none.
 [[nodiscard]] std::string rested_state(std::span<const Effect> conditions);
+// The tags of the records this module writes into a campaign save as text
+// (rules::VitalState::resources). Each names its record's layout, which the
+// save version covers (docs/SAVES.md): a new tag needs a new save version.
+[[nodiscard]] std::vector<std::string_view> saved_record_formats();
 
 // The items a creature can use in a fight among those it carries
 // (UsableItem), each by its place among them.

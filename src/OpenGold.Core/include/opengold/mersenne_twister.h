@@ -41,11 +41,9 @@ class MersenneTwister
     }
 
     // The saved text: the 624 state words and the position of the next one,
-    // as libstdc++ writes std::mt19937, so saves written on Linux before this
-    // engine existed are byte-identical to the ones it writes.
+    // as libstdc++ writes std::mt19937.
     [[nodiscard]] std::string state_text() const;
-    // Reads state_text(), and the 624 words libc++ and MSVC write for
-    // std::mt19937 (the last 624 values the engine made). Nothing else.
+    // Reads state_text(). Nothing else.
     [[nodiscard]] static std::optional<MersenneTwister> from_state_text(std::string_view text);
 
     friend bool operator==(const MersenneTwister &, const MersenneTwister &) = default;

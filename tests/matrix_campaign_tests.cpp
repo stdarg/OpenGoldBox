@@ -297,8 +297,8 @@ void saved_campaign_round_trips(Campaign &campaign, const std::filesystem::path 
     const auto before = campaign.party->checkpoint();
     const auto saved =
         opengold::encode_campaign(*campaign.party, &campaign.session, assets, matrix);
-    check(saved.starts_with("OPENGOLD-CAMPAIGN 55\n"),
-          "Only the newly supported Matrix campaign writes format 55");
+    check(saved.starts_with("OPENGOLD-CAMPAIGN " + std::to_string(opengold::save_version) + "\n"),
+          "Matrix's campaign writes the one save version");
     const auto header = opengold::saved_campaign_rules(saved);
     check(header.game == matrix, "The save names Matrix's stable game ID 11");
     auto loaded = opengold::decode_campaign(
@@ -332,16 +332,6 @@ void saved_campaign_round_trips(Campaign &campaign, const std::filesystem::path 
               loaded.town->snapshot().pose == pose_before_settings &&
               loaded.town->snapshot().game_won == winning,
           "Applying settings after load updates the live cell without restarting the campaign");
-    if (!winning)
-    {
-        const auto legacy = opengold::encode_campaign_in_format(*campaign.party, &campaign.session,
-                                                                assets, 53, matrix);
-        auto old = opengold::decode_campaign(
-            legacy, *campaign.creation, campaign.party->rule_module(), assets, &campaign.session);
-        check(old.town && !old.town->snapshot().game_won && old.party.slots == before.slots &&
-                  old.party.roster.size() == before.roster.size(),
-              "An ordinary format-53 Matrix town retains its party without inventing victory");
-    }
     if (winning)
     {
         check(!loaded.town->explore(opengold::por::ExplorationCommand::forward) &&
@@ -413,44 +403,25 @@ void native_difficulty_keeps_all_six_settings()
     }
 }
 
-void matrix_format_preserves_released_history(const std::filesystem::path &folder)
+// Every game writes the one save version, Matrix's party-only save too.
+void every_game_writes_the_save_version(const std::filesystem::path &folder)
 {
     auto campaign = fresh_campaign(folder);
     const auto assets = opengold::campaign_asset_identity(folder);
-    const auto legacy =
-        opengold::encode_campaign_in_format(*campaign.party, nullptr, assets, 53, matrix);
-    auto loaded = opengold::decode_campaign(legacy, *campaign.creation,
-                                            campaign.party->rule_module(), assets, nullptr);
-    check(loaded.game == matrix && !loaded.town &&
-              loaded.party.slots == campaign.party->state().slots,
-          "A released format-53 Matrix party-only save still loads");
-    for (const auto &[game, version] : {std::pair{GoldBoxGame::countdown_to_doomsday, 53U},
-                                        std::pair{GoldBoxGame::dark_queen_of_krynn, 54U}})
+    for (const auto game :
+         {matrix, GoldBoxGame::countdown_to_doomsday, GoldBoxGame::dark_queen_of_krynn})
     {
         const auto bytes = opengold::encode_campaign(*campaign.party, nullptr, assets, game);
-        check(bytes.starts_with("OPENGOLD-CAMPAIGN " + std::to_string(version) + '\n'),
-              "Countdown and Native keep their existing format-53 and format-54 writers");
-        bool refused = false;
-        try
-        {
-            (void)opengold::encode_campaign_in_format(*campaign.party, nullptr, assets, 55, game);
-        }
-        catch (const std::runtime_error &)
-        {
-            refused = true;
-        }
-        check(refused, "A non-Matrix game cannot write Matrix's format-55 layout");
+        check(
+            bytes.starts_with("OPENGOLD-CAMPAIGN " + std::to_string(opengold::save_version) + '\n'),
+            "Matrix, Countdown and Native write the one save version");
     }
-    bool refused = false;
-    try
-    {
-        (void)opengold::encode_campaign_in_format(*campaign.party, nullptr, assets, 54, matrix);
-    }
-    catch (const std::runtime_error &)
-    {
-        refused = true;
-    }
-    check(refused, "Matrix cannot masquerade as Native's format-54 layout");
+    auto loaded = opengold::decode_campaign(
+        opengold::encode_campaign(*campaign.party, nullptr, assets, matrix), *campaign.creation,
+        campaign.party->rule_module(), assets, nullptr);
+    check(loaded.game == matrix && !loaded.town &&
+              loaded.party.slots == campaign.party->state().slots,
+          "A Matrix party-only save loads");
 }
 
 // Choose a carried gun using the native rules' attack counts, damage and
@@ -3043,10 +3014,9 @@ void retained_wilderness_save_checks(Campaign &campaign, const std::filesystem::
     const auto assets = opengold::campaign_asset_identity(folder);
     const auto x = campaign.session.script_variable(opengold::por::EclAddress{0x4BC3});
     const auto y = campaign.session.script_variable(opengold::por::EclAddress{0x4BC4});
-    for (const unsigned format : {53U, 55U})
     {
-        const auto saved = opengold::encode_campaign_in_format(*campaign.party, &campaign.session,
-                                                               assets, format, matrix);
+        const auto saved =
+            opengold::encode_campaign(*campaign.party, &campaign.session, assets, matrix);
         auto fresh = opengold::load_campaign(folder, matrix);
         auto loaded = opengold::decode_campaign(saved, *campaign.creation,
                                                 campaign.party->rule_module(), assets, &fresh);
@@ -3062,17 +3032,16 @@ void retained_wilderness_save_checks(Campaign &campaign, const std::filesystem::
                   loaded.town->snapshot().overland_y == y &&
                   loaded.town->snapshot().overland_direction ==
                       campaign.session.snapshot().overland_direction,
-              "Both supported saves publish actual wilderness controls and coordinates");
+              "The save publishes actual wilderness controls and coordinates");
         auto restored = std::make_shared<opengold::CampaignParty>(
             og::rules_module(opengold::load_original_content(folder, matrix)), campaign.creation);
         restored->restore(std::move(loaded.party));
         loaded.town->attach_restored_party(restored);
-        check(opengold::encode_campaign_in_format(*restored, &*loaded.town, assets, format,
-                                                  matrix) == saved,
-              "A supported wilderness save resaves byte-identically");
+        check(opengold::encode_campaign(*restored, &*loaded.town, assets, matrix) == saved,
+              "A wilderness save resaves byte-identically");
         if (!negative)
         {
-            continue;
+            return;
         }
         const auto rejects_context = [&](const std::string &bytes, std::string_view label,
                                          std::initializer_list<std::string_view> reasons)
@@ -3091,8 +3060,7 @@ void retained_wilderness_save_checks(Campaign &campaign, const std::filesystem::
             }
             check(refused, std::string(label));
         };
-        const auto party_only =
-            opengold::encode_campaign_in_format(*campaign.party, nullptr, assets, format, matrix);
+        const auto party_only = opengold::encode_campaign(*campaign.party, nullptr, assets, matrix);
         rejects_context(
             saved_with_other_script(saved, party_only, 35, campaign.session.snapshot().script_id),
             "An unrelated program cannot use a wilderness kind to bypass district validation",
@@ -3105,8 +3073,7 @@ void retained_wilderness_save_checks(Campaign &campaign, const std::filesystem::
             {"Script image size mismatch", "Invalid saved Matrix wilderness context"});
         auto changed = campaign.session.detached_copy();
         opengold::test::TourAccess::set_variable(changed, opengold::por::EclAddress{0x4BA6}, 0);
-        const auto bad_mode =
-            opengold::encode_campaign_in_format(*campaign.party, &changed, assets, format, matrix);
+        const auto bad_mode = opengold::encode_campaign(*campaign.party, &changed, assets, matrix);
         rejects_context(bad_mode,
                         "An authenticated controller still requires wilderness picture mode",
                         {"Invalid saved Matrix wilderness context"});
@@ -3114,14 +3081,12 @@ void retained_wilderness_save_checks(Campaign &campaign, const std::filesystem::
         opengold::test::TourAccess::set_variable(
             changed, opengold::por::EclAddress{0x4BE6},
             campaign.session.snapshot().script_id == 32 ? 0xA2 : 0xA8);
-        rejects_context(
-            opengold::encode_campaign_in_format(*campaign.party, &changed, assets, format, matrix),
-            "Another wilderness kind does not authenticate this controller",
-            {"Invalid saved Matrix wilderness context"});
+        rejects_context(opengold::encode_campaign(*campaign.party, &changed, assets, matrix),
+                        "Another wilderness kind does not authenticate this controller",
+                        {"Invalid saved Matrix wilderness context"});
         opengold::test::TourAccess::set_variable(changed, opengold::por::EclAddress{0x4BA6}, 0);
         opengold::test::TourAccess::set_variable(changed, opengold::por::EclAddress{0x4BE6}, 0x81);
-        const auto ordinary =
-            opengold::encode_campaign_in_format(*campaign.party, &changed, assets, format, matrix);
+        const auto ordinary = opengold::encode_campaign(*campaign.party, &changed, assets, matrix);
         rejects_context(saved_with_other_script(ordinary, party_only, 35,
                                                 campaign.session.snapshot().script_id),
                         "Ordinary mismatched districts remain rejected",
@@ -3130,10 +3095,9 @@ void retained_wilderness_save_checks(Campaign &campaign, const std::filesystem::
         opengold::test::TourAccess::set_variable(changed, opengold::por::EclAddress{0x4BF2},
                                                  campaign.session.snapshot().script_id == 32 ? 48
                                                                                              : 32);
-        rejects_context(
-            opengold::encode_campaign_in_format(*campaign.party, &changed, assets, format, matrix),
-            "The restored VM identity must match the saved controller",
-            {"Invalid saved Matrix wilderness context"});
+        rejects_context(opengold::encode_campaign(*campaign.party, &changed, assets, matrix),
+                        "The restored VM identity must match the saved controller",
+                        {"Invalid saved Matrix wilderness context"});
     }
 }
 
@@ -3141,19 +3105,17 @@ void retained_interior_save_checks(Campaign &campaign, const std::filesystem::pa
                                    unsigned controller = 37, unsigned district = 33)
 {
     const auto assets = opengold::campaign_asset_identity(folder);
-    for (const unsigned format : {53U, 55U})
     {
-        const auto saved = opengold::encode_campaign_in_format(*campaign.party, &campaign.session,
-                                                               assets, format, matrix);
-        const auto absent =
-            opengold::encode_campaign_in_format(*campaign.party, nullptr, assets, format, matrix);
+        const auto saved =
+            opengold::encode_campaign(*campaign.party, &campaign.session, assets, matrix);
+        const auto absent = opengold::encode_campaign(*campaign.party, nullptr, assets, matrix);
         auto fresh = opengold::load_campaign(folder, matrix);
         auto loaded = opengold::decode_campaign(saved, *campaign.creation,
                                                 campaign.party->rule_module(), assets, &fresh);
         check(loaded.town && loaded.town->snapshot().script_id == controller &&
                   loaded.town->snapshot().area_id == district &&
                   loaded.town->snapshot().pose == campaign.session.snapshot().pose,
-              "Both supported saves keep the actual retained-floor controller and shared map");
+              "The save keeps the actual retained-floor controller and shared map");
         auto restored = std::make_shared<opengold::CampaignParty>(
             og::rules_module(opengold::load_original_content(folder, matrix)), campaign.creation);
         restored->restore(std::move(loaded.party));
@@ -3163,8 +3125,7 @@ void retained_interior_save_checks(Campaign &campaign, const std::filesystem::pa
             check(restored->game_record(member.id) == campaign.party->game_record(member.id),
                   "The retained floor keeps every actual party record");
         }
-        check(opengold::encode_campaign_in_format(*restored, &*loaded.town, assets, format,
-                                                  matrix) == saved,
+        check(opengold::encode_campaign(*restored, &*loaded.town, assets, matrix) == saved,
               "The independently loaded retained floor resaves byte-identically");
         bool refused = false;
         try
@@ -6163,17 +6124,16 @@ void dock_scratch_resumes_an_older_save(const std::filesystem::path &folder)
                                              0xA5);
     const auto assets = opengold::campaign_asset_identity(folder);
     const auto bytes =
-        opengold::encode_campaign_in_format(*campaign.party, &campaign.session, assets, 53, matrix);
+        opengold::encode_campaign(*campaign.party, &campaign.session, assets, matrix);
     auto loaded = opengold::decode_campaign(
         bytes, *campaign.creation, campaign.party->rule_module(), assets, &campaign.session);
-    check(loaded.town.has_value(), "The older Matrix town restores");
+    check(loaded.town.has_value(), "The Matrix town restores");
     auto restored = std::make_shared<opengold::CampaignParty>(
         og::rules_module(opengold::load_original_content(folder, matrix)), campaign.creation);
     restored->restore(std::move(loaded.party));
     loaded.town->attach_restored_party(restored);
-    check(opengold::encode_campaign_in_format(*restored, &*loaded.town, assets, 53, matrix) ==
-              bytes,
-          "An older town resaves byte-identically before its next action");
+    check(opengold::encode_campaign(*restored, &*loaded.town, assets, matrix) == bytes,
+          "The town resaves byte-identically before its next action");
     opengold::test::rejects<opengold::por::EclError>(
         [&]
         {
@@ -6335,10 +6295,9 @@ void venus_arrival_save_protocol(const std::filesystem::path &folder)
             auto changed = campaign.session.detached_copy();
             const auto old = changed.script_variable(cell);
             opengold::test::TourAccess::set_variable(changed, cell, old + 1);
-            for (const unsigned format : {53U, 55U})
             {
-                const auto saved = opengold::encode_campaign_in_format(*campaign.party, &changed,
-                                                                       assets, format, matrix);
+                const auto saved =
+                    opengold::encode_campaign(*campaign.party, &changed, assets, matrix);
                 auto fresh = opengold::load_campaign(folder, matrix);
                 bool refused = false;
                 try
@@ -6562,20 +6521,18 @@ void retained_ship_wall_refreshes_before_the_next_command(const std::filesystem:
     check(campaign.session.script_variable(opengold::por::EclAddress{0xC04E}) == 5,
           "The source retained its old wall cell without requesting a redraw");
     const auto assets = opengold::campaign_asset_identity(folder);
-    for (const unsigned format : {53U, 55U})
     {
-        const auto saved = opengold::encode_campaign_in_format(*campaign.party, &campaign.session,
-                                                               assets, format, matrix);
+        const auto saved =
+            opengold::encode_campaign(*campaign.party, &campaign.session, assets, matrix);
         auto fresh = opengold::load_campaign(folder, matrix);
         auto loaded = opengold::decode_campaign(saved, *campaign.creation,
                                                 campaign.party->rule_module(), assets, &fresh);
-        check(loaded.town.has_value(), "Both supported ship saves restore an actual world");
+        check(loaded.town.has_value(), "The ship save restores an actual world");
         auto restored = std::make_shared<opengold::CampaignParty>(
             og::rules_module(opengold::load_original_content(folder, matrix)), campaign.creation);
         restored->restore(std::move(loaded.party));
         loaded.town->attach_restored_party(restored);
-        check(opengold::encode_campaign_in_format(*restored, &*loaded.town, assets, format,
-                                                  matrix) == saved,
+        check(opengold::encode_campaign(*restored, &*loaded.town, assets, matrix) == saved,
               "An idle retained-wall save stays byte-identical until the next player action");
         check(loaded.town->explore(opengold::por::ExplorationCommand::forward),
               "The next public Forward command is accepted");
@@ -6792,7 +6749,7 @@ int main(int argc, char **argv)
             venus_distant_encounter_protocol(folder);
             venus_arrival_save_protocol(folder);
             installed_wilderness_save_protocol(folder);
-            matrix_format_preserves_released_history(folder);
+            every_game_writes_the_save_version(folder);
             retained_ship_wall_refreshes_before_the_next_command(folder);
             authored_solo_loss_preserves_the_rest_of_the_team(folder);
             actual_program_two_is_a_saved_terminal_win(folder);

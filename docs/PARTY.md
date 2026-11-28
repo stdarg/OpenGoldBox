@@ -196,7 +196,7 @@ class/equipment choices and retains the conversion of previously unsupported
 ordinary weapons with verified original provenance. Campaign saves and combat
 checkpoints retain feature/feat grant provenance, choices and training selections. See [advancement](ADVANCEMENT.md)
 and [training support](TRAINING.md). Combat checkpoints also retain [Temporary HP](TEMPORARY-HP.md), Hit Dice and [recovery clocks](RECOVERY-CLOCKS.md); see also [rest resources](REST-RESOURCES.md).
-Saves from older formats or rules versions are rejected; see [saves](SAVES.md#pre-10-format-policy).
+Saves of another save version or rules module are rejected; see [saves](SAVES.md#one-save-version).
 
 Untrained use is allowed under [SRD 5.2.1](https://media.dndbeyond.com/compendium-images/srd/5.2/SRD_CC_v5.2.1.pdf):
 - Weapons omit the +2 level-one proficiency bonus on attacks.

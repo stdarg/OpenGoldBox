@@ -85,7 +85,7 @@ scope, prerequisites and independent expected results. Reconcile work already
 completed by other contributors. Bound oversized work with named acceptance substeps before coding; create a
 separate issue only for a genuine independent dependency/deliverable. A feature
 that changes saved state changes the current format in place, with no migration;
-see [saves](SAVES.md#pre-10-format-policy).
+see [saves](SAVES.md#one-save-version).
 
 Each completed increment must:
 
@@ -298,7 +298,7 @@ removed: spells have no components
 
 I01–I08, F01, F02a and F02b are complete. #189's Review Training dialog, which
 only completed training missing from old saves, was removed at the
-[pre-1.0 save cutoff](SAVES.md#pre-10-format-policy).
+[pre-1.0 save cutoff](SAVES.md#one-save-version).
 F03a–d are complete: #192's rest controls and #193's interruption handling
 complete #30; SIMPLIFY-1 later removed resumption, natural sleep, dropped gear and
 Q37 safe recovery. See [rest resources](REST-RESOURCES.md)

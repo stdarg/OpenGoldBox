@@ -27,9 +27,10 @@ level/multiclass milestones intact. Efficiency changes execution, not acceptance
    may be active with a return path. Do not ask again for routine choices or
    controls already covered by a recorded approval.
 4. Plan persistence across the batch. Distinguish schema changes, semantic
-   changes and data additions. Reuse valid records. Add no save migrations: until
-   1.0, change the current format in place; tests check round-trips and rejection
-   of older formats. See [saves](SAVES.md#pre-10-format-policy).
+   changes and data additions. Reuse valid records. Add no save migrations: a
+   change to what a save holds raises the save version and commits its layout;
+   tests check round-trips and rejection of other versions. See
+   [saves](SAVES.md#one-save-version).
 5. Implement a real player path, including all named grants/routes. No speculative
    helper or abstraction without an immediate consumer. A separate state machine
    may warrant a reviewable substep, not automatically another GitHub issue.
