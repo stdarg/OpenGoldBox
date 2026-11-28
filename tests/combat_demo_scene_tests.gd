@@ -253,6 +253,13 @@ func check_demo() -> void:
         await create_timer(0.02).timeout
     require(combat.selected_character_cell() == Vector2i(8, 5),
         "Arrow key moves the selected character on their turn")
+    # The footstep lasts about 40 ms and mixes in real time, so a busy machine
+    # can end it before the move is seen; finished is only sent on a later
+    # frame, so a few frames are waited for it.
+    for frame in range(30):
+        if footstep[0] or effect_audio.playing:
+            break
+        await process_frame
     require(footstep[0] or effect_audio.playing,
         "Moving to a new square plays the original footstep sound")
     require(is_equal_approx(combat.get_node("EffectAudio").volume_linear, 0.125),
