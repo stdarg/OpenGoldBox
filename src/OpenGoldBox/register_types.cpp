@@ -1,4 +1,5 @@
 #include "game_classes.h"
+#include "old_user_folder.h"
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
 
@@ -8,6 +9,8 @@ void initialize(godot::ModuleInitializationLevel level)
 {
     if (level == godot::MODULE_INITIALIZATION_LEVEL_SCENE)
     {
+        // Before any autoload reads settings or writes logs into the user folder.
+        move_old_user_folder();
         register_game_classes();
     }
 }

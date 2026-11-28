@@ -8,8 +8,8 @@ The project was previously named OpenGold. The display name, documentation
 and the GitHub repository ([stdarg/OpenGoldBox](https://github.com/stdarg/OpenGoldBox))
 now use OpenGoldBox. Existing `opengold` C++ namespaces, build targets,
 `OPENGOLD_GAME_DIR`, source-directory names and save-format identifiers keep
-their original names. Settings and campaign saves use the Godot user-data
-folder `app_userdata/OpenGold`.
+their original names. Settings and campaign saves use the user data folder
+`%APPDATA%\OpenGold` on Windows and `app_userdata/OpenGold` elsewhere.
 
 A modern Godot-based reimplementation of SSI's Gold Box engine that reads the
 original game data and assets while adding a cleaner UI, improved rendering,

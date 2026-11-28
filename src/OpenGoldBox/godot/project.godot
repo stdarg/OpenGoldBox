@@ -17,6 +17,8 @@ boot_splash/show_image=false
 config/use_custom_user_dir=true
 config/custom_user_dir_name="Godot/app_userdata/OpenGold"
 config/custom_user_dir_name.linuxbsd="godot/app_userdata/OpenGold"
+; On Windows the folder is %APPDATA%\OpenGold; the game moves the old one there.
+config/custom_user_dir_name.windows="OpenGold"
 run/main_scene="res://scenes/startup.tscn"
 config/features=PackedStringArray("4.7")
 

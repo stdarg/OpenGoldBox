@@ -20,7 +20,7 @@ def default_directory():
     if sys.platform == "darwin":
         base = Path.home() / "Library/Application Support"
     elif os.name == "nt":
-        base = Path(os.environ["APPDATA"])
+        return Path(os.environ["APPDATA"]) / "OpenGold/screenshots"
     else:
         base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
     return base / ("godot" if sys.platform.startswith("linux") else "Godot") / "app_userdata/OpenGold/screenshots"

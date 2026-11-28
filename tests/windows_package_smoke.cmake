@@ -18,7 +18,7 @@ set(original "$ENV{OPENGOLD_GAME_DIR}")
 set(install "${WORK}/Program Files Prüfung 冒険/OpenGoldBox")
 set(game_files "${WORK}/Pool of Radiance Daten ü 冒険/POOLRAD")
 set(profile "${WORK}/profile")
-set(user_data "${profile}/Godot/app_userdata/OpenGold")
+set(user_data "${profile}/OpenGold")
 set(denied "$ENV{USERDOMAIN}\\$ENV{USERNAME}")
 
 # Directory-only deny ACEs: no new file or folder appears and nothing is

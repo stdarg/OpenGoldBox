@@ -240,7 +240,7 @@ replacement. Loading never rolls dice, spends actions or refunds resources. See
 ## File safety
 
 Saves live in Godot's writable **user://saves** directory (normally
-`%APPDATA%\Godot\app_userdata\OpenGold\saves` on Windows). UTF-8 slot names are
+`%APPDATA%\OpenGold\saves` on Windows). UTF-8 slot names are
 encoded into safe filenames, with `.ogs` and previous-version `.ogs.bak` files.
 Original installations may remain read-only.
 

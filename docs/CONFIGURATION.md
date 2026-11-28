@@ -1,11 +1,16 @@
 # First-run setup and configuration
 
 The packaged game saves `settings.cfg` in the player's user data folder, beside
-the campaign saves: `%APPDATA%\Godot\app_userdata\OpenGold\settings.cfg` on
+the campaign saves: `%APPDATA%\OpenGold\settings.cfg` on
 Windows and `~/Library/Application Support/Godot/app_userdata/OpenGold/settings.cfg`
 on macOS. The game's own folder can be read-only. A `settings.cfg` left beside
 `opengoldbox.exe` by an earlier build is no longer read; the first launch asks for
 the language and the game folder again.
+
+Windows builds before 2026-11-27 used `%APPDATA%\Godot\app_userdata\OpenGold`.
+At startup the game moves that folder's settings, saves and other files into
+`%APPDATA%\OpenGold`, keeping any file the new folder already has, and removes
+the old folder once it is empty.
 
 ```ini
 [game]

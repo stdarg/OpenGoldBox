@@ -215,7 +215,7 @@ The notice does not take focus and is excluded from the next capture.
 Default folders:
 
 - macOS: `~/Library/Application Support/Godot/app_userdata/OpenGold/screenshots`
-- Windows: `%APPDATA%\Godot\app_userdata\OpenGold\screenshots`
+- Windows: `%APPDATA%\OpenGold\screenshots`
 
 For agent inspection while the game is running, from the repository root:
 

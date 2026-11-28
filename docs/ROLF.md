@@ -148,6 +148,6 @@ demos\review-rolf.cmd -- --tour-check --capture
 ```
 
 Screenshots go to `checks/rolf-tour-1.png` through `rolf-tour-8.png` in the user
-data folder (`%APPDATA%\Godot\app_userdata\OpenGold` on Windows).
+data folder (`%APPDATA%\OpenGold` on Windows).
 The check exits automatically and verifies Enter with another button focused,
 held-key rejection, movement locking and turning after the tour.

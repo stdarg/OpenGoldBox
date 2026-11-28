@@ -177,7 +177,7 @@ Godot that built the export, so they match it. The build fails if the package
 holds any file the original game's MD5 manifest names, any `.DAX`, a
 `settings.cfg`, a `.TMP` file or any of the new art. Players unzip it anywhere, including a
 read-only folder: settings and saves go to
-`%APPDATA%\Godot\app_userdata\OpenGold` (see
+`%APPDATA%\OpenGold` (see
 [configuration](CONFIGURATION.md)). The package uses the debug export
 template, so `opengoldbox.console.exe` shows the engine's messages when a
 player reports a problem. The executable carries the app icon and the version,
